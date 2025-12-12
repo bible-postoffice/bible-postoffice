@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우체통 - {{ mailbox.nickname }}</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .lock-icon {
+            font-size: 80px;
+            margin: 20px 0;
+        }
+        h1 {
+            color: #333;
+            margin: 20px 0;
+        }
+        .date {
+            font-size: 24px;
+            color: #667eea;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .share-section {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        .share-url {
+            padding: 15px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+        }
+        button {
+            padding: 15px 40px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="lock-icon">🔒</div>
+        <h1>{{ mailbox.nickname }}님의 우체통</h1>
+        <p>아직 우체통을 열 수 없습니다</p>
+        <div class="date">📅 2026년 1월 1일에 공개됩니다</div>
+        
+        <div class="share-section">
+            <h3>🎁 친구들에게 공유하세요!</h3>
+            <p>아래 링크를 공유하면 친구들이 성경 구절을 보낼 수 있습니다</p>
+            <div class="share-url" id="shareUrl">{{ request.url_root }}send/{{ mailbox.id }}</div>
+            <button onclick="copyUrl()">링크 복사</button>
+            <button onclick="goToSend()">직접 구절 보내기</button>
+        </div>
+    </div>
+
+    <script>
+        function copyUrl() {
+            const url = document.getElementById('shareUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('링크가 복사되었습니다! 📋');
+            });
+        }
+        
+        function goToSend() {
+            window.location.href = '/send/{{ mailbox.id }}';
+        }
+    </script>
+</body>
+</html>
