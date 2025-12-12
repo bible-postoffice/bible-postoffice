@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>성경 구절 우체통</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        input {
+            padding: 15px;
+            width: 80%;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 15px 40px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎄 성경 구절 우체통 🎄</h1>
+        <p>당신만의 우체통을 만들고<br>소중한 사람들에게 성경 구절을 선물하세요</p>
+        <input type="text" id="nickname" placeholder="닉네임을 입력하세요">
+        <br>
+        <button onclick="createMailbox()">우체통 만들기</button>
+    </div>
+
+    <script>
+        async function createMailbox() {
+            const nickname = document.getElementById('nickname').value;
+            if (!nickname) {
+                alert('닉네임을 입력해주세요');
+                return;
+            }
+            
+            const response = await fetch('/api/create-mailbox', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({nickname})
+            });
+            
+            const data = await response.json();
+            window.location.href = data.url;
+        }
+    </script>
+</body>
+</html>
