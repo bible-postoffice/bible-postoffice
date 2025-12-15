@@ -1,0 +1,31 @@
+.env
+확인용.py
+
+# 환경변수 파일
+*.env
+.env.*
+
+# 가상환경
+venv/
+*.venv
+.venv
+
+# 컴파일된 python파일
+__pycache__/
+*.pyc
+
+# Jupyter 노트북 캐시
+.ipynb_checkpoints
+
+# RAG 및 벡터 DB 관련 파일
+vectorstore/
+vectordb*
+*.pkl
+*.bin
+source_docs/
+embeddings_cache/
+*.log
+
+# IDE 관련 파일
+.vscode/
+.idea/
