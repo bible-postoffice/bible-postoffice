@@ -209,8 +209,14 @@ THEME_CONTEXT_RULES = [
 ]
 
 REFERENCE_SPLIT_PATTERN = re.compile(r'^(.*?)(\d+:\d.*)$')
-DOC_REFERENCE_PATTERN = re.compile(r'([가-힣A-Za-z]{1,8})\s*(\d+:\d+)')
-DOC_REFERENCE_PATTERN_JANG = re.compile(r'([가-힣A-Za-z]{1,8})\s*(\d+)\s*장\s*(\d+)\s*절')
+# 예: "롬15:13", "Rom 15:13", "1Th 5:18", "약5:15" 등
+DOC_REFERENCE_PATTERN = re.compile(r'([0-9]{0,1}\s*[가-힣A-Za-z]{1,20})\s*(\d+:\d+)')
+DOC_REFERENCE_PATTERN_JANG = re.compile(r'([0-9]{0,1}\s*[가-힣A-Za-z]{1,20})\s*(\d+)\s*장\s*(\d+)\s*절')
+
+# 입력으로 들어오는 "마 10:5", "마10장5절", "Matthew 10:5" 같은 레퍼런스 파서
+REFERENCE_INPUT_PATTERN_RANGE = re.compile(
+    r'^\s*([0-9]{0,1}\s*[가-힣A-Za-z]{1,30})\s*([0-9]{1,3})\s*(?:[:장]\s*([0-9]{1,3}))\s*(?:[-–—~]\s*([0-9]{1,3}))?\s*(?:절)?\s*$'
+)
 
 BOOK_ABBREVIATIONS = {
     "창": "창세기",
@@ -279,13 +285,36 @@ BOOK_ABBREVIATIONS = {
     "요삼": "요한삼서",
     "유": "유다서",
     "계": "요한계시록",
-    "롬": "로마서",
-    "빌": "빌립보서",
-    "살전": "데살로니가전서",
-    "살후": "데살로니가후서",
-    "약": "야고보서",
-    "엡": "에베소서",
+    # English abbreviations (lowercase keys)
+    "mt": "마태복음",
+    "mat": "마태복음",
+    "matt": "마태복음",
+    "mk": "마가복음",
+    "mrk": "마가복음",
+    "lk": "누가복음",
+    "luk": "누가복음",
+    "jn": "요한복음",
+    "jhn": "요한복음",
+    "ps": "시편",
+    "psa": "시편",
+    "prov": "잠언",
+    "prv": "잠언",
+    "rom": "로마서",
+    "1th": "데살로니가전서",
+    "1thess": "데살로니가전서",
+    "2th": "데살로니가후서",
+    "2thess": "데살로니가후서",
+    "eph": "에베소서",
+    "phil": "빌립보서",
+    "jas": "야고보서",
 }
+
+KOREAN_TO_ENGLISH_BOOK = {v: k for k, v in BOOK_NAME_MAP.items()}
+FULL_BOOK_TO_ABBREVIATIONS = {}
+for _abbr, _full in BOOK_ABBREVIATIONS.items():
+    # 문서 프리픽스는 대개 한글 약어(예: 마10:5) 형태
+    if re.fullmatch(r"[가-힣0-9]+", _abbr):
+        FULL_BOOK_TO_ABBREVIATIONS.setdefault(_full, []).append(_abbr)
 
 
 def _collect_all_curated_references():
@@ -305,12 +334,66 @@ def _collect_all_curated_references():
 ALL_CURATED_REFERENCES = _collect_all_curated_references()
 REFERENCE_INDEX = {}
 REFERENCE_INDEX_LOADED = False
+VERSE_LOOKUP_INDEX = {}
+VERSE_LOOKUP_INDEX_LOADED = False
+
+
+def iter_collection_documents(where=None, include=None, batch_size=2000):
+    """
+    Chroma collection.get() 결과가 기본적으로 limit이 걸려 있는 환경을 대비해,
+    offset/limit 기반으로 문서를 순회한다.
+    """
+    if not bible_collection:
+        return
+    include = include or ["documents", "metadatas"]
+
+    total = None
+    try:
+        total = bible_collection.count()
+    except Exception:
+        total = None
+
+    offset = 0
+    while True:
+        try:
+            data = bible_collection.get(
+                where=where,
+                include=include,
+                limit=batch_size,
+                offset=offset,
+            )
+        except TypeError:
+            # offset/limit 미지원 버전이면 단건 호출로 폴백
+            data = bible_collection.get(where=where, include=include)
+            docs = data.get("documents") or []
+            metas = data.get("metadatas") or []
+            for doc, meta in zip(docs, metas):
+                yield doc, (meta or {})
+            return
+
+        docs = data.get("documents") or []
+        metas = data.get("metadatas") or []
+        if not docs:
+            return
+
+        for doc, meta in zip(docs, metas):
+            yield doc, (meta or {})
+
+        offset += len(docs)
+        if total is not None and offset >= total:
+            return
 
 
 def canonical_book_name(book: str) -> str:
     book = normalize_korean(book or '').strip()
     if not book:
         return ''
+    book_key = normalize_korean(book).replace(" ", "")
+    book_key_lower = book_key.lower()
+    if book_key_lower in BOOK_ABBREVIATIONS:
+        return BOOK_ABBREVIATIONS[book_key_lower]
+    if book_key in BOOK_ABBREVIATIONS:
+        return BOOK_ABBREVIATIONS[book_key]
     if book in BOOK_ABBREVIATIONS:
         return BOOK_ABBREVIATIONS[book]
     return BOOK_NAME_MAP.get(book, book)
@@ -350,6 +433,234 @@ def normalize_reference(reference: str) -> str:
     else:
         base = remainder
     return base.replace(" ", "")
+
+
+def parse_reference_input(text: str):
+    """
+    사용자가 입력한 레퍼런스(예: '마 10:5', '마10장5절', 'Matthew 10:5')를 파싱한다.
+    반환: {"book": str, "chapter": int, "verse": int, "verse_end": Optional[int]} 또는 None
+    """
+    normalized = normalize_korean(text or "").strip()
+    if not normalized:
+        return None
+    match = REFERENCE_INPUT_PATTERN_RANGE.match(normalized)
+    if not match:
+        return None
+    book_raw, chapter_str, verse_str, verse_end_str = match.groups()
+    book = canonical_book_name(book_raw)
+    if not book:
+        return None
+    chapter = int(chapter_str)
+    verse = int(verse_str)
+    verse_end = int(verse_end_str) if verse_end_str else None
+    return {"book": book, "chapter": chapter, "verse": verse, "verse_end": verse_end}
+
+
+def _candidate_source_values(book: str):
+    book = canonical_book_name(book)
+    candidates = []
+    if book:
+        candidates.append(book)
+        english = KOREAN_TO_ENGLISH_BOOK.get(book)
+        if english:
+            candidates.append(english)
+    # 중복 제거하면서 순서 유지
+    seen = set()
+    unique = []
+    for item in candidates:
+        if item and item not in seen:
+            unique.append(item)
+            seen.add(item)
+    return unique
+
+
+def get_exact_verse_entry(reference_input: str):
+    """입력 레퍼런스가 주어졌을 때, 해당 구절(또는 해당 구절이 포함된 문서)을 정확히 찾아 반환."""
+    if not bible_collection:
+        return None
+    parsed = parse_reference_input(reference_input)
+    if not parsed:
+        return None
+
+    book = parsed["book"]
+    chapter = parsed["chapter"]
+    verse = parsed["verse"]
+    verse_end = parsed.get("verse_end")
+    target_label = f"{book} {chapter}:{verse}"
+    target_key = normalize_reference(target_label)
+    target_range_key = (
+        normalize_reference(f"{book} {chapter}:{verse}-{verse_end}") if verse_end else None
+    )
+
+    ensure_verse_lookup_index()
+    if target_key in VERSE_LOOKUP_INDEX:
+        return VERSE_LOOKUP_INDEX[target_key]
+    if target_range_key and target_range_key in VERSE_LOOKUP_INDEX:
+        return VERSE_LOOKUP_INDEX[target_range_key]
+
+    def _doc_contains_target(doc: str) -> bool:
+        doc_norm = normalize_korean(doc or "")
+        doc_compact = re.sub(r"\s+", "", doc_norm)
+        # '10:5'만으로는 책을 구분할 수 없어 오탐이 생기므로, 책까지 포함된 마커만 사용한다.
+        markers = []
+        abbrs = FULL_BOOK_TO_ABBREVIATIONS.get(book, [])
+        for abbr in abbrs:
+            markers.append(f"{abbr}{chapter}:{verse}")
+            markers.append(f"{abbr}{chapter}장{verse}절")
+        markers.append(re.sub(r"\s+", "", f"{book} {chapter}:{verse}"))
+        return any(m and m in doc_compact for m in markers)
+
+    def _match_in_docs(docs, metas):
+        for doc, meta in zip(docs or [], metas or []):
+            label = build_reference_label(meta or {}, doc or "")
+            if normalize_reference(label) == target_key:
+                return {"text": doc, "metadata": meta or {}}
+        return None
+
+    # 1) source(book) 필터로 우선 탐색
+    for source_value in _candidate_source_values(book):
+        try:
+            for doc, meta in iter_collection_documents(
+                where={"source": source_value},
+                include=["documents", "metadatas"],
+                batch_size=2000,
+            ):
+                label = build_reference_label(meta or {}, doc or "")
+                if normalize_reference(label) == target_key:
+                    return {"text": doc, "metadata": meta or {}}
+                if _doc_contains_target(doc):
+                    extracted = extract_exact_verse_text(book, chapter, verse, doc) or doc
+                    meta = dict(meta or {})
+                    meta["_reference_override"] = target_label
+                    return {"text": extracted, "metadata": meta}
+        except Exception:
+            continue
+
+    # 2) 임베딩 기반 검색 후 (정확 레이블 매칭 → 본문 마커 매칭) 순으로 폴백
+    try:
+        embedding = embedding_model.encode(f"{target_label} 성경 구절").tolist()
+        results = bible_collection.query(
+            query_embeddings=[embedding],
+            n_results=200,
+            include=["documents", "metadatas", "distances"],
+        )
+        docs = results.get("documents", [[]])[0]
+        metas = results.get("metadatas", [[]])[0]
+        dists = results.get("distances", [[]])[0] or []
+        hit = _match_in_docs(docs, metas)
+        if hit:
+            return hit
+        # 레이블이 정확히 없더라도, chunk 내부에 '마10:5' 같은 마커가 있으면 그 문서를 반환
+        best = None
+        best_dist = None
+        for doc, meta, dist in zip(docs, metas, dists):
+            if _doc_contains_target(doc):
+                if best is None or (isinstance(dist, (int, float)) and dist < best_dist):
+                    extracted = extract_exact_verse_text(book, chapter, verse, doc) or doc
+                    meta = dict(meta or {})
+                    meta["_reference_override"] = target_label
+                    best = {"text": extracted, "metadata": meta}
+                    best_dist = dist
+        if best:
+            return best
+    except Exception as exc:
+        print(f"⚠️ 레퍼런스 직접 검색 실패 ({reference_input}): {exc}")
+
+    return None
+
+
+def contains_phrase(query: str, document: str) -> bool:
+    query = normalize_korean(query or "").strip()
+    document = normalize_korean(document or "")
+    if not query or len(query) < 2:
+        return False
+    query_compact = re.sub(r"\s+", "", query)
+    doc_compact = re.sub(r"\s+", "", document)
+    return query_compact in doc_compact
+
+
+KOREAN_STOPWORDS = {
+    "자기", "내", "나", "너", "우리", "너희", "그", "그의", "그녀", "그들의",
+    "이", "저", "것", "수", "때", "말", "일", "등",
+    "을", "를", "이", "가", "은", "는", "에", "의", "과", "와", "로", "으로",
+}
+
+
+def greedy_terms(query: str):
+    """
+    구절/문구 검색을 위해 질의에서 핵심 단어를 추출한다(간단 휴리스틱).
+    예: '자기 십자가를' -> ['십자가']
+    """
+    normalized = normalize_korean(query or "").strip().lower()
+    if not normalized:
+        return []
+    terms = []
+    for token in re.findall(r"[가-힣]{2,}|[a-z]{2,}", normalized):
+        token = token.strip()
+        if token in KOREAN_STOPWORDS:
+            continue
+        if len(token) < 2:
+            continue
+        terms.append(token)
+    seen = set()
+    unique = []
+    for t in terms:
+        if t not in seen:
+            unique.append(t)
+            seen.add(t)
+    return unique[:6]
+
+
+def greedy_match_count(terms, document: str) -> int:
+    if not terms or not document:
+        return 0
+    doc_norm = normalize_korean(document).lower()
+    doc_compact = re.sub(r"\s+", "", doc_norm)
+    count = 0
+    for term in terms:
+        term_compact = re.sub(r"\s+", "", term)
+        if term_compact and term_compact in doc_compact:
+            count += 1
+    return count
+
+
+def extract_exact_verse_text(book: str, chapter: int, verse: int, document: str) -> str | None:
+    """
+    chunk 문서에 여러 절이 포함된 경우(예: 마10:4 ... \\n마10:5 ...),
+    요청한 특정 절만 본문으로 잘라낸다.
+    """
+    if not document:
+        return None
+    doc_norm = normalize_korean(document)
+    abbrs = FULL_BOOK_TO_ABBREVIATIONS.get(book, [])
+    if not abbrs:
+        return None
+
+    best = None
+    best_pos = None
+    for abbr in abbrs:
+        # 시작 마커: '마10:5' 또는 '마 10:5'
+        start_pattern = re.compile(
+            rf'({re.escape(abbr)})\s*{chapter}\s*:\s*{verse}\s*',
+            re.MULTILINE,
+        )
+        start_match = start_pattern.search(doc_norm)
+        if not start_match:
+            continue
+
+        start_idx = start_match.end()
+        # 다음 절 마커(대개 같은 책 약어로 시작하지만, 안전하게 한글약어+장:절 패턴으로 종료)
+        next_marker = re.compile(r'\n?\s*[가-힣]{1,5}\s*\d+\s*:\s*\d+\s*', re.MULTILINE)
+        next_match = next_marker.search(doc_norm, start_idx)
+        end_idx = next_match.start() if next_match else len(doc_norm)
+        body = doc_norm[start_idx:end_idx].strip()
+        candidate = f"{abbr}{chapter}:{verse} {body}".strip()
+
+        if best is None or (start_match.start() < best_pos):
+            best = candidate
+            best_pos = start_match.start()
+
+    return best
 
 
 def build_reference_label(metadata: dict, document: str) -> str:
@@ -397,7 +708,7 @@ def build_reference_label(metadata: dict, document: str) -> str:
 
 def build_reference_index():
     """테마 대표 구절을 빠르게 가져올 수 있도록 메모리에 적재."""
-    global REFERENCE_INDEX_LOADED
+    global REFERENCE_INDEX_LOADED, VERSE_LOOKUP_INDEX_LOADED
     if REFERENCE_INDEX_LOADED or not bible_collection or not ALL_CURATED_REFERENCES:
         REFERENCE_INDEX_LOADED = True
         return
@@ -414,25 +725,27 @@ def build_reference_index():
         return
 
     print("🔄 테마 대표 구절 인덱스 로딩 중...")
+    found = 0
+
     try:
-        data = bible_collection.get(include=["documents", "metadatas"])
+        iterator = iter_collection_documents(include=["documents", "metadatas"])
+        for doc, meta in iterator:
+            reference = build_reference_label(meta, doc)
+            normalized = normalize_reference(reference)
+            if normalized and normalized not in VERSE_LOOKUP_INDEX:
+                VERSE_LOOKUP_INDEX[normalized] = {
+                    "text": doc,
+                    "metadata": meta,
+                }
+            if normalized in target_refs and normalized not in REFERENCE_INDEX:
+                REFERENCE_INDEX[normalized] = {
+                    "text": doc,
+                    "metadata": meta,
+                }
+                found += 1
     except Exception as e:
         print(f"⚠️ 대표 구절 인덱스 로딩 실패: {e}")
         return
-
-    docs = data.get("documents") or []
-    metas = data.get("metadatas") or []
-    found = 0
-
-    for doc, meta in zip(docs, metas):
-        reference = build_reference_label(meta, doc)
-        normalized = normalize_reference(reference)
-        if normalized in target_refs and normalized not in REFERENCE_INDEX:
-            REFERENCE_INDEX[normalized] = {
-                "text": doc,
-                "metadata": meta,
-            }
-            found += 1
 
     missing_keys = [key for key in target_refs if key not in REFERENCE_INDEX]
     if missing_keys:
@@ -448,12 +761,38 @@ def build_reference_index():
                 print(f"     ⚠️ 초기 로딩에서 대표 구절 미발견: {original_ref}")
 
     REFERENCE_INDEX_LOADED = True
+    VERSE_LOOKUP_INDEX_LOADED = True
     print(f"✅ 대표 구절 인덱스 준비 완료: {len(REFERENCE_INDEX)}개 매핑")
 
 
 def ensure_reference_index():
     if not REFERENCE_INDEX_LOADED and bible_collection:
         build_reference_index()
+
+
+def build_verse_lookup_index():
+    """레퍼런스(책+장:절) → 문서/메타데이터 전체 인덱스(직접 구절 검색용)."""
+    global VERSE_LOOKUP_INDEX_LOADED
+    if VERSE_LOOKUP_INDEX_LOADED or not bible_collection:
+        VERSE_LOOKUP_INDEX_LOADED = True
+        return
+    print("🔄 레퍼런스 전체 인덱스 로딩 중...")
+    try:
+        for doc, meta in iter_collection_documents(include=["documents", "metadatas"]):
+            reference = build_reference_label(meta or {}, doc or "")
+            key = normalize_reference(reference)
+            if key and key not in VERSE_LOOKUP_INDEX:
+                VERSE_LOOKUP_INDEX[key] = {"text": doc, "metadata": meta or {}}
+    except Exception as e:
+        print(f"⚠️ 레퍼런스 전체 인덱스 로딩 실패: {e}")
+        return
+    VERSE_LOOKUP_INDEX_LOADED = True
+    print(f"✅ 레퍼런스 전체 인덱스 준비 완료: {len(VERSE_LOOKUP_INDEX)}개")
+
+
+def ensure_verse_lookup_index():
+    if not VERSE_LOOKUP_INDEX_LOADED and bible_collection:
+        build_verse_lookup_index()
 
 
 def lookup_reference_with_query(reference_label: str):
@@ -495,20 +834,17 @@ def lookup_reference_by_book(reference_label: str):
         return None
 
     try:
-        data = bible_collection.get(
+        for doc, meta in iter_collection_documents(
             where={"source": book},
             include=["documents", "metadatas"],
-        )
+            batch_size=2000,
+        ):
+            label = build_reference_label(meta, doc)
+            if normalize_reference(label) == normalize_reference(reference_label):
+                return {"text": doc, "metadata": meta}
     except Exception as exc:
         print(f"⚠️ 대표 구절 책 기반 조회 실패 ({reference_label}): {exc}")
         return None
-
-    docs = data.get("documents", [])
-    metas = data.get("metadatas", [])
-    for doc, meta in zip(docs, metas):
-        label = build_reference_label(meta, doc)
-        if normalize_reference(label) == normalize_reference(reference_label):
-            return {"text": doc, "metadata": meta}
     return None
 
 
@@ -518,6 +854,10 @@ def get_or_create_curated_entry(normalized_key: str, reference_label: str):
     cached = REFERENCE_INDEX.get(normalized_key)
     if cached:
         return cached
+    exact = get_exact_verse_entry(reference_label)
+    if exact:
+        REFERENCE_INDEX[normalized_key] = exact
+        return exact
     fetched = lookup_reference_with_query(reference_label)
     if fetched:
         REFERENCE_INDEX[normalized_key] = fetched
@@ -530,6 +870,7 @@ def get_or_create_curated_entry(normalized_key: str, reference_label: str):
 
 
 ensure_reference_index()
+ensure_verse_lookup_index()
 
 mailboxes = {}
 postcards = {}
@@ -568,9 +909,11 @@ def build_contextual_query(keyword: str):
             seen_refs.add(ref)
 
     contextual_summary = ' / '.join(unique_contexts)
+    key_terms = greedy_terms(keyword)
+    term_hint = f" 핵심어: {', '.join(key_terms)}." if key_terms else ""
     expanded = (
         f"query: {keyword}. "
-        f"상황과 감정: {contextual_summary}. "
+        f"상황과 감정: {contextual_summary}.{term_hint} "
         "주제와 맞닿은 성경의 약속, 위로, 격려, 도전, 하나님의 성품과 계획을 찾는다."
     )
     return expanded, unique_refs
@@ -614,61 +957,99 @@ def recommend_verses():
         return jsonify({'error': 'ChromaDB 컬렉션이 로드되지 않았습니다'}), 500
     
     try:
-        data = request.json
-        keyword = data.get('keyword', '사랑')
-        print(f"\n🔍 검색 키워드: '{keyword}'")
+        data = request.json or {}
+        query = (data.get('query') or data.get('keyword') or '사랑').strip()
+        print(f"\n🔍 검색 입력: '{query}'")
 
         ensure_reference_index()
-        
-        # 1) 쿼리를 주제+상황으로 확장
-        query_text, curated_refs = build_contextual_query(keyword)
-        
-        # ⭐ 2) TEHMA 대표 구절 전부 먼저 확보 (중복 제거)
+
+        # 0) 레퍼런스 직접 입력(예: "마 10:5")이면 해당 구절을 최우선 반환
+        parsed_reference = parse_reference_input(query)
+        exact_hit = get_exact_verse_entry(query)
+
         curated_reference_set = set()
-        curated_keys_order = []
-        theme_injected = []  # 주입될 대표 구절들
-        
-        for ref in curated_refs:
-            key = normalize_reference(ref)
-            if key and key not in curated_reference_set:
-                curated_reference_set.add(key)
-                curated_keys_order.append((key, ref))
-        
-        print(f"   🎯 매칭된 테마 규칙: {len(curated_keys_order)}개 대표 구절")
-        
-        # 대표 구절들을 먼저 모두 확보 (캐시 또는 DB에서)
-        for key, original_label in curated_keys_order:
-            cached = get_or_create_curated_entry(key, original_label)
-            if not cached:
-                print(f"     ⚠️ 대표 구절 미발견: {original_label}")
-                continue
+        theme_injected = []
+        phrase_query = query
 
-            meta = cached.get("metadata") or {}
-            doc = cached.get("text", "")
-            popularity = meta.get("popularity", 85)
-            reference = build_reference_label(meta, doc)
+        if exact_hit:
+            meta = exact_hit.get("metadata") or {}
+            doc = exact_hit.get("text", "")
+            popularity = meta.get("popularity")
+            if not isinstance(popularity, (int, float)):
+                popularity = get_popularity_score(meta.get("source", ""), doc)
+                meta["popularity"] = popularity
+            if parsed_reference:
+                reference = f"{parsed_reference['book']} {parsed_reference['chapter']}:{parsed_reference['verse']}"
+            else:
+                reference = meta.get("_reference_override") or build_reference_label(meta, doc)
 
+            curated_reference_set.add(normalize_reference(reference))
             theme_injected.append({
                 "text": doc,
                 "reference": reference,
                 "semantic_score": None,
                 "popularity": popularity,
-                "final_score": 1.8,  # 항상 최상단 고정 점수
-                "is_curated": True,
+                "final_score": 2.0,
+                "is_curated": False,
                 "injected": True,
-                "priority": "theme_top"
+                "priority": "exact_reference",
             })
-        
-        print(f"   ✅ 테마 대표 구절 {len(theme_injected)}개 확보 완료")
-        
+            query_text = f"query: {doc}. 이 구절과 유사한 위로/격려/도전 구절을 찾는다."
+            phrase_query = None
+            print(f"   🎯 레퍼런스 직접 매칭: {reference}")
+        else:
+            if parsed_reference:
+                normalized_label = f"{parsed_reference['book']} {parsed_reference['chapter']}:{parsed_reference['verse']}"
+                print(f"   ⚠️ 레퍼런스 형식 감지되었지만 미발견: {normalized_label}")
+            # 1) 쿼리를 주제+상황으로 확장
+            query_text, curated_refs = build_contextual_query(query)
+
+            # ⭐ 2) THEME 대표 구절 전부 먼저 확보 (중복 제거)
+            curated_keys_order = []
+            for ref in curated_refs:
+                key = normalize_reference(ref)
+                if key and key not in curated_reference_set:
+                    curated_reference_set.add(key)
+                    curated_keys_order.append((key, ref))
+
+            print(f"   🎯 매칭된 테마 규칙: {len(curated_keys_order)}개 대표 구절")
+
+            # 대표 구절들을 먼저 모두 확보 (캐시 또는 DB에서)
+            for key, original_label in curated_keys_order:
+                cached = get_or_create_curated_entry(key, original_label)
+                if not cached:
+                    print(f"     ⚠️ 대표 구절 미발견: {original_label}")
+                    continue
+
+                meta = cached.get("metadata") or {}
+                doc = cached.get("text", "")
+                popularity = meta.get("popularity", 85)
+                reference = build_reference_label(meta, doc)
+
+                theme_injected.append({
+                    "text": doc,
+                    "reference": reference,
+                    "semantic_score": None,
+                    "popularity": popularity,
+                    "final_score": 1.8,  # 항상 최상단 고정 점수
+                    "is_curated": True,
+                    "injected": True,
+                    "priority": "theme_top"
+                })
+
+            print(f"   ✅ 테마 대표 구절 {len(theme_injected)}개 확보 완료")
+
         # 3) 쿼리 임베딩 및 벡터 검색 (대표 구절 제외하고 일반 검색)
         query_embedding = embedding_model.encode(query_text).tolist()
         print(f"   임베딩 생성 완료: {len(query_embedding)}차원")
         
-        # 상위 40개 정도 일반 검색 (대표 구절만큼 덜 가져옴)
+        # 구절/문구 검색은 recall이 중요하므로 조금 더 많이 가져온 뒤 rerank
+        expanded_terms = greedy_terms(query) if not exact_hit else []
+        n_results = 200 if (not exact_hit and (len(query) >= 6 or " " in query or expanded_terms)) else 40
+
         raw_results = bible_collection.query(
             query_embeddings=[query_embedding],
-            n_results=40,
+            n_results=n_results,
             include=["documents", "metadatas", "distances"]
         )
         print(f"✅ 1차 벡터 검색 완료: {len(raw_results['documents'][0])}개 결과")
@@ -694,7 +1075,10 @@ def recommend_verses():
                 popularity = get_popularity_score(meta.get("source", ""), doc)
                 meta["popularity"] = popularity
             pop_norm = popularity / 100.0
-            final_score = semantic_score * 0.6 + pop_norm * 0.4
+            phrase_bonus = 0.15 if phrase_query and contains_phrase(phrase_query, doc) else 0.0
+            greedy_hits = greedy_match_count(expanded_terms, doc) if expanded_terms else 0
+            greedy_bonus = min(0.18, greedy_hits * 0.06)
+            final_score = semantic_score * 0.6 + pop_norm * 0.4 + phrase_bonus + greedy_bonus
             
             reranked_general.append({
                 "text": doc,
