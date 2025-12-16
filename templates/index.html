@@ -12,20 +12,34 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         .container {
-            max-width: 500px;
+            max-width: 520px;
             margin: 0 auto;
             background: white;
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        input {
+        .form-group {
+            text-align: left;
+            margin: 20px auto;
+            width: 90%;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        input, textarea {
             padding: 15px;
-            width: 80%;
+            width: 100%;
             font-size: 16px;
             border: 2px solid #ddd;
             border-radius: 10px;
-            margin: 20px 0;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
         }
         button {
             padding: 15px 40px;
@@ -35,6 +49,7 @@
             border: none;
             border-radius: 10px;
             cursor: pointer;
+            margin-top: 10px;
         }
         button:hover {
             background: #764ba2;
@@ -45,25 +60,39 @@
     <div class="container">
         <h1>🎄 성경 구절 우체통 🎄</h1>
         <p>당신만의 우체통을 만들고<br>소중한 사람들에게 성경 구절을 선물하세요</p>
-        <input type="text" id="nickname" placeholder="닉네임을 입력하세요">
-        <br>
+
+        <div class="form-group">
+            <label for="name">이름 <span style="color: #e53e3e;">*</span></label>
+            <input type="text" id="name" placeholder="이름을 입력하세요" required>
+        </div>
+
+        <div class="form-group">
+            <label for="prayerTopic">기도제목 (선택)</label>
+            <textarea id="prayerTopic" placeholder="함께 나누고 싶은 기도제목이 있다면 작성해주세요"></textarea>
+        </div>
+
         <button onclick="createMailbox()">우체통 만들기</button>
     </div>
 
     <script>
         async function createMailbox() {
-            const nickname = document.getElementById('nickname').value;
-            if (!nickname) {
-                alert('닉네임을 입력해주세요');
+            const name = document.getElementById('name').value.trim();
+            const prayerTopic = document.getElementById('prayerTopic').value.trim();
+
+            if (!name) {
+                alert('이름을 입력해주세요');
                 return;
             }
-            
+
             const response = await fetch('/api/create-mailbox', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({nickname})
+                body: JSON.stringify({
+                    name,
+                    prayer_topic: prayerTopic
+                })
             });
-            
+
             const data = await response.json();
             window.location.href = data.url;
         }
