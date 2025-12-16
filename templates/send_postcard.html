@@ -88,7 +88,7 @@
         <h2>💌 성경 구절 엽서 보내기</h2>
         
         <div class="search-box">
-            <input type="text" id="keyword" placeholder="키워드를 입력하세요 (예: 사랑, 희망, 평화, 기쁨)">
+            <input type="text" id="keyword" placeholder="키워드/구절/문구를 입력하세요 (예: 취업 응원, 사 41:10, 자기 십자가를 지고)">
             <button onclick="searchVerses()">구절 찾기</button>
         </div>
         
@@ -107,9 +107,9 @@
         const mailboxId = "{{ mailbox_id }}";
         
         async function searchVerses() {
-            const keyword = document.getElementById('keyword').value;
-            if (!keyword) {
-                alert('키워드를 입력해주세요');
+            const query = document.getElementById('keyword').value;
+            if (!query) {
+                alert('검색어를 입력해주세요');
                 return;
             }
             
@@ -120,7 +120,7 @@
                 const response = await fetch('/api/recommend-verses', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({keyword})
+                    body: JSON.stringify({query})
                 });
                 
                 const data = await response.json();
