@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ mailbox.nickname }}님의 우체통</title>
+    <title>{{ (mailbox.name or mailbox.nickname) }}님의 우체통</title>
     <style>
         body {
             font-family: 'Noto Sans KR', sans-serif;
@@ -56,7 +56,15 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎉 {{ mailbox.nickname }}님에게 온 엽서들</h1>
+        {% set display_name = mailbox.name or mailbox.nickname %}
+        <h1>🎉 {{ display_name }}님에게 온 엽서들</h1>
+
+        {% if mailbox.prayer_topic %}
+        <div class="postcard" style="background: #eef2ff;">
+            <div class="verse-reference">🙏 함께 기도해요</div>
+            <div class="verse-text" style="background: white;">{{ mailbox.prayer_topic }}</div>
+        </div>
+        {% endif %}
         
         {% if postcards %}
             {% for postcard in postcards %}
