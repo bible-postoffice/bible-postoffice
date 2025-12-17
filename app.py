@@ -626,6 +626,10 @@ def store_postcard_supabase(mailbox_id: str, postcard: dict):
     payload = {
         "id": postcard["id"],
         "mailbox_id": mailbox_id,
+        "template_id": postcard.get("template_id"),
+        "template_type": postcard.get("template_type"),
+        "template_name": postcard.get("template_name"),
+        "is_anonymous": postcard.get("is_anonymous", False),
         "verse_reference": postcard.get("verse_reference"),
         "verse_text": postcard.get("verse_text"),
         "message": postcard.get("message", ""),
@@ -989,6 +993,10 @@ def send_postcard():
     
     postcard = {
         'id': str(uuid.uuid4()),
+        'template_id': data.get('template_id') or 'postcard-sunset',
+        'template_type': data.get('template_type') or '엽서',
+        'template_name': data.get('template_name') or '',
+        'is_anonymous': bool(data.get('is_anonymous')),
         'verse_reference': data.get('verse_reference'),
         'verse_text': data.get('verse_text'),
         'message': data.get('message', ''),
@@ -1031,7 +1039,29 @@ def send_page(mailbox_id):
         mailboxes[mailbox_id] = loaded
         postcards.setdefault(mailbox_id, fetch_postcards_supabase(mailbox_id))
 
-    return render_template('send_postcard.html', mailbox_id=mailbox_id)
+    return render_template('choose_template.html', mailbox_id=mailbox_id)
+
+
+@app.route('/send/<mailbox_id>/write')
+def send_page_write(mailbox_id):
+    if mailbox_id not in mailboxes:
+        loaded = fetch_mailbox_supabase(mailbox_id)
+        if not loaded:
+            return "우체통을 찾을 수 없습니다", 404
+        mailboxes[mailbox_id] = loaded
+        postcards.setdefault(mailbox_id, fetch_postcards_supabase(mailbox_id))
+
+    template_id = request.args.get('template_id')
+    template_type = request.args.get('template_type')
+    template_name = request.args.get('template_name')
+
+    return render_template(
+        'send_postcard.html',
+        mailbox_id=mailbox_id,
+        template_id=template_id,
+        template_type=template_type,
+        template_name=template_name,
+    )
 
 
 def open_all_mailboxes():
