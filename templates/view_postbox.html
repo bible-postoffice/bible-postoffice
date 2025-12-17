@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-2xl mx-auto w-full text-center">
+
+    <div class="mb-4">
+        <span id="badge" class="px-3 py-1.5 rounded-full text-xs font-bold shadow-sm 
+              {{ 'bg-green-500' if privacy == 'public' else 'bg-slate-500' }} text-white">
+            {{ '🔓 모두에게 공개' if privacy == 'public' else '🔒 나만 보기' }}
+        </span>
+    </div>
+
+    <h1 class="text-3xl font-black text-slate-900 dark:text-white mb-8">{{ postbox_name }}</h1>
+
+    <div class="relative mb-10 animate-float">
+        <img src="/static/images/postbox/{{ color }}.png" class="w-64 h-64 object-contain drop-shadow-2xl mx-auto">
+        <div class="mt-6 text-slate-600 dark:text-slate-300">
+            현재 <span class="text-primary font-bold text-2xl">12</span>개의 편지가 담겨있어요!
+        </div>
+    </div>
+
+    <div class="w-full max-w-sm">
+        {% if is_owner %}
+        {% if is_expired %}
+        <button onclick="location.href='/inbox/{{ postbox_name }}'"
+            class="w-full py-5 bg-accent text-slate-900 rounded-2xl font-bold text-xl shadow-xl hover:scale-[1.02] transition-all">
+            📩 도착한 메시지 읽기
+        </button>
+        {% else %}
+        <div class="bg-slate-100 dark:bg-slate-800 p-6 rounded-3xl border-2 border-dashed border-slate-300">
+            <p class="text-sm text-slate-500 mb-3">메시지 공개까지 남은 시간</p>
+            <div id="countdown" class="text-3xl font-black tracking-widest text-primary">00:00:00:00</div>
+            <p class="mt-4 text-xs text-slate-400 font-medium">편지는 1월 1일에 열어볼 수 있어요!</p>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <button onclick="location.href='/write/{{ postbox_name }}?color={{ color }}'"
+            class="w-full py-5 bg-primary text-white rounded-2xl font-bold text-xl shadow-xl hover:scale-[1.02] transition-all">
+            ✍️ 편지 남기기
+        </button>
+        <p class="mt-4 text-slate-400 text-sm">익명으로 따뜻한 마음을 전달하세요.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // 주인이고 아직 시간이 안 지났을 때만 실행
+    {% if is_owner and not is_expired %}
+    function updateCountdown() {
+        const now = new Date();
+        const target = new Date("2026-01-01T00:00:00"); // 테스트 시 미래 날짜로 설정
+        const diff = target - now;
+
+        if (diff <= 0) {
+            location.reload(); // 시간이 다 되면 페이지를 새로고침해서 '메시지 읽기' 버튼으로 전환
+            return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const mins = Math.floor((diff / (1000 * 60)) % 60);
+        const secs = Math.floor((diff / 1000) % 60);
+
+        document.getElementById('countdown').innerText =
+            `${days}d ${String(hours).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
+    }
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+    {% endif %}
+</script>
+{% endblock %}
