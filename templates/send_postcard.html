@@ -70,6 +70,51 @@
         }
         .selected-banner strong { color: #4338ca; }
         .selected-banner .template-type { color: #374151; font-weight: 600; }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f9fafb;
+        }
+        .toggle-text { font-weight: 700; color: #111827; }
+        .toggle-desc { color: #4b5563; font-size: 13px; margin-top: 4px; }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #e5e7eb;
+            transition: .2s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+        }
+        input:checked + .slider {
+            background-color: #6366f1;
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
         .search-box {
             margin: 30px 0;
         }
@@ -97,6 +142,7 @@
             body { padding: 14px; }
             .container { padding: 24px 18px; }
             input[type="text"] { width: 100%; margin-bottom: 10px; }
+            .toggle-row { flex-direction: column; align-items: flex-start; }
         }
         .verse-item {
             padding: 20px;
@@ -164,10 +210,16 @@
         <div id="verse-results"></div>
         
         <div class="section-title">익명 여부</div>
-        <label style="display:flex; align-items:center; gap:10px; color:#374151; margin-bottom:18px;">
-            <input type="checkbox" id="anonymous-toggle" style="width:18px; height:18px;">
-            익명으로 보낼래요
-        </label>
+        <div class="toggle-row" style="margin-bottom:18px;">
+            <div>
+                <div class="toggle-text">익명으로 보낼래요</div>
+                <div class="toggle-desc">이름을 숨기고 마음만 전할 수 있어요.</div>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="anonymous-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
 
         <div class="section-title">3. 편지 작성</div>
         <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요"></textarea>
