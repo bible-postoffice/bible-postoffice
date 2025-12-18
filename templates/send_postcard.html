@@ -68,6 +68,11 @@
             align-items: center;
             gap: 8px;
         }
+        .search-box .section-title {
+            display: flex;
+            width: 100%;
+            margin-bottom: 8px;
+        }
         .tooltip {
             position: relative;
             display: inline-flex;
@@ -130,6 +135,7 @@
         }
         .toggle-text { font-weight: 700; color: #111827; }
         .toggle-desc { color: #4b5563; font-size: 13px; margin-top: 4px; }
+        .toggle-row .switch { margin-left: auto; }
         .switch {
             position: relative;
             display: inline-block;
@@ -251,7 +257,15 @@
             .container { padding: 24px 18px; }
             input[type="text"] { width: 100%; max-width: 100%; margin-bottom: 10px; }
             button { width: 100%; }
-            .toggle-row { flex-direction: column; align-items: flex-start; width: 100%; box-sizing: border-box; }
+            .toggle-row {
+                flex-direction: row;
+                align-items: center;
+                width: 100%;
+                box-sizing: border-box;
+                gap: 8px;
+            }
+            .toggle-row .switch { margin-left: auto; }
+            .toggle-desc { margin-top: 0; }
         }
         .verse-item {
             padding: 20px;
@@ -295,22 +309,9 @@
 <body>
     <div class="container">
         <h2>💌 성경 구절 엽서 보내기</h2>
-        <div class="steps">
-            <div class="step">1단계: 배경 선택<span>엽서/편지지 고르기</span></div>
-            <div class="step">2단계: 구절 선택<span>검색 후 구절 선택</span></div>
-            <div class="step">3단계: 메시지 작성<span>전달할 마음 적기</span></div>
-        </div>
 
-        <div>
-            <div class="section-title">1. 선택한 엽서/편지지</div>
-            <div class="selected-banner" id="selected-banner">
-                <span class="pill">선택됨</span>
-                <strong id="selected-name"></strong> · <span id="selected-type" class="template-type"></span>
-            </div>
-        </div>
-        
         <div class="search-box">
-            <div class="section-title" style="margin-top:28px;">2. 성경 구절 검색 및 선택
+            <div class="section-title" style="margin-top:28px;">성경 구절 검색 및 선택
                 <span class="tooltip">?
                     <div class="tooltip-content">
                         <strong>검색 예시</strong>
@@ -345,7 +346,7 @@
             </label>
         </div>
 
-        <div class="section-title">3. 편지 작성</div>
+        <div class="section-title">편지 작성</div>
         <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요"></textarea>
         
         <div class="cta-row">
@@ -366,16 +367,10 @@
             type: "{{ template_type or '' }}",
             name: "{{ template_name or '' }}"
         };
-        const selectedBanner = document.getElementById('selected-banner');
-        const selectedNameEl = document.getElementById('selected-name');
-        const selectedTypeEl = document.getElementById('selected-type');
         const defaultTemplate = { id: 'postcard-1', type: '엽서', name: '엽서 1' };
         function setTemplateFromQuery() {
             const tpl = preselectedTemplate.id ? preselectedTemplate : defaultTemplate;
             selectedTemplate = tpl;
-            selectedNameEl.textContent = tpl.name || tpl.id;
-            selectedTypeEl.textContent = tpl.type || '엽서';
-            selectedBanner.style.display = 'block';
         }
         
         const pageNav = document.getElementById('page-nav');
