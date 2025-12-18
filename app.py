@@ -543,8 +543,14 @@ def get_or_create_curated_entry(normalized_key: str, reference_label: str):
     return None
 
 
-mailboxes = {}
+postboxes = {}
 postcards = {}
+
+# 템플릿 유형 매핑 (Supabase templates.template_type: 0=엽서, 1=편지지)
+TEMPLATE_TYPE_MAP = {
+    "엽서": 0,
+    "편지지": 1,
+}
 
 
 def supabase_headers():
@@ -555,28 +561,28 @@ def supabase_headers():
     }
 
 
-def fetch_mailbox_supabase(mailbox_id: str):
+def fetch_postbox_supabase(postbox_id: str):
     if not SUPABASE_URL or not SUPABASE_KEY:
         return None
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/mailboxes"
-    params = {"id": f"eq.{mailbox_id}", "limit": 1}
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postboxes"
+    params = {"id": f"eq.{postbox_id}", "limit": 1}
     try:
         resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
         if resp.status_code != 200:
-            print(f"⚠️ Supabase mailbox fetch 실패 status={resp.status_code}, body={resp.text}")
+            print(f"⚠️ Supabase post fetch 실패 status={resp.status_code}, body={resp.text}")
             return None
         data = resp.json()
         return data[0] if data else None
     except Exception as exc:
-        print(f"⚠️ Supabase mailbox fetch 예외: {exc}")
+        print(f"⚠️ Supabase post fetch 예외: {exc}")
         return None
 
 
-def fetch_postcards_supabase(mailbox_id: str):
+def fetch_postcards_supabase(postbox_id: str):
     if not SUPABASE_URL or not SUPABASE_KEY:
         return []
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postcards"
-    params = {"mailbox_id": f"eq.{mailbox_id}", "order": "created_at.asc"}
+    params = {"postbox_id": f"eq.{postbox_id}", "order": "created_at.asc"}
     try:
         resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
         if resp.status_code != 200:
@@ -588,47 +594,97 @@ def fetch_postcards_supabase(mailbox_id: str):
         return []
 
 
-def store_mailbox_supabase(mailbox: dict):
+
+
+def fetch_postcard_by_id(postcard_id: str):
+    """우편 ID로 엽서 1건을 가져온다 (메모리 캐시 → Supabase)."""
+    # 1) 메모리 캐시 우선
+    for plist in postcards.values():
+        for card in plist:
+            if card.get("id") == postcard_id:
+                return card
+
+    # 2) Supabase 조회
+    if SUPABASE_URL and SUPABASE_KEY:
+        endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postcards"
+        params = {"id": f"eq.{postcard_id}", "limit": 1}
+        try:
+            resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
+            if resp.status_code == 200:
+                data = resp.json() or []
+                return data[0] if data else None
+            else:
+                print(f"⚠️ Supabase postcard fetch 실패 status={resp.status_code}, body={resp.text}")
+        except Exception as exc:
+            print(f"⚠️ Supabase postcard fetch 예외: {exc}")
+    return None
+
+
+def store_postbox_supabase(postbox: dict):
     if not SUPABASE_URL or not SUPABASE_KEY:
-        print("⚠️ Supabase 설정이 없어 mailboxes 저장을 건너뜁니다.")
+        print("⚠️ Supabase 설정이 없어 postboxes 저장을 건너뜁니다.")
         return None
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/mailboxes"
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postboxes"
     headers = supabase_headers()
     headers["Prefer"] = "return=representation"
     payload = {
-        "id": mailbox["id"],
-        "name": mailbox.get("name"),
-        "nickname": mailbox.get("nickname"),
-        "prayer_topic": mailbox.get("prayer_topic", ""),
-        "url": mailbox.get("url"),
-        "created_at": mailbox.get("created_at"),
-        "is_opened": mailbox.get("is_opened", False),
-        "full_url": mailbox.get("full_url"),
+        "id": postbox["id"],
+        "name": postbox.get("name"),
+        "nickname": postbox.get("nickname"),
+        "prayer_topic": postbox.get("prayer_topic", ""),
+        "url": postbox.get("url"),
+        "created_at": postbox.get("created_at"),
+        "is_opened": postbox.get("is_opened", False),
     }
     try:
         resp = requests.post(endpoint, headers=headers, json=payload, timeout=8)
         if resp.status_code not in (200, 201):
-            print(f"⚠️ Supabase mailboxes 저장 실패 status={resp.status_code}, body={resp.text}")
+            print(f"⚠️ Supabase postboxes 저장 실패 status={resp.status_code}, body={resp.text}")
             return None
         return resp.json()
     except Exception as exc:
-        print(f"⚠️ Supabase mailboxes 저장 예외: {exc}")
+        print(f"⚠️ Supabase postboxes 저장 예외: {exc}")
         return None
 
 
-def store_postcard_supabase(mailbox_id: str, postcard: dict):
+def ensure_postbox_supabase(postbox_id: str):
+    """Supabase postboxes에 해당 postbox가 없으면 저장을 시도."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return
+    if fetch_postbox_supabase(postbox_id):
+        return
+    pb = postboxes.get(postbox_id)
+    if pb:
+        store_postbox_supabase(pb)
+
+
+def store_postcard_supabase(postbox_id: str, postcard: dict):
     if not SUPABASE_URL or not SUPABASE_KEY:
         print("⚠️ Supabase 설정이 없어 postcards 저장을 건너뜁니다.")
         return None
+    # 외래키 충돌 방지를 위해 postbox 레코드 확보
+    ensure_postbox_supabase(postbox_id)
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postcards"
     headers = supabase_headers()
     headers["Prefer"] = "return=representation"
+    # template_id를 integer로 변환 시도 (문자열에 숫자가 섞여 있으면 숫자만 추출)
+    tpl_id_raw = postcard.get("template_id")
+    tpl_id = None
+    try:
+        if isinstance(tpl_id_raw, str):
+            digits = ''.join(ch for ch in tpl_id_raw if ch.isdigit())
+            tpl_id = int(digits) if digits else None
+        elif tpl_id_raw is not None:
+            tpl_id = int(tpl_id_raw)
+    except Exception:
+        tpl_id = None
+    tpl_type_raw = postcard.get("template_type")
+    tpl_type = TEMPLATE_TYPE_MAP.get(tpl_type_raw, tpl_type_raw if isinstance(tpl_type_raw, int) else None)
     payload = {
         "id": postcard["id"],
-        "mailbox_id": mailbox_id,
-        "template_id": postcard.get("template_id"),
-        "template_type": postcard.get("template_type"),
-        "template_name": postcard.get("template_name"),
+        "postbox_id": postbox_id,
+        "template_id": tpl_id,
+        "template_type": tpl_type,
         "is_anonymous": postcard.get("is_anonymous", False),
         "verse_reference": postcard.get("verse_reference"),
         "verse_text": postcard.get("verse_text"),
@@ -639,11 +695,52 @@ def store_postcard_supabase(mailbox_id: str, postcard: dict):
         resp = requests.post(endpoint, headers=headers, json=payload, timeout=8)
         if resp.status_code in (200, 201):
             return resp.json()
-        print(f"⚠️ Supabase postcards 저장 실패 status={resp.status_code}, body={resp.text}")
+        # 외래키 부족 등으로 실패하면 한번 더 postbox upsert 시도 후 재시도
+        if resp.status_code == 409:
+            ensure_postbox_supabase(postbox_id)
+            resp_retry = requests.post(endpoint, headers=headers, json=payload, timeout=8)
+            if resp_retry.status_code in (200, 201):
+                return resp_retry.json()
+            print(f"⚠️ Supabase postcards 재시도 실패 status={resp_retry.status_code}, body={resp_retry.text}")
+        else:
+            print(f"⚠️ Supabase postcards 저장 실패 status={resp.status_code}, body={resp.text}")
     except Exception as exc:
         print(f"⚠️ Supabase postcards 저장 예외: {exc}")
-    return None
+        return None
 
+
+@app.route('/view-postcard/<postcard_id>')
+def view_postcard(postcard_id):
+    card = fetch_postcard_by_id(postcard_id)
+    if not card:
+        return "엽서를 찾을 수 없습니다.", 404
+    sender = "익명"
+    verse_ref = card.get("verse_reference") or "말씀"
+    verse_text = card.get("verse_text") or ""
+    message = card.get("message") or ""
+    tpl_id_raw = card.get("template_id") or 1
+    tpl_img = None
+    tpl_type = card.get("template_type") or 0
+    try:
+        tpl_meta = fetch_template_meta(int(tpl_id_raw))
+        if tpl_meta:
+            tpl_img = tpl_meta.get("image_path")
+            tpl_type = tpl_meta.get("template_type", tpl_type)
+    except Exception:
+        tpl_meta = None
+    template_image = tpl_img or "images/postcards/POSTCARD1.png"
+    template_type = tpl_type
+    return render_template(
+        'postcard_view.html',
+        postcard_id=postcard_id,
+        sender=sender,
+        verse_reference=verse_ref,
+        verse_text=verse_text,
+        message=message,
+        template_id=tpl_id_raw,
+        template_type=template_type,
+        template_image=template_image,
+    )
 
 def store_generated_url(original_url: str, base_url: str):
     if not SUPABASE_URL or not SUPABASE_KEY:
@@ -784,8 +881,8 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/api/create-mailbox', methods=['POST'])
-def create_mailbox():
+@app.route('/api/create-postbox', methods=['POST'])
+def create_postbox():
     data = request.get_json(silent=True) or {}
     name = data.get('name')
     prayer_topic = data.get('prayer_topic', '')
@@ -793,27 +890,27 @@ def create_mailbox():
     if not name:
         return jsonify({'error': 'Name is required'}), 400
 
-    mailbox_id = str(uuid.uuid4())[:8]
+    postbox_id = str(uuid.uuid4())[:8]
     base_url = request.url_root.rstrip('/')
-    mailbox_path = f'/mailbox/{mailbox_id}'
-    original_url = f"{base_url}{mailbox_path}"
-    mailboxes[mailbox_id] = {
-        'id': mailbox_id,
+    postbox_path = f'/postboxes/{postbox_id}'
+    original_url = f"{base_url}{postbox_path}"
+    postboxes[postbox_id] = {
+        'id': postbox_id,
         'name': name,
         'nickname': name,
         'prayer_topic': prayer_topic,
-        'url': mailbox_path,
+        'url': postbox_path,
         'full_url': original_url,
         'created_at': datetime.now().isoformat(),
         'is_opened': False
     }
-    postcards[mailbox_id] = []
+    postcards[postbox_id] = []
 
     short_url = store_generated_url(original_url=original_url, base_url=base_url)
-    store_mailbox_supabase(mailboxes[mailbox_id])
+    store_postbox_supabase(postboxes[postbox_id])
     response_payload = {
-        'mailbox_id': mailbox_id,
-        'url': mailbox_path,
+        'postbox_id': postbox_id,
+        'url': postbox_path,
         'original_url': original_url
     }
     if short_url:
@@ -830,6 +927,11 @@ def recommend_verses():
     try:
         data = request.get_json(silent=True) or {}
         query = (data.get('query') or data.get('keyword') or '').strip()
+        page = 0
+        try:
+            page = max(0, int(data.get('page', 0)))
+        except Exception:
+            page = 0
         if not query:
             return jsonify({'error': '검색어가 필요합니다'}), 400
         print(f"\n🔍 검색 쿼리: '{query}'")
@@ -890,6 +992,7 @@ def recommend_verses():
 
         # 3) 문구 검색: greedy + semantic 혼합
         expanded_terms = greedy_terms(query)
+        normalized_query = re.sub(r"\s+", "", normalize_korean(query or "").lower())
         print(f"   🔎 greedy 핵심어: {expanded_terms if expanded_terms else '없음'}")
         query_embedding = embedding_model.encode(query_text).tolist()
         raw_results = bible_collection.query(
@@ -914,17 +1017,30 @@ def recommend_verses():
             semantic = 1 - dist if dist is not None else 0
             greedy_hits = greedy_match_count(expanded_terms, doc)
             greedy_bonus = min(0.18, greedy_hits * 0.06)
-            phrase_bonus = 0.0  # 별도 phrase 스코어가 있다면 여기서 더해줌
+            coverage = greedy_hits / max(1, len(expanded_terms)) if expanded_terms else 0
+            phrase_bonus = coverage * 0.1  # 핵심어 커버리지 보너스
+            if coverage >= 0.99:  # 모든 핵심어를 포함하면 추가 가산
+                phrase_bonus += 0.08
+            if normalized_query and normalized_query in re.sub(r"\s+", "", normalize_korean(doc or "").lower()):
+                phrase_bonus += 0.06  # 전체 문구가 연속해 들어있으면 추가 보너스
+            phrase_bonus = min(0.24, phrase_bonus)
             final_score = semantic * 0.6 + (pop / 100.0) * 0.4 + phrase_bonus + greedy_bonus
 
             scored.append((final_score, reference, doc, meta))
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        remaining_slots = max(0, 5 - len(curated_items))
-        top = curated_items + scored[:remaining_slots]
+        all_candidates_full = curated_items + scored
+        page_size = 5
+        start_idx = page * page_size
+        end_idx = start_idx + page_size
+        # 요청한 페이지까지 필요한 만큼만 슬라이스
+        needed = end_idx
+        all_candidates = all_candidates_full[:needed]
+        page_slice = all_candidates[start_idx:end_idx]
+        total_pages = (len(all_candidates_full) + page_size - 1) // page_size if all_candidates_full else 0
 
         verses = []
-        for entry in top:
+        for entry in page_slice:
             if isinstance(entry, tuple):
                 score, reference, doc, meta = entry
             else:
@@ -945,7 +1061,13 @@ def recommend_verses():
                 }
             )
 
-        return jsonify({"verses": verses})
+        has_more = end_idx < len(all_candidates_full)
+        return jsonify({
+            "verses": verses,
+            "has_more": has_more,
+            "total_pages": total_pages,
+            "page": page,
+        })
     
     except Exception as e:
         print(f"❌ 검색 오류: {str(e)}")
@@ -982,19 +1104,34 @@ def format_results(results):
 @app.route('/api/send-postcard', methods=['POST'])
 def send_postcard():
     data = request.json
-    mailbox_id = data.get('mailbox_id')
+    postbox_id = data.get('postbox_id')
     
-    if mailbox_id not in mailboxes:
-        loaded = fetch_mailbox_supabase(mailbox_id)
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
         if not loaded:
-            return jsonify({'error': 'Mailbox not found'}), 404
-        mailboxes[mailbox_id] = loaded
-        postcards[mailbox_id] = fetch_postcards_supabase(mailbox_id)
+            # Supabase에도 없으면 최소 정보로 생성 후 진행
+            base_url = request.url_root.rstrip('/')
+            postbox_path = f"/postboxes/{postbox_id}"
+            fallback = {
+                'id': postbox_id,
+                'name': '우체통',
+                'nickname': '우체통',
+                'prayer_topic': '',
+                'url': postbox_path,
+                'created_at': datetime.now().isoformat(),
+                'is_opened': False
+            }
+            postboxes[postbox_id] = fallback
+            postcards[postbox_id] = []
+            store_postbox_supabase(fallback)
+        else:
+            postboxes[postbox_id] = loaded
+            postcards[postbox_id] = fetch_postcards_supabase(postbox_id)
     
     postcard = {
         'id': str(uuid.uuid4()),
-        'template_id': data.get('template_id') or 'postcard-sunset',
-        'template_type': data.get('template_type') or '엽서',
+        'template_id': data.get('template_id') or 1,
+        'template_type': data.get('template_type') if data.get('template_type') is not None else 0,
         'template_name': data.get('template_name') or '',
         'is_anonymous': bool(data.get('is_anonymous')),
         'verse_reference': data.get('verse_reference'),
@@ -1003,53 +1140,69 @@ def send_postcard():
         'created_at': datetime.now().isoformat()
     }
     
-    postcards[mailbox_id].append(postcard)
-    store_postcard_supabase(mailbox_id, postcard)
+    postcards[postbox_id].append(postcard)
+    store_postcard_supabase(postbox_id, postcard)
     
     return jsonify({'success': True, 'postcard_id': postcard['id']})
 
 
-@app.route('/mailbox/<mailbox_id>')
-def mailbox(mailbox_id):
-    if mailbox_id not in mailboxes:
-        loaded = fetch_mailbox_supabase(mailbox_id)
+@app.route('/postbox/<postbox_id>')
+def postbox(postbox_id):
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
         if not loaded:
             return "우체통을 찾을 수 없습니다", 404
-        mailboxes[mailbox_id] = loaded
-        postcards[mailbox_id] = fetch_postcards_supabase(mailbox_id)
+        postboxes[postbox_id] = loaded
+        postcards[postbox_id] = fetch_postcards_supabase(postbox_id)
     
-    mailbox_data = mailboxes[mailbox_id]
-    postcard_list = postcards.get(mailbox_id, [])
+    postbox_data = postboxes[postbox_id]
+    postcard_list = postcards.get(postbox_id, [])
     
-    if datetime.now() >= datetime(2026, 1, 1) or mailbox_data.get('is_opened'):
-        mailbox_data['is_opened'] = True
-        return render_template('mailbox.html', 
-                             mailbox=mailbox_data, 
+    if datetime.now() >= datetime(2026, 1, 1) or postbox_data.get('is_opened'):
+        postbox_data['is_opened'] = True
+        return render_template('postbox.html', 
+                             postbox=postbox_data, 
                              postcards=postcard_list)
     else:
-        return render_template('mailbox_locked.html', mailbox=mailbox_data)
+        return render_template('postbox_locked.html', postbox=postbox_data)
 
 
-@app.route('/send/<mailbox_id>')
-def send_page(mailbox_id):
-    if mailbox_id not in mailboxes:
-        loaded = fetch_mailbox_supabase(mailbox_id)
+@app.route('/send/<postbox_id>')
+def send_page(postbox_id):
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
         if not loaded:
             return "우체통을 찾을 수 없습니다", 404
-        mailboxes[mailbox_id] = loaded
-        postcards.setdefault(mailbox_id, fetch_postcards_supabase(mailbox_id))
+        postboxes[postbox_id] = loaded
+        postcards.setdefault(postbox_id, fetch_postcards_supabase(postbox_id))
 
-    return render_template('choose_template.html', mailbox_id=mailbox_id)
+    return render_template('choose_template.html', postbox_id=postbox_id)
 
 
-@app.route('/send/<mailbox_id>/write')
-def send_page_write(mailbox_id):
-    if mailbox_id not in mailboxes:
-        loaded = fetch_mailbox_supabase(mailbox_id)
+@app.route('/send/<postbox_id>/write')
+def send_page_write(postbox_id):
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
         if not loaded:
-            return "우체통을 찾을 수 없습니다", 404
-        mailboxes[mailbox_id] = loaded
-        postcards.setdefault(mailbox_id, fetch_postcards_supabase(mailbox_id))
+            # Supabase에도 없으면 최소 정보로 생성하여 진행
+            base_url = request.url_root.rstrip('/')
+            postbox_path = f"/postboxes/{postbox_id}"
+            fallback = {
+                'id': postbox_id,
+                'name': '우체통',
+                'nickname': '우체통',
+                'prayer_topic': '',
+                'url': postbox_path,
+                'full_url': f"{base_url}{postbox_path}",
+                'created_at': datetime.now().isoformat(),
+                'is_opened': False
+            }
+            postboxes[postbox_id] = fallback
+            postcards.setdefault(postbox_id, [])
+            store_postbox_supabase(fallback)
+        else:
+            postboxes[postbox_id] = loaded
+            postcards.setdefault(postbox_id, fetch_postcards_supabase(postbox_id))
 
     template_id = request.args.get('template_id')
     template_type = request.args.get('template_type')
@@ -1057,21 +1210,21 @@ def send_page_write(mailbox_id):
 
     return render_template(
         'send_postcard.html',
-        mailbox_id=mailbox_id,
+        postbox_id=postbox_id,
         template_id=template_id,
         template_type=template_type,
         template_name=template_name,
     )
 
 
-def open_all_mailboxes():
-    for mailbox_id in mailboxes:
-        mailboxes[mailbox_id]['is_opened'] = True
+def open_all_postboxes():
+    for postbox_id in postboxes:
+        postboxes[postbox_id]['is_opened'] = True
 
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(
-    func=open_all_mailboxes,
+    func=open_all_postboxes,
     trigger='cron',
     year=2026,
     month=1,
