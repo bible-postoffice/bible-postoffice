@@ -141,11 +141,12 @@
                 right: 25%;
             }
         }
-    </style>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     <div class="wrap">
-        <div class="card">
+        <div class="card" id="postcard">
             <div class="overlay">
                 <div class="left">
                     <div class="verse-box">
@@ -162,6 +163,9 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div style="margin-top:14px; text-align:center;">
+            <button onclick="saveImage()" style="padding:10px 16px; border-radius:10px; border:none; background:#2563eb; color:#fff; font-weight:800; cursor:pointer;">이미지 저장</button>
         </div>
     </div>
 
@@ -270,6 +274,23 @@
             setTimeout(adjustAllText, 100); // 폰트 로딩을 위한 짧은 지연
         });
         window.addEventListener('resize', adjustAllText);
+
+        function saveImage() {
+            const cardEl = document.getElementById('postcard');
+            if (!cardEl || typeof html2canvas === 'undefined') {
+                alert('이미지 저장 도구를 불러오지 못했습니다.');
+                return;
+            }
+            html2canvas(cardEl, { scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'postcard.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                alert('이미지 저장 중 오류가 발생했습니다.');
+                console.error(err);
+            });
+        }
     </script>
 </body>
 </html>

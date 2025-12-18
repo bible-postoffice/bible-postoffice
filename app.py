@@ -918,6 +918,12 @@ def create_postbox():
     return jsonify(response_payload)
 
 
+# 호환성: 기존 /api/create-mailbox 엔드포인트를 /api/create-postbox로 포워딩
+@app.route('/api/create-mailbox', methods=['POST'])
+def create_mailbox_legacy():
+    return create_postbox()
+
+
 @app.route('/api/recommend-verses', methods=['POST'])
 def recommend_verses():
     """레퍼런스 직접 매칭 → 문구 검색(greedy+semantic) 추천."""
