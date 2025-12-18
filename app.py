@@ -1,4 +1,3 @@
-
 # app.py
 from flask import Flask, render_template, request, jsonify
 import chromadb
@@ -20,10 +19,22 @@ from popular_verses import (
 
 load_dotenv()
 
+
+app = Flask(__name__)
+
+import os
+app.secret_key = os.urandom(24)
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
-app = Flask(__name__)
+def supabase_headers():
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+    }
+
 
 # 1024차원 임베딩 모델 로드
 print("🔄 임베딩 모델 로딩 중...")
@@ -544,40 +555,31 @@ def get_or_create_curated_entry(normalized_key: str, reference_label: str):
     return None
 
 
-mailboxes = {}
+postboxes = {}
 postcards = {}
 
-
-def supabase_headers():
-    return {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json",
-    }
-
-
-def fetch_mailbox_supabase(mailbox_id: str):
+def fetch_postbox_supabase(postbox_id: str):
     if not SUPABASE_URL or not SUPABASE_KEY:
         return None
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/mailboxes"
-    params = {"id": f"eq.{mailbox_id}", "limit": 1}
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postboxes"
+    params = {"id": f"eq.{postbox_id}", "limit": 1}
     try:
         resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
         if resp.status_code != 200:
-            print(f"⚠️ Supabase mailbox fetch 실패 status={resp.status_code}, body={resp.text}")
+            print(f"⚠️ Supabase postbox fetch 실패 status={resp.status_code}, body={resp.text}")
             return None
         data = resp.json()
         return data[0] if data else None
     except Exception as exc:
-        print(f"⚠️ Supabase mailbox fetch 예외: {exc}")
+        print(f"⚠️ Supabase postbox fetch 예외: {exc}")
         return None
 
 
-def fetch_postcards_supabase(mailbox_id: str):
+def fetch_postcards_supabase(postbox_id: str):
     if not SUPABASE_URL or not SUPABASE_KEY:
         return []
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postcards"
-    params = {"mailbox_id": f"eq.{mailbox_id}", "order": "created_at.asc"}
+    params = {"postbox_id": f"eq.{postbox_id}", "order": "created_at.asc"}
     try:
         resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
         if resp.status_code != 200:
@@ -589,35 +591,35 @@ def fetch_postcards_supabase(mailbox_id: str):
         return []
 
 
-def store_mailbox_supabase(mailbox: dict):
+def store_postbox_supabase(postbox: dict):
     if not SUPABASE_URL or not SUPABASE_KEY:
-        print("⚠️ Supabase 설정이 없어 mailboxes 저장을 건너뜁니다.")
+        print("⚠️ Supabase 설정이 없어 postboxes 저장을 건너뜁니다.")
         return None
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/mailboxes"
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postboxes"
     headers = supabase_headers()
     headers["Prefer"] = "return=representation"
     payload = {
-        "id": mailbox["id"],
-        "name": mailbox.get("name"),
-        "nickname": mailbox.get("nickname"),
-        "prayer_topic": mailbox.get("prayer_topic", ""),
-        "url": mailbox.get("url"),
-        "created_at": mailbox.get("created_at"),
-        "is_opened": mailbox.get("is_opened", False),
-        "full_url": mailbox.get("full_url"),
+        "id": postbox["id"],
+        "name": postbox.get("name"),
+        "nickname": postbox.get("nickname"),
+        "prayer_topic": postbox.get("prayer_topic", ""),
+        "url": postbox.get("url"),
+        "created_at": postbox.get("created_at"),
+        "is_opened": postbox.get("is_opened", False),
+        "full_url": postbox.get("full_url"),
     }
     try:
         resp = requests.post(endpoint, headers=headers, json=payload, timeout=8)
         if resp.status_code not in (200, 201):
-            print(f"⚠️ Supabase mailboxes 저장 실패 status={resp.status_code}, body={resp.text}")
+            print(f"⚠️ Supabase postboxes 저장 실패 status={resp.status_code}, body={resp.text}")
             return None
         return resp.json()
     except Exception as exc:
-        print(f"⚠️ Supabase mailboxes 저장 예외: {exc}")
+        print(f"⚠️ Supabase postboxes 저장 예외: {exc}")
         return None
 
 
-def store_postcard_supabase(mailbox_id: str, postcard: dict):
+def store_postcard_supabase(postbox_id: str, postcard: dict):
     if not SUPABASE_URL or not SUPABASE_KEY:
         print("⚠️ Supabase 설정이 없어 postcards 저장을 건너뜁니다.")
         return None
@@ -626,7 +628,7 @@ def store_postcard_supabase(mailbox_id: str, postcard: dict):
     headers["Prefer"] = "return=representation"
     payload = {
         "id": postcard["id"],
-        "mailbox_id": mailbox_id,
+        "postbox_id": postbox_id,
         "template_id": postcard.get("template_id"),
         "template_type": postcard.get("template_type"),
         "template_name": postcard.get("template_name"),
@@ -780,47 +782,239 @@ def greedy_match_count(terms, doc: str):
     return sum(1 for t in terms if t and re.sub(r"\s+", "", t) in docc)
 
 
+
+def format_results(results):
+    """ChromaDB 결과를 포맷팅하는 헬퍼 함수"""
+    formatted = []
+    if results['documents'] and results['documents'][0]:
+        for i, doc in enumerate(results['documents'][0]):
+            metadata = results['metadatas'][0][i] if results.get('metadatas') else {}
+            distance = results['distances'][0][i] if results.get('distances') else 0
+            
+            reference = build_reference_label(metadata, doc)
+            similarity_score = round((1 - distance) * 100, 1)
+            popularity = metadata.get('popularity', 30)
+            
+            formatted.append({
+                'text': doc,
+                'reference': reference,
+                'similarity': similarity_score,
+                'popularity': popularity
+            })
+            
+            print(f"  [{reference}] 유사도: {similarity_score}% | 인기도: {popularity}")
+    
+    return formatted
+
+
+
+
+
+@app.route('/send/<postbox_id>')
+def send_page(postbox_id):
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
+        if not loaded:
+            return "우체통을 찾을 수 없습니다", 404
+        postboxes[postbox_id] = loaded
+        postcards.setdefault(postbox_id, fetch_postcards_supabase(postbox_id))
+
+    return render_template('choose_template.html', postbox_id=postbox_id)
+
+
+@app.route('/send/<postbox_id>/write')
+def send_page_write(postbox_id):
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
+        if not loaded:
+            return "우체통을 찾을 수 없습니다", 404
+        postboxes[postbox_id] = loaded
+        postcards.setdefault(postbox_id, fetch_postcards_supabase(postbox_id))
+
+    template_id = request.args.get('template_id')
+    template_type = request.args.get('template_type')
+    template_name = request.args.get('template_name')
+
+    return render_template(
+        'send_postcard.html',
+        postbox_id=postbox_id,
+        template_id=template_id,
+        template_type=template_type,
+        template_name=template_name,
+    )
+
+
+def open_all_postboxes():
+    for postbox_id in postboxes:
+        postboxes[postbox_id]['is_opened'] = True
+
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=open_all_postboxes,
+    trigger='cron',
+    year=2026,
+    month=1,
+    day=1,
+    hour=0,
+    minute=0
+)
+scheduler.start()
+
+
+# ----------------------------------------------------------------
+# 1. 메인 및 인증 관련 라우트 (추가/수정된 부분)
+# ----------------------------------------------------------------
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+import requests
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 
-@app.route('/api/create-mailbox', methods=['POST'])
-def create_mailbox():
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        # 1. 폼 데이터 가져오기
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            flash("서버 설정 오류가 발생했습니다.")
+            return redirect(url_for('signup'))
+
+        # 2. Supabase 저장용 엔드포인트 및 페이로드 설정
+        endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/bible_users"
+        payload = {
+            "name": name,
+            "email": email,
+            "password": password  # 실제 서비스 시 해싱(hashing) 권장
+        }
+
+        try:
+            # 3. REST API를 통해 데이터 POST
+            resp = requests.post(
+                endpoint, 
+                headers=supabase_headers(), 
+                json=payload, 
+                timeout=8
+            )
+
+            # 성공 시 (201 Created)
+            if resp.status_code in (200, 201):
+                flash(f"{name}님, 환영합니다! 로그인을 진행해주세요.")
+                return redirect(url_for('login'))
+            
+            # 실패 시 (예: 이메일 중복 등)
+            else:
+                error_msg = resp.json().get('message', '알 수 없는 오류')
+                if "unique_violation" in resp.text:
+                    flash("이미 사용 중인 이메일입니다.")
+                else:
+                    flash(f"가입 실패: {error_msg}")
+                return redirect(url_for('signup'))
+
+        except Exception as e:
+            print(f"⚠️ 회원가입 API 예외 발생: {e}")
+            flash("서버 통신 중 오류가 발생했습니다.")
+            return redirect(url_for('signup'))
+
+    return render_template('signup.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        # [수정] 조회 시에도 테이블 이름을 users로 설정
+        endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/bible_users?email=eq.{email}&password=eq.{password}&select=*"
+        
+        try:
+            resp = requests.get(endpoint, headers=supabase_headers())
+            users = resp.json()
+
+            if resp.status_code == 200 and len(users) > 0:
+                user = users[0]
+                session['user_id'] = user['id']
+                session['user_name'] = user['name']
+                
+                flash(f"{user['name']}님, 환영합니다!")
+                return redirect(url_for('setup_postbox')) # 로그인 성공 시 우체통 설정으로
+            else:
+                flash("이메일 또는 비밀번호가 일치하지 않습니다.")
+                return redirect(url_for('login'))
+        except Exception as e:
+            flash("로그인 처리 중 오류가 발생했습니다.")
+            return redirect(url_for('login'))
+
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
+# ----------------------------------------------------------------
+# 2. 우체통 및 구절 API 라우트 (기존 로직 유지)
+# ----------------------------------------------------------------
+
+@app.route('/api/create-postbox', methods=['POST'])
+def create_postbox():
     data = request.get_json(silent=True) or {}
     name = data.get('name')
+    privacy = data.get('privacy')
+    color = data.get('color')
     prayer_topic = data.get('prayer_topic', '')
+    
+    # [중요] 클라이언트에서 보낸 user_id (Supabase Auth ID)
+    # 로그인을 했으므로 프론트에서 함께 보내주거나 세션에서 확인해야 합니다.
+    user_id = data.get('user_id') 
 
     if not name:
         return jsonify({'error': 'Name is required'}), 400
 
-    mailbox_id = str(uuid.uuid4())[:8]
+    # 1. 자르지 않은 전체 UUID 생성
+    full_uuid = str(uuid.uuid4()) 
+    
     base_url = request.url_root.rstrip('/')
-    mailbox_path = f'/mailbox/{mailbox_id}'
-    original_url = f"{base_url}{mailbox_path}"
-    mailboxes[mailbox_id] = {
-        'id': mailbox_id,
+    postbox_path = f'/postbox/{full_uuid}'
+    original_url = f"{base_url}{postbox_path}"
+
+    # 2. 데이터 구조 (Supabase 컬럼명에 맞춰 조정)
+    postbox_data = {
+        'id': full_uuid,           # 이제 UUID 전체가 들어감
         'name': name,
-        'nickname': name,
+        'owner_id': user_id,        # 누가 만들었는지 저장
         'prayer_topic': prayer_topic,
-        'url': mailbox_path,
-        'full_url': original_url,
         'created_at': datetime.now().isoformat(),
-        'is_opened': False
+        'color': color,
+        'is_opened': False,
+        'end_date': datetime(2026, 1, 1, 0, 0, 0).isoformat(),
+        'privacy': privacy
     }
-    postcards[mailbox_id] = []
 
-    short_url = store_generated_url(original_url=original_url, base_url=base_url)
-    store_mailbox_supabase(mailboxes[mailbox_id])
-    response_payload = {
-        'mailbox_id': mailbox_id,
-        'url': mailbox_path,
-        'original_url': original_url
-    }
-    if short_url:
-        response_payload['short_url'] = short_url
-    return jsonify(response_payload)
+    # 3. Supabase 저장
+    # store_postbox_supabase 함수 내부에서 'mailboxes' 테이블에 insert 하도록 구성
+    try:
+        store_postbox_supabase(postbox_data)
+        
+        # 선택사항: 메모리(postboxes)에도 저장 시
+        postboxes[full_uuid] = postbox_data
+        postcards[full_uuid] = []
 
+        response_payload = {
+            'postbox_id': full_uuid,
+            'url': postbox_path,
+            'original_url': original_url
+        }
+        
+        return jsonify(response_payload)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/recommend-verses', methods=['POST'])
 def recommend_verses():
@@ -955,48 +1149,22 @@ def recommend_verses():
         return jsonify({"error": f"검색 실패: {str(e)}"}), 500
 
 
-
-def format_results(results):
-    """ChromaDB 결과를 포맷팅하는 헬퍼 함수"""
-    formatted = []
-    if results['documents'] and results['documents'][0]:
-        for i, doc in enumerate(results['documents'][0]):
-            metadata = results['metadatas'][0][i] if results.get('metadatas') else {}
-            distance = results['distances'][0][i] if results.get('distances') else 0
-            
-            reference = build_reference_label(metadata, doc)
-            similarity_score = round((1 - distance) * 100, 1)
-            popularity = metadata.get('popularity', 30)
-            
-            formatted.append({
-                'text': doc,
-                'reference': reference,
-                'similarity': similarity_score,
-                'popularity': popularity
-            })
-            
-            print(f"  [{reference}] 유사도: {similarity_score}% | 인기도: {popularity}")
-    
-    return formatted
-
-
 @app.route('/api/send-postcard', methods=['POST'])
 def send_postcard():
     data = request.json
-    mailbox_id = data.get('mailbox_id')
-    
-    if mailbox_id not in mailboxes:
-        loaded = fetch_mailbox_supabase(mailbox_id)
+    postbox_id = data.get('postbox_id')
+
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
         if not loaded:
-            return jsonify({'error': 'Mailbox not found'}), 404
-        mailboxes[mailbox_id] = loaded
-        postcards[mailbox_id] = fetch_postcards_supabase(mailbox_id)
+            return jsonify({'error': 'postbox not found'}), 404
+        postboxes[postbox_id] = loaded
+        postcards[postbox_id] = fetch_postcards_supabase(postbox_id)
     
     postcard = {
         'id': str(uuid.uuid4()),
         'template_id': data.get('template_id') or 'postcard-sunset',
         'template_type': data.get('template_type') or '엽서',
-        'template_name': data.get('template_name') or '',
         'is_anonymous': bool(data.get('is_anonymous')),
         'verse_reference': data.get('verse_reference'),
         'verse_text': data.get('verse_text'),
@@ -1004,154 +1172,54 @@ def send_postcard():
         'created_at': datetime.now().isoformat()
     }
     
-    postcards[mailbox_id].append(postcard)
-    store_postcard_supabase(mailbox_id, postcard)
+    postcards[postbox_id].append(postcard)
+    store_postcard_supabase(postbox_id, postcard)
     
     return jsonify({'success': True, 'postcard_id': postcard['id']})
 
-
-@app.route('/mailbox/<mailbox_id>')
-def mailbox(mailbox_id):
-    if mailbox_id not in mailboxes:
-        loaded = fetch_mailbox_supabase(mailbox_id)
+@app.route('/postbox/<postbox_id>')
+def postbox(postbox_id):
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
         if not loaded:
             return "우체통을 찾을 수 없습니다", 404
-        mailboxes[mailbox_id] = loaded
-        postcards[mailbox_id] = fetch_postcards_supabase(mailbox_id)
+        postboxes[postbox_id] = loaded
+        postcards[postbox_id] = fetch_postcards_supabase(postbox_id)
     
-    mailbox_data = mailboxes[mailbox_id]
-    postcard_list = postcards.get(mailbox_id, [])
+    postbox_data = postboxes[postbox_id]
+    postcard_list = postcards.get(postbox_id, [])
     
-    if datetime.now() >= datetime(2026, 1, 1) or mailbox_data.get('is_opened'):
-        mailbox_data['is_opened'] = True
-        return render_template('mailbox.html', 
-                             mailbox=mailbox_data, 
+    if datetime.now() >= datetime(2026, 1, 1) or postbox_data.get('is_opened'):
+        postbox_data['is_opened'] = True
+        return render_template('postbox.html', 
+                             postbox=postbox_data, 
                              postcards=postcard_list)
     else:
-        return render_template('mailbox_locked.html', mailbox=mailbox_data)
+        return render_template('postbox_locked.html', postbox=postbox_data)
 
+from functools import wraps
 
-@app.route('/send/<mailbox_id>')
-def send_page(mailbox_id):
-    if mailbox_id not in mailboxes:
-        loaded = fetch_mailbox_supabase(mailbox_id)
-        if not loaded:
-            return "우체통을 찾을 수 없습니다", 404
-        mailboxes[mailbox_id] = loaded
-        postcards.setdefault(mailbox_id, fetch_postcards_supabase(mailbox_id))
-
-    return render_template('choose_template.html', mailbox_id=mailbox_id)
-
-
-@app.route('/send/<mailbox_id>/write')
-def send_page_write(mailbox_id):
-    if mailbox_id not in mailboxes:
-        loaded = fetch_mailbox_supabase(mailbox_id)
-        if not loaded:
-            return "우체통을 찾을 수 없습니다", 404
-        mailboxes[mailbox_id] = loaded
-        postcards.setdefault(mailbox_id, fetch_postcards_supabase(mailbox_id))
-
-    template_id = request.args.get('template_id')
-    template_type = request.args.get('template_type')
-    template_name = request.args.get('template_name')
-
-    return render_template(
-        'send_postcard.html',
-        mailbox_id=mailbox_id,
-        template_id=template_id,
-        template_type=template_type,
-        template_name=template_name,
-    )
-
-
-def open_all_mailboxes():
-    for mailbox_id in mailboxes:
-        mailboxes[mailbox_id]['is_opened'] = True
-
-
-scheduler = BackgroundScheduler()
-scheduler.add_job(
-    func=open_all_mailboxes,
-    trigger='cron',
-    year=2026,
-    month=1,
-    day=1,
-    hour=0,
-    minute=0
-)
-scheduler.start()
-
-
-# ----------------------------------------------------------------
-# 1. 메인 및 인증 관련 라우트 (추가/수정된 부분)
-# ----------------------------------------------------------------
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        # 회원가입 폼 데이터 수집
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        # [TODO: Supabase 등에 사용자 정보 저장 로직 추가]
-        print(f"회원가입 시도: {name}, {email}")
-        
-        # 가입 성공 시 로그인 페이지로 이동
-        return redirect(url_for('login'))
-    return render_template('signup.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        # 로그인 처리 로직
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        # [TODO: 인증 확인 로직]
-        session['user_email'] = email # 임시 세션 생성
-        return redirect(url_for('index'))
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('index'))
-
-# ----------------------------------------------------------------
-# 2. 우체통 및 구절 API 라우트 (기존 로직 유지)
-# ----------------------------------------------------------------
-
-@app.route('/api/create-mailbox', methods=['POST'])
-def create_mailbox():
-    # ... (기존 제공해주신 코드 유지) ...
-    pass # 실제 파일에는 제공해주신 로직을 그대로 넣으시면 됩니다.
-
-@app.route('/api/recommend-verses', methods=['POST'])
-def recommend_verses():
-    # ... (기존 제공해주신 시맨틱 검색 로직 유지) ...
-    pass
-
-@app.route('/api/send-postcard', methods=['POST'])
-def send_postcard():
-    # ... (기존 제공해주신 Supabase 저장 로직 유지) ...
-    pass
-
-@app.route('/mailbox/<mailbox_id>')
-def mailbox(mailbox_id):
-    # ... (기존 제공해주신 우체통 조회 로직 유지) ...
-    pass
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("로그인이 필요한 서비스입니다.")
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # 회원 로그인 구현 전까지 테스트
 @app.route('/setup-postbox')
-def setup_mailbox():
+@login_required
+def setup_postbox():
+    # .env 파일에서 직접 읽어서 템플릿으로 전달
+    s_url = os.environ.get("SUPABASE_URL")
+    s_key = os.environ.get("SUPABASE_KEY")
     # 임시로 유저 이름을 '나'로 설정 (로그인 연동 전)
-    return render_template('setup_postbox.html', user_name="말씀지기")
+    return render_template('setup_postbox.html',
+                           supabase_url=s_url,
+                           supabase_key=s_key,
+                           user_name=session.get('user_name'))
 
 from flask import Flask, render_template, request
 from datetime import datetime
