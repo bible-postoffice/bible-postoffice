@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엽서 보기</title>
+    <style>
+        :root {
+            --ink: #0f172a;
+            --muted: #475569;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #f5f7fb;
+            color: var(--ink);
+            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+            padding: 18px;
+        }
+        .wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .card {
+            position: relative;
+            background: url("{{ url_for('static', filename=template_image) }}") center/cover no-repeat;
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+        .overlay {
+            position: absolute;
+            inset: 0;
+            padding: 3% 2.5%;
+            display: flex;
+            gap: 1.5%;
+        }
+        .left, .right {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 왼쪽: 성경 구절 영역 (노란색) */
+        .verse-box {
+            position: absolute;
+            top: 12%;
+            left: 4%;
+            right: 4%;
+            bottom: 10%;
+            color: var(--ink);
+            line-height: 1.5;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .verse-box .text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .verse-box .text .body {
+            flex: 1;
+            overflow: hidden;
+        }
+        .verse-box  .ref {
+            font-weight: 800;
+            text-align: right;
+            flex-shrink: 0;
+            margin-top: 0.3em;
+            align-self: flex-end;
+            display: block;
+        }
+        
+        /* 오른쪽: 메시지 영역 (파란색) */
+        .msg-box {
+            position: absolute;
+            top: 25%;
+            left: 5%;
+            right: 5%;
+            bottom: 22%;
+            color: var(--ink);
+            line-height: 1.5;
+            font-weight: 600;
+            overflow: hidden;
+        }
+        
+        /* 발신자 영역 (검정색) */
+        .sender-box {
+            position: absolute;
+            bottom: 8%;
+            left: 5%;
+            right: 35%;
+            color: var(--ink);
+            font-weight: 700;
+            overflow: hidden;
+        }
+        
+        /* 반응형 조정 */
+        @media (max-width: 768px) {
+            .overlay { 
+                padding: 2.5% 2%;
+                gap: 1%;
+            }
+            .verse-box {
+                top: 20%;
+                bottom: 12%;
+            }
+            .msg-box {
+                top: 30%;
+                bottom: 25%;
+            }
+            .sender-box {
+                bottom: 10%;
+                right: 30%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .card { border-radius: 8px; }
+            .verse-box {
+                top: 18%;
+                left: 3%;
+                right: 3%;
+            }
+            .msg-box {
+                top: 30%;
+                left: 4%;
+                right: 4%;
+                bottom: 28%;
+            }
+            .sender-box {
+                bottom: 12%;
+                right: 25%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="card">
+            <div class="overlay">
+                <div class="left">
+                    <div class="verse-box">
+                        <div class="text">{{ verse_text }}</div>
+                        <span class="ref">{{ verse_reference }}</span>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="msg-box">
+                        {{ message if message else '전달할 메시지가 없습니다.' }}
+                    </div>
+                    <div class="sender-box">
+                        From. {{ sender or '익명' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function fitTextToContainer(element, minSize, maxSize) {
+            if (!element || !element.textContent.trim()) return;
+            
+            let fontSize = maxSize;
+            element.style.fontSize = fontSize + 'px';
+            
+            // 텍스트가 컨테이너를 넘치면 글씨 크기를 줄임 (반드시 들어갈 때까지)
+            let iterations = 0;
+            const maxIterations = 200; // 무한루프 방지
+            
+            while ((element.scrollHeight > element.clientHeight + 1 || 
+                    element.scrollWidth > element.clientWidth + 1) && 
+                   fontSize > minSize && iterations < maxIterations) {
+                fontSize -= 0.3;
+                element.style.fontSize = fontSize + 'px';
+                iterations++;
+            }
+        }
+
+        function fitVerseBox() {
+            const verseBox = document.querySelector('.verse-box');
+            const verseRef = document.querySelector('.verse-box .ref');
+            const verseText = document.querySelector('.verse-box .text');
+            
+            if (!verseBox || !verseRef || !verseText) return;
+            
+            const isMobile = window.innerWidth <= 480;
+            const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
+            
+            let refMin, refMax, textMin, textMax;
+            
+            if (isMobile) {
+                refMin = 8; refMax = 10;
+                textMin = 5; textMax = 12;
+            } else if (isTablet) {
+                refMin = 8; refMax = 15;
+                textMin = 7; textMax = 16;
+            } else {
+                refMin = 12; refMax = 20;
+                textMin = 10; textMax = 24;
+            }
+            
+            // 제목을 먼저 맞춤
+            fitTextToContainer(verseRef, refMin, refMax);
+            
+            // 제목이 차지한 공간을 제외한 나머지 공간에 본문을 맞춤
+            const verseBoxHeight = verseBox.clientHeight;
+            const refHeight = verseRef.offsetHeight;
+            const availableHeight = verseBoxHeight - refHeight;
+            
+            // 본문 영역의 높이 계산
+            let textFontSize = textMax;
+            verseText.style.fontSize = textFontSize + 'px';
+            
+            let iterations = 0;
+            const maxIterations = 200;
+            
+            while ((verseText.scrollHeight > availableHeight + 1 || 
+                    verseText.scrollWidth > verseText.clientWidth + 1) && 
+                   textFontSize > textMin && iterations < maxIterations) {
+                textFontSize -= 0.3;
+                verseText.style.fontSize = textFontSize + 'px';
+                iterations++;
+            }
+        }
+
+        function adjustAllText() {
+            const msgBox = document.querySelector('.msg-box');
+            const senderBox = document.querySelector('.sender-box');
+            
+            const isMobile = window.innerWidth <= 480;
+            const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
+            
+            // 성경 구절 영역 (제목 + 본문)
+            fitVerseBox();
+            
+            // 메시지 영역
+            if (msgBox) {
+                if (isMobile) {
+                    fitTextToContainer(msgBox, 5, 12);
+                } else if (isTablet) {
+                    fitTextToContainer(msgBox, 7, 16);
+                } else {
+                    fitTextToContainer(msgBox, 10, 24);
+                }
+            }
+            
+            // 발신자 영역
+            if (senderBox) {
+                if (isMobile) {
+                    fitTextToContainer(senderBox, 5, 13);
+                } else if (isTablet) {
+                    fitTextToContainer(senderBox, 7, 17);
+                } else {
+                    fitTextToContainer(senderBox, 11, 25);
+                }
+            }
+        }
+
+        // 페이지 로드 및 리사이즈 시 실행
+        window.addEventListener('load', () => {
+            setTimeout(adjustAllText, 100); // 폰트 로딩을 위한 짧은 지연
+        });
+        window.addEventListener('resize', adjustAllText);
+    </script>
+</body>
+</html>
