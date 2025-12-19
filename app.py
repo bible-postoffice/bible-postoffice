@@ -1282,14 +1282,19 @@ scheduler.add_job(
 )
 scheduler.start()
 
-
 if __name__ == '__main__':
     print("\n" + "="*50)
     print("🚀 Flask 서버 시작")
- 
     print("✅ 인기도 필터링 활성화 (3-tier 검색)")
     ensure_reference_index()
     ensure_verse_lookup_index()
-    print("📍 브라우저에서 접속: http://127.0.0.1:5001")
+    
+    # 환경 감지
+    is_local = os.environ.get('RENDER') is None  # Render는 자동으로 RENDER 환경변수 설정
+    host = '127.0.0.1' if is_local else '0.0.0.0'
+    port = int(os.environ.get('PORT', 5001))
+    debug = is_local
+    
+    print(f"📍 브라우저에서 접속: http://{host}:{port}")
+    print(f"🔧 환경: {'로컬 개발' if is_local else 'Render 배포'}")
     print("="*50 + "\n")
-    app.run(host='127.0.0.1', port=5001, debug=True, threaded=True)
