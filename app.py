@@ -25,6 +25,7 @@ app = Flask(__name__)
 import os
 app.secret_key = os.urandom(24)
 
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
@@ -807,9 +808,6 @@ def format_results(results):
     return formatted
 
 
-
-
-
 @app.route('/send/<postbox_id>')
 def send_page(postbox_id):
     if postbox_id not in postboxes:
@@ -1245,6 +1243,114 @@ def view_postbox(name):
                            is_expired=is_expired)
 
 
+# 카카오 로그인
+KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
+KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+
+@app.route('/login/kakao')
+def login_kakao():
+    # 이제 안전하게 환경 변수에서 가져온 키를 사용합니다.
+    kakao_oauth_url = (
+        f"https://kauth.kakao.com/oauth/authorize?"
+        f"client_id={KAKAO_CLIENT_ID}&"
+        f"redirect_uri={KAKAO_REDIRECT_URI}&"
+        f"response_type=code"
+    )
+    return redirect(kakao_oauth_url)
+
+
+@app.route('/oauth/kakao/callback')
+def kakao_callback():
+    # 2. 인가 코드 받기
+    code = request.args.get("code")
+    print(f"발급된 인가 코드: {code}") # 터미널에 찍히는지 확인
+    
+    # 3. 인가 코드로 액세스 토큰 요청
+    token_request = requests.post(
+        "https://kauth.kakao.com/oauth/token",
+        data={
+            "grant_type": "authorization_code",
+            "client_id": KAKAO_CLIENT_ID,
+            "redirect_uri": KAKAO_REDIRECT_URI,
+            "code": code,
+        },
+    )
+    token_json = token_request.json()
+    
+    # [중요] 토큰이 잘 왔는지 확인하는 디버깅 코드
+    if "access_token" not in token_json:
+        return jsonify({
+            "error": "토큰 발급 실패",
+            "reason": token_json  # 여기서 KOE로 시작하는 에러 코드를 확인해야 합니다.
+        })
+
+    access_token = token_json.get("access_token")
+
+    # 4. 액세스 토큰으로 사용자 정보 가져오기
+    profile_request = requests.get(
+        "https://kapi.kakao.com/v2/user/me",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    user_info = profile_request.json()
+    print(f"사용자 정보: {user_info}")  # 터미널에 찍히는지 확인
+
+
+
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("⚠️ Supabase 설정이 없어 postcards 저장을 건너뜁니다.")
+        return None
+    
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/bible_users"
+    headers = supabase_headers()
+    headers["Prefer"] = "return=representation"
+    payload = {
+        "email": user_info.get("kakao_account", {}).get("email"),
+        "created_at": datetime.now().isoformat(),
+    } 
+    try:
+        resp = requests.post(endpoint, headers=headers, json=payload, timeout=8)
+        if resp.status_code in (200, 201):
+            return resp.json()
+        print(f"⚠️ Supabase postcards 저장 실패 status={resp.status_code}, body={resp.text}")
+    except Exception as exc:
+        print(f"⚠️ Supabase postcards 저장 예외: {exc}")
+
+    return redirect('/')
+
+def check_user_exists_in_db(email):
+    """requests를 사용하여 bible_users 테이블에서 이메일 조회"""
+    # PostgREST 필터링 문법: 컬럼명=eq.값
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/bible_users?email=eq.{email}"
+    
+    try:
+        resp = requests.get(endpoint, headers=supabase_headers(), timeout=5)
+        if resp.status_code == 200:
+            user_list = resp.json()
+            return len(user_list) > 0  # 데이터가 있으면 True
+        return False
+    except Exception as e:
+        print(f"❌ DB 조회 에러: {e}")
+        return False
+    
+@app.route('/auth/check-user', methods=['POST'])
+def auth_check():
+    data = request.json
+    email = data.get('email') # 이메일만 가져옴
+    
+    # DB에 이메일 존재 여부만 확인 (기존 함수 활용)
+    if check_user_exists_in_db(email):
+        return jsonify({
+            "success": True, 
+            "redirect_url": "/view_postbox.html"
+        })
+    else:
+        return jsonify({
+            "success": False, 
+            "message": "등록되지 않은 사용자입니다."
+        })
+    
+
 if __name__ == '__main__':
     print("\n" + "="*50)
     print("🚀 Flask 서버 시작")
@@ -1254,4 +1360,4 @@ if __name__ == '__main__':
     ensure_verse_lookup_index()
     print("📍 브라우저에서 접속: http://127.0.0.1:5001")
     print("="*50 + "\n")
-    app.run(host='127.0.0.1', port=5001, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port=5001, debug=True, threaded=True)
