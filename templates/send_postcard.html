@@ -43,6 +43,17 @@
             text-align: center;
             border: 1px solid #d7dcff;
         }
+        .step.active {
+            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
+            border-color: #2749d8;
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
+        }
+        .step.completed {
+            background: #e0f2fe;
+            border-color: #bfdbfe;
+            color: #2563eb;
+        }
         .step span {
             color: #6b7280;
             font-weight: 500;
@@ -288,80 +299,6 @@
             color: #667eea;
             margin-bottom: 10px;
         }
-        .template-preview {
-            margin: 18px 0 10px;
-            padding: 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            background: #f9fafb;
-            display: grid;
-            grid-template-columns: 120px 1fr;
-            gap: 12px;
-            align-items: center;
-        }
-        .template-thumb {
-            width: 100%;
-            aspect-ratio: 3 / 2;
-            border-radius: 10px;
-            border: 1px solid #d1d5db;
-            background-size: cover;
-            background-position: center;
-            position: relative;
-        }
-        .template-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .template-name {
-            font-weight: 800;
-            color: #111827;
-            font-size: 16px;
-        }
-        .template-type {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #4338ca;
-            font-weight: 700;
-            font-size: 12px;
-            width: fit-content;
-        }
-        .template-verse {
-            margin-top: 6px;
-            font-size: 14px;
-            color: #1f2937;
-            line-height: 1.5;
-        }
-        .template-verse .ref {
-            font-weight: 700;
-            color: #2563eb;
-        }
-        .verse-overlay {
-            position: absolute;
-            top: 50%;
-            left: 12px;
-            transform: translateY(-50%);
-            background: rgba(255,255,255,0.85);
-            color: #0f172a;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid #d1d5db;
-            max-width: 75%;
-            line-height: 1.45;
-            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-        }
-        .verse-overlay .ref {
-            display: block;
-            font-weight: 800;
-            color: #2563eb;
-            margin-bottom: 4px;
-        }
-        @media (max-width: 640px) {
-            .template-preview { grid-template-columns: 1fr; }
-            .template-thumb { aspect-ratio: 4 / 3; }
-        }
         textarea {
             width: 100%;
             height: 150px;
@@ -372,6 +309,12 @@
             font-size: 16px;
             font-family: 'Noto Sans KR', sans-serif;
             box-sizing: border-box;
+        }
+        .char-counter {
+            text-align: right;
+            color: #6b7280;
+            font-size: 13px;
+            margin: -4px 2px 6px;
         }
         .loading {
             text-align: center;
@@ -384,16 +327,10 @@
     <div class="container">
         <h2>💌 성경 구절 엽서 보내기</h2>
 
-        <div class="template-preview" id="template-preview" style="display:none;">
-            <div class="template-thumb" id="template-thumb">
-                <div class="verse-overlay" id="verse-overlay" style="display:none;"></div>
-            </div>
-            <div class="template-meta">
-                <span class="template-type" id="template-type"></span>
-                <div class="template-name" id="template-name"></div>
-                <div style="color:#6b7280; font-size:13px;">선택한 디자인으로 편지를 보냅니다.</div>
-                <div class="template-verse" id="template-verse" style="display:none;"></div>
-            </div>
+        <div class="steps">
+            <div class="step completed">1. 템플릿<span>엽서/편지지 선택</span></div>
+            <div class="step active">2. 내용 작성<span>말씀과 편지 입력</span></div>
+            <div class="step">3. 미리보기<span>글씨체 고르고 전송</span></div>
         </div>
 
         <div class="search-box">
@@ -433,10 +370,11 @@
         </div>
 
         <div class="section-title">편지 작성</div>
-        <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요"></textarea>
+        <div class="char-counter" id="message-counter">0/150자</div>
+        <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요" maxlength="150"></textarea>
         
         <div class="cta-row">
-            <button class="btn-primary" onclick="sendPostcard()">보내기 🎉</button>
+            <button class="btn-primary" onclick="goPreview()">미리보기 & 글씨체 ✨</button>
             <button class="btn-secondary" onclick="window.location.href='/send/{{ postbox_id }}'">이전</button>
         </div>
     </div>
@@ -448,6 +386,10 @@
         let currentPage = 0;
         let totalPages = 0;
         const postboxId = "{{ postbox_id }}";
+        const draftKey = `postcardDraft-${postboxId}`;
+        const MAX_MESSAGE_LENGTH = 150;
+        const messageInput = document.getElementById('message');
+        const messageCounter = document.getElementById('message-counter');
         const preselectedTemplate = {
             id: "{{ template_id or '' }}",
             type: "{{ template_type or '' }}",
@@ -465,13 +407,21 @@
             7: "{{ url_for('static', filename='images/letters/letter3.png') }}",
             8: "{{ url_for('static', filename='images/letters/letter4.jpg') }}",
         };
-        const defaultTemplate = { id: 1, type: 0, name: '엽서 1', typeLabel: '엽서' };
+        const defaultTemplate = { id: 1, type: 0, name: '항공 엽서', typeLabel: '엽서' };
         function normalizeTemplate(tpl = {}) {
             const rawId = tpl.id;
             let id = parseInt(String(rawId).replace(/\D+/g, ''), 10);
             if (!id) id = 1;
             const rawType = tpl.type;
-            const typeInt = typeof rawType === 'string' ? (TYPE_MAP[rawType] ?? 0) : (rawType ?? 0);
+            let typeInt = 0;
+            if (typeof rawType === 'string') {
+                const num = parseInt(rawType, 10);
+                if (!Number.isNaN(num)) typeInt = num;
+                else typeInt = TYPE_MAP[rawType] ?? 0;
+            } else {
+                typeInt = rawType ?? 0;
+            }
+            typeInt = typeInt === 1 ? 1 : 0;
             const typeLabel = TYPE_LABEL[typeInt] || '엽서';
             return {
                 id,
@@ -481,49 +431,9 @@
             };
         }
 
-        function updateVersePreview() {
-            const verseEl = document.getElementById('template-verse');
-            const overlayEl = document.getElementById('verse-overlay');
-            const isPostcard = selectedTemplate && selectedTemplate.type === 0;
-            if (isPostcard) {
-                verseEl.style.display = 'none';
-                if (selectedVerse) {
-                    overlayEl.style.display = 'block';
-                    overlayEl.innerHTML = `<span class="ref">${selectedVerse.reference}</span>${selectedVerse.text}`;
-                } else {
-                    overlayEl.style.display = 'none';
-                    overlayEl.innerHTML = '';
-                }
-            } else {
-                overlayEl.style.display = 'none';
-                overlayEl.innerHTML = '';
-                if (selectedVerse) {
-                    verseEl.style.display = 'block';
-                    verseEl.innerHTML = `<span class="ref">${selectedVerse.reference}</span><br>${selectedVerse.text}`;
-                } else {
-                    verseEl.style.display = 'none';
-                    verseEl.innerHTML = '';
-                }
-            }
-        }
-
         function setTemplateFromQuery() {
             const tpl = preselectedTemplate.id ? normalizeTemplate(preselectedTemplate) : defaultTemplate;
             selectedTemplate = tpl;
-            const preview = document.getElementById('template-preview');
-            const thumb = document.getElementById('template-thumb');
-            const nameEl = document.getElementById('template-name');
-            const typeEl = document.getElementById('template-type');
-            const img = templateAssets[tpl.id];
-            if (img) {
-                thumb.style.backgroundImage = `url(${img})`;
-                nameEl.textContent = tpl.name || tpl.id;
-                typeEl.textContent = tpl.typeLabel || (tpl.type === 0 ? '엽서' : '편지지');
-                preview.style.display = 'grid';
-            } else {
-                preview.style.display = 'none';
-            }
-            updateVersePreview();
         }
         
         const pageNav = document.getElementById('page-nav');
@@ -615,43 +525,45 @@
             );
             element.classList.add('selected');
             selectedVerse = verse;
-            updateVersePreview();
         }
+
+        function updateMessageCounter() {
+            const length = messageInput.value.length;
+            messageCounter.textContent = `${length}/${MAX_MESSAGE_LENGTH}자`;
+        }
+
+        messageInput.addEventListener('input', () => {
+            if (messageInput.value.length > MAX_MESSAGE_LENGTH) {
+                messageInput.value = messageInput.value.slice(0, MAX_MESSAGE_LENGTH);
+            }
+            updateMessageCounter();
+        });
         
-        async function sendPostcard() {
+        function goPreview() {
             if (!selectedVerse) {
                 alert('성경 구절을 먼저 선택해주세요! 📖');
                 return;
             }
             
-            const message = document.getElementById('message').value;
-            const isAnonymous = document.getElementById('anonymous-toggle').checked;
-            
-            try {
-                const response = await fetch('/api/send-postcard', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        postbox_id: postboxId,
-                        template_id: selectedTemplate.id,
-                        template_type: selectedTemplate.type,
-                        template_name: selectedTemplate.name,
-                        is_anonymous: isAnonymous,
-                        verse_reference: selectedVerse.reference,
-                        verse_text: selectedVerse.text,
-                        message: message
-                    })
-                });
-                
-                if (response.ok) {
-                    alert('엽서가 성공적으로 전송되었습니다! 🎉\n2026년 1월 1일에 상대방이 확인할 수 있습니다.');
-                    window.location.href = '/';
-                } else {
-                    alert('전송 중 오류가 발생했습니다.');
-                }
-            } catch (e) {
-                alert('전송 실패: ' + e.message);
+            const message = messageInput.value;
+            if (message.length > MAX_MESSAGE_LENGTH) {
+                alert(`편지는 최대 ${MAX_MESSAGE_LENGTH}자까지 작성할 수 있어요.`);
+                return;
             }
+            const isAnonymous = document.getElementById('anonymous-toggle').checked;
+            const draft = {
+                postbox_id: postboxId,
+                template: selectedTemplate,
+                is_anonymous: isAnonymous,
+                verse: selectedVerse,
+                message
+            };
+            try {
+                sessionStorage.setItem(draftKey, JSON.stringify(draft));
+            } catch (e) {
+                console.warn('draft save failed', e);
+            }
+            window.location.href = `/send/${postboxId}/preview`;
         }
         
         // Enter 키로 검색
@@ -665,6 +577,30 @@
         nextPageBtn.addEventListener('click', () => goPage(1));
 
         setTemplateFromQuery();
+
+        (function restoreDraft() {
+            try {
+                const raw = sessionStorage.getItem(draftKey);
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                if (saved.message) {
+                    messageInput.value = saved.message.slice(0, MAX_MESSAGE_LENGTH);
+                }
+                if (saved.is_anonymous) {
+                    document.getElementById('anonymous-toggle').checked = true;
+                }
+                if (saved.template) {
+                    selectedTemplate = normalizeTemplate(saved.template);
+                }
+                if (saved.verse) {
+                    selectedVerse = saved.verse;
+                }
+                updateMessageCounter();
+            } catch (e) {
+                console.warn('draft restore failed', e);
+            }
+        })();
+        updateMessageCounter();
     </script>
 </body>
 </html>

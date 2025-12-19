@@ -630,7 +630,6 @@ def store_postbox_supabase(postbox: dict):
     payload = {
         "id": postbox["id"],
         "name": postbox.get("name"),
-        "nickname": postbox.get("nickname"),
         "prayer_topic": postbox.get("prayer_topic", ""),
         "url": postbox.get("url"),
         "created_at": postbox.get("created_at"),
@@ -691,10 +690,22 @@ def store_postcard_supabase(postbox_id: str, postcard: dict):
         "message": postcard.get("message", ""),
         "created_at": postcard.get("created_at"),
     }
+    if postcard.get("font_family"):
+        payload["font_family"] = postcard.get("font_family")
+    if postcard.get("font_style"):
+        payload["font_style"] = postcard.get("font_style")
     try:
         resp = requests.post(endpoint, headers=headers, json=payload, timeout=8)
         if resp.status_code in (200, 201):
             return resp.json()
+        if resp.status_code == 400 and ("font_family" in resp.text or "font_style" in resp.text):
+            fallback_payload = dict(payload)
+            fallback_payload.pop("font_family", None)
+            fallback_payload.pop("font_style", None)
+            resp_font_retry = requests.post(endpoint, headers=headers, json=fallback_payload, timeout=8)
+            if resp_font_retry.status_code in (200, 201):
+                print("ℹ️ Supabase가 글씨체 컬럼을 지원하지 않아 기본 필드로 저장했습니다.")
+                return resp_font_retry.json()
         # 외래키 부족 등으로 실패하면 한번 더 postbox upsert 시도 후 재시도
         if resp.status_code == 409:
             ensure_postbox_supabase(postbox_id)
@@ -718,6 +729,7 @@ def view_postcard(postcard_id):
     verse_ref = card.get("verse_reference") or "말씀"
     verse_text = card.get("verse_text") or ""
     message = card.get("message") or ""
+    font_family = card.get("font_family") or ""
     tpl_id_raw = card.get("template_id") or 1
     tpl_img = None
     tpl_type = card.get("template_type") or 0
@@ -728,7 +740,8 @@ def view_postcard(postcard_id):
             tpl_type = tpl_meta.get("template_type", tpl_type)
     except Exception:
         tpl_meta = None
-    template_image = tpl_img or "images/postcards/POSTCARD1.png"
+    # 파일 시스템은 대소문자 구분이 있을 수 있으니 소문자로 정규화
+    template_image = (tpl_img or "images/postcards/POSTCARD1.png").lower()
     template_type = tpl_type
     return render_template(
         'postcard_view.html',
@@ -737,6 +750,7 @@ def view_postcard(postcard_id):
         verse_reference=verse_ref,
         verse_text=verse_text,
         message=message,
+        font_family=font_family,
         template_id=tpl_id_raw,
         template_type=template_type,
         template_image=template_image,
@@ -892,12 +906,11 @@ def create_postbox():
 
     postbox_id = str(uuid.uuid4())[:8]
     base_url = request.url_root.rstrip('/')
-    postbox_path = f'/postboxes/{postbox_id}'
+    postbox_path = f'/postbox/{postbox_id}'
     original_url = f"{base_url}{postbox_path}"
     postboxes[postbox_id] = {
         'id': postbox_id,
         'name': name,
-        'nickname': name,
         'prayer_topic': prayer_topic,
         'url': postbox_path,
         'full_url': original_url,
@@ -1143,6 +1156,8 @@ def send_postcard():
         'verse_reference': data.get('verse_reference'),
         'verse_text': data.get('verse_text'),
         'message': data.get('message', ''),
+        'font_family': data.get('font_family') or '',
+        'font_style': data.get('font_style') or '',
         'created_at': datetime.now().isoformat()
     }
     
@@ -1221,6 +1236,33 @@ def send_page_write(postbox_id):
         template_type=template_type,
         template_name=template_name,
     )
+
+
+@app.route('/send/<postbox_id>/preview')
+def send_page_preview(postbox_id):
+    if postbox_id not in postboxes:
+        loaded = fetch_postbox_supabase(postbox_id)
+        if not loaded:
+            base_url = request.url_root.rstrip('/')
+            postbox_path = f"/postboxes/{postbox_id}"
+            fallback = {
+                'id': postbox_id,
+                'name': '우체통',
+                'nickname': '우체통',
+                'prayer_topic': '',
+                'url': postbox_path,
+                'full_url': f"{base_url}{postbox_path}",
+                'created_at': datetime.now().isoformat(),
+                'is_opened': False
+            }
+            postboxes[postbox_id] = fallback
+            postcards.setdefault(postbox_id, [])
+            store_postbox_supabase(fallback)
+        else:
+            postboxes[postbox_id] = loaded
+            postcards.setdefault(postbox_id, fetch_postcards_supabase(postbox_id))
+
+    return render_template('preview_postcard.html', postbox_id=postbox_id)
 
 
 def open_all_postboxes():

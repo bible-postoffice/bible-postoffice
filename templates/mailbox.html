@@ -66,6 +66,30 @@
             font-size: 12px;
             margin-left: 8px;
         }
+        @font-face {
+            font-family: 'PyeojinGothic';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2504-1@1.0/PyeojinGothic-Regular.woff2') format('woff2');
+            font-weight: 400;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'KimJeongcheolMyoungjo';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/KimjungchulMyungjo-Light.woff2') format('woff2');
+            font-weight: 300;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YesMyungjo';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Regular.woff') format('woff');
+            font-weight: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YesMyungjo';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Bold.woff') format('woff');
+            font-weight: 700;
+            font-display: swap;
+        }
         .verse-reference {
             color: #667eea;
             font-weight: bold;
@@ -116,15 +140,16 @@
             {% for postcard in postcards %}
             {% set tpl_id = postcard.template_id or 'default' %}
             {% set tpl_type = postcard.template_type or '엽서' %}
+            {% set font_family = postcard.font_family or postcard.font_style %}
             <div class="postcard template-{{ tpl_id }}">
                 <div class="template-badge">{{ tpl_type }} | {{ postcard.template_name or tpl_id }}</div>
                 {% if postcard.is_anonymous %}
                 <span class="anon-badge">익명</span>
                 {% endif %}
                 <div class="verse-reference">📖 {{ postcard.verse_reference }}</div>
-                <div class="verse-text">{{ postcard.verse_text }}</div>
+                <div class="verse-text" style="{{ 'font-family: ' ~ font_family ~ ';' if font_family else '' }}">{{ postcard.verse_text }}</div>
                 {% if postcard.message %}
-                <div class="message">
+                <div class="message" style="{{ 'font-family: ' ~ font_family ~ ';' if font_family else '' }}">
                     <strong>💌 편지:</strong><br>
                     {{ postcard.message }}
                 </div>

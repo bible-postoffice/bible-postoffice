@@ -5,16 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>엽서 보기</title>
     <style>
+        @font-face {
+            font-family: 'PyeojinGothic';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2504-1@1.0/PyeojinGothic-Regular.woff2') format('woff2');
+            font-weight: 400;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'KimJeongcheolMyoungjo';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/KimjungchulMyungjo-Light.woff2') format('woff2');
+            font-weight: 300;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YesMyungjo';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Regular.woff') format('woff');
+            font-weight: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'YesMyungjo';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Bold.woff') format('woff');
+            font-weight: 700;
+            font-display: swap;
+        }
         :root {
             --ink: #0f172a;
             --muted: #475569;
+            --user-font: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             background: #f5f7fb;
             color: var(--ink);
-            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+            font-family: var(--user-font);
             padding: 18px;
         }
         .wrap {
@@ -58,6 +83,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            font-family: var(--user-font);
         }
         .verse-box .text {
             flex: 1;
@@ -89,6 +115,7 @@
             line-height: 1.5;
             font-weight: 600;
             overflow: hidden;
+            font-family: var(--user-font);
         }
         
         /* 발신자 영역 (검정색) */
@@ -100,6 +127,7 @@
             color: var(--ink);
             font-weight: 700;
             overflow: hidden;
+            font-family: var(--user-font);
         }
         
         /* 반응형 조정 */
@@ -145,6 +173,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
+    <script>
+        (function() {
+            const fontFamily = {{ font_family|tojson }};
+            if (fontFamily) {
+                document.documentElement.style.setProperty('--user-font', fontFamily);
+            }
+        })();
+    </script>
     <div class="wrap">
         <div class="card" id="postcard">
             <div class="overlay">
@@ -260,11 +296,11 @@
             // 발신자 영역
             if (senderBox) {
                 if (isMobile) {
-                    fitTextToContainer(senderBox, 5, 13);
+                    fitTextToContainer(senderBox, 5, 10);
                 } else if (isTablet) {
-                    fitTextToContainer(senderBox, 7, 17);
+                    fitTextToContainer(senderBox, 7, 15);
                 } else {
-                    fitTextToContainer(senderBox, 11, 25);
+                    fitTextToContainer(senderBox, 11, 20);
                 }
             }
         }
