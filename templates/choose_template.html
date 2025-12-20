@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엽서/편지지 선택</title>
+    <style>
+        :root {
+            --purple: #6b4de6;
+            --indigo: #4338ca;
+            --gray: #111827;
+            --muted: #6b7280;
+            --bg: linear-gradient(135deg, #eef2ff 0%, #e0f2fe 100%);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Noto Sans KR', 'Pretendard', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--gray);
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 32px 20px 40px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(67, 56, 202, 0.15);
+            padding: 26px;
+            position: relative;
+            overflow: hidden;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--indigo);
+        }
+        .subtitle {
+            color: var(--muted);
+            margin-top: 6px;
+            font-size: 14px;
+        }
+        .steps {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-weight: 700;
+            color: var(--muted);
+        }
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #d9d6ff;
+        }
+        .step-dot.active {
+            background: var(--indigo);
+            box-shadow: 0 0 0 6px rgba(67, 56, 202, 0.18);
+        }
+        .slider-wrap {
+            position: relative;
+            margin-top: 22px;
+        }
+        .slider {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(260px, 1fr);
+            gap: 16px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 10px 6px 10px 6px;
+        }
+        .slider::-webkit-scrollbar { height: 10px; }
+        .slider::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 999px;
+        }
+        .template-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 14px;
+            background: white;
+            scroll-snap-align: center;
+            min-height: 210px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+        }
+        .template-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--purple);
+            box-shadow: 0 15px 25px rgba(107, 77, 230, 0.15);
+        }
+        .template-card.selected {
+            border-color: var(--purple);
+            box-shadow: 0 15px 25px rgba(107, 77, 230, 0.22);
+        }
+        .preview {
+            height: 110px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #e5e7eb;
+        }
+        .preview.postcard-sunset { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+        .preview.postcard-ocean { background: linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%); }
+        .preview.postcard-midnight { background: linear-gradient(135deg, #141e30 0%, #243b55 100%); }
+        .preview.stationery-cream { background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%); }
+        .preview.stationery-olive { background: linear-gradient(135deg, #d2fbd4 0%, #88c397 100%); }
+        .preview.stationery-lilac { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
+        .label {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            background: #eef2ff;
+            color: var(--indigo);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .name { font-weight: 800; font-size: 16px; margin-bottom: 6px; }
+        .desc { color: var(--muted); font-size: 13px; line-height: 1.5; }
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+            color: var(--indigo);
+            font-weight: 800;
+            cursor: pointer;
+            display: none;
+        }
+        .nav-btn.show { display: inline-flex; align-items: center; justify-content: center; }
+        .nav-btn:active { transform: translateY(-50%) scale(0.98); }
+        .nav-prev { left: -14px; }
+        .nav-next { right: -14px; }
+        .cta {
+            margin-top: 22px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .primary {
+            flex: 1 1 220px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6b4de6 0%, #4338ca 100%);
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 15px 30px rgba(67, 56, 202, 0.25);
+        }
+        .primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .secondary {
+            flex: 1 1 150px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            color: var(--gray);
+            font-weight: 700;
+            cursor: pointer;
+        }
+        @media (max-width: 640px) {
+            .card { padding: 18px; }
+            .slider { grid-auto-columns: 80%; padding-right: 20px; }
+            .nav-btn { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div>
+                    <h1>엽서/편지지 선택</h1>
+                    <div class="subtitle">마음에 드는 스타일을 고르고 다음 단계에서 구절과 편지를 작성하세요.</div>
+                </div>
+                <div class="steps">
+                    <div class="step-dot active"></div>
+                    <span>선택</span>
+                    <div class="step-dot"></div>
+                    <span>작성</span>
+                </div>
+            </div>
+
+            <div class="slider-wrap">
+                <button class="nav-btn nav-prev" id="nav-prev">&#x2039;</button>
+                <div class="slider" id="slider"></div>
+                <button class="nav-btn nav-next" id="nav-next">&#x203a;</button>
+            </div>
+
+            <div class="cta">
+                <button class="primary" id="next-btn" disabled>선택한 템플릿으로 편지 쓰기</button>
+                <button class="secondary" onclick="window.location.href='/'">홈으로</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const mailboxId = "{{ mailbox_id }}";
+        const sliderEl = document.getElementById('slider');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('nav-prev');
+        const nextNavBtn = document.getElementById('nav-next');
+        const templates = [
+            { id: 'postcard-sunset', name: '노을 엽서', type: '엽서', desc: '따뜻한 빛감의 노을 엽서', previewClass: 'postcard-sunset' },
+            { id: 'postcard-ocean', name: '바다 엽서', type: '엽서', desc: '시원한 파도 느낌의 엽서', previewClass: 'postcard-ocean' },
+            { id: 'postcard-midnight', name: '밤하늘 엽서', type: '엽서', desc: '고요한 밤하늘 톤', previewClass: 'postcard-midnight' },
+            { id: 'stationery-cream', name: '크림 편지지', type: '편지지', desc: '차분한 크림 색감', previewClass: 'stationery-cream' },
+            { id: 'stationery-olive', name: '올리브 편지지', type: '편지지', desc: '잔잔한 올리브 톤', previewClass: 'stationery-olive' },
+            { id: 'stationery-lilac', name: '라일락 편지지', type: '편지지', desc: '라일락 그라데이션', previewClass: 'stationery-lilac' },
+        ];
+        let selected = null;
+
+        function renderTemplates() {
+            templates.forEach(tpl => {
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                card.innerHTML = `
+                    <div class="preview ${tpl.previewClass}"></div>
+                    <span class="label">${tpl.type}</span>
+                    <div class="name">${tpl.name}</div>
+                    <div class="desc">${tpl.desc}</div>
+                `;
+                card.onclick = () => selectTemplate(tpl, card);
+                sliderEl.appendChild(card);
+            });
+            updateNavButtons();
+        }
+
+        function selectTemplate(tpl, card) {
+            document.querySelectorAll('.template-card').forEach(el => el.classList.remove('selected'));
+            card.classList.add('selected');
+            selected = tpl;
+            nextBtn.disabled = false;
+        }
+
+        function updateNavButtons() {
+            const canScroll = sliderEl.scrollWidth > sliderEl.clientWidth + 40;
+            if (canScroll && window.innerWidth > 640) {
+                prevBtn.classList.add('show');
+                nextNavBtn.classList.add('show');
+            } else {
+                prevBtn.classList.remove('show');
+                nextNavBtn.classList.remove('show');
+            }
+        }
+
+        function scrollSlider(direction) {
+            const amount = sliderEl.clientWidth * 0.8;
+            sliderEl.scrollBy({ left: direction * amount, behavior: 'smooth' });
+        }
+
+        prevBtn.onclick = () => scrollSlider(-1);
+        nextNavBtn.onclick = () => scrollSlider(1);
+        window.addEventListener('resize', updateNavButtons);
+
+        nextBtn.onclick = () => {
+            if (!selected) return;
+            const url = new URL(window.location.origin + `/send/${mailboxId}/write`);
+            url.searchParams.set('template_id', selected.id);
+            url.searchParams.set('template_type', selected.type);
+            url.searchParams.set('template_name', selected.name);
+            window.location.href = url.toString();
+        };
+
+        renderTemplates();
+    </script>
+</body>
+</html>

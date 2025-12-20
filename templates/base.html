@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>말씀우체통</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Tailwind 설정 (애니메이션 및 다크모드 필수 설정)
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -34,38 +34,57 @@
         }
     </script>
     <style type="text/tailwindcss">
-        /* 폰트 및 기본 배경 설정 */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap');
         
         @layer base {
             .font-serif { font-family: 'Noto Serif KR', serif; }
-        }
-
-        body {
-            @apply transition-colors duration-500 min-h-screen flex flex-col;
+            /* 텍스트가 안 보이는 현상을 방지하기 위해 기본 텍스트 색상을 강제 지정 */
+            body {
+                @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-500 min-h-screen flex flex-col;
+            }
         }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+<body class="font-serif">
 
-    <nav class="fixed top-6 right-6 z-50">
-        <button id="theme-toggle" class="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-lg border border-slate-200 dark:border-slate-700 transition-all hover:scale-110">
-            <span id="theme-toggle-light-icon" class="hidden dark:block">☀️</span>
-            <span id="theme-toggle-dark-icon" class="block dark:hidden">🌙</span>
+    <nav class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 py-4 bg-transparent border-none">
+        <a href="/" class="flex items-center gap-2 group">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+                <span class="text-white text-xl">✉️</span>
+            </div>
+            <span class="text-xl font-bold tracking-tight text-slate-800 dark:text-white drop-shadow-sm">
+                말씀<span class="text-blue-600">우체통</span>
+            </span>
+        </a>
+
+        <button id="theme-toggle" class="p-2.5 rounded-xl transition-all hover:bg-slate-200/50 dark:hover:bg-slate-800/50 active:scale-95">
+            <span id="theme-toggle-light-icon" class="hidden dark:block text-xl">☀️</span>
+            <span id="theme-toggle-dark-icon" class="block dark:hidden text-xl text-slate-700">🌙</span>
         </button>
     </nav>
 
-    <main class="flex-1 flex flex-col">
-        {% block content %}{% endblock %}
+    <main class="flex-1 flex flex-col pt-24 px-4">
+        {% block content %}
+        <div class="max-w-2xl mx-auto w-full p-8 rounded-3xl bg-white dark:bg-slate-900 shadow-xl border border-slate-100 dark:border-slate-800">
+            <h1 class="text-3xl font-bold mb-4">반갑습니다!</h1>
+            <p class="leading-relaxed opacity-90">
+                라이트모드에서는 어두운 글씨로, 다크모드에서는 밝은 글씨로 자동 전환됩니다. 
+                배경색과 글자색의 대비를 높여 시인성을 확보했습니다.
+            </p>
+        </div>
+        {% endblock %}
     </main>
 
     <script>
         const themeToggleBtn = document.getElementById('theme-toggle');
-        // 초기 테마 로드
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
+        
+        // 초기 테마 설정 확인 함수
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         }
 
         themeToggleBtn.addEventListener('click', function() {
@@ -77,6 +96,8 @@
                 localStorage.theme = 'dark';
             }
         });
+
+        initTheme();
     </script>
 </body>
 </html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ (mailbox.name or mailbox.nickname) }}님의 우체통</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .postcard {
+            background: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+            border: 2px solid transparent;
+            overflow: hidden;
+        }
+        .template-postcard-sunset { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+        .template-postcard-ocean { background: linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%); }
+        .template-postcard-midnight { background: linear-gradient(135deg, #141e30 0%, #243b55 100%); color: #f8fafc; }
+        .template-stationery-cream { background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%); }
+        .template-stationery-olive { background: linear-gradient(135deg, #d2fbd4 0%, #88c397 100%); }
+        .template-stationery-lilac { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
+        .postcard::before {
+            content: "";
+            position: absolute;
+            inset: 12px;
+            border-radius: 12px;
+            background: white;
+            opacity: 0.9;
+            z-index: 0;
+        }
+        .postcard > * { position: relative; z-index: 1; }
+        .template-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.08);
+            color: #111827;
+            font-weight: 700;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .anon-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(67, 56, 202, 0.12);
+            color: #312e81;
+            font-weight: 700;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        .verse-reference {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .template-postcard-midnight .verse-reference {
+            color: #c7d2fe;
+        }
+        .verse-text {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+        }
+        .template-postcard-midnight .verse-text {
+            background: rgba(255,255,255,0.08);
+            color: #e5e7eb;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff9e6;
+            border-radius: 10px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% set display_name = mailbox.name or mailbox.nickname %}
+        <h1>🎉 {{ display_name }}님에게 온 엽서들</h1>
+
+        {% if mailbox.prayer_topic %}
+        <div class="postcard" style="background: #eef2ff;">
+            <div class="verse-reference">🙏 함께 기도해요</div>
+            <div class="verse-text" style="background: white;">{{ mailbox.prayer_topic }}</div>
+        </div>
+        {% endif %}
+        
+        {% if postcards %}
+            {% for postcard in postcards %}
+            {% set tpl_id = postcard.template_id or 'default' %}
+            {% set tpl_type = postcard.template_type or '엽서' %}
+            <div class="postcard template-{{ tpl_id }}">
+                <div class="template-badge">{{ tpl_type }} | {{ postcard.template_name or tpl_id }}</div>
+                {% if postcard.is_anonymous %}
+                <span class="anon-badge">익명</span>
+                {% endif %}
+                <div class="verse-reference">📖 {{ postcard.verse_reference }}</div>
+                <div class="verse-text">{{ postcard.verse_text }}</div>
+                {% if postcard.message %}
+                <div class="message">
+                    <strong>💌 편지:</strong><br>
+                    {{ postcard.message }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <h2>📭 아직 받은 엽서가 없습니다</h2>
+                <p>친구들에게 링크를 공유해보세요!</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
