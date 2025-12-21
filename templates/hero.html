@@ -16,7 +16,7 @@
         <!-- 우체통 이미지 -->
         <div class="relative mb-12 animate-float">
             <div class="w-48 h-48 mx-auto relative flex items-center justify-center">
-                <img src="/static/images/red_postbox.png" 
+                <img src="{{ url_for('static', filename='images/red_postbox.png') }}" 
                     alt="빨간 우체통" 
                     class="w-full h-full object-contain drop-shadow-2xl">
                 
@@ -27,12 +27,13 @@
         </div>
 
         <h1 class="text-4xl sm:text-5xl font-bold mb-6 font-serif tracking-tight text-slate-900 dark:text-white transition-colors">
+            <img src=""></img>
             말씀우체통
         </h1>
 
         <div class="space-y-1 mb-10">
-            <p class="text-lg text-slate-600 dark:text-slate-300 transition-colors">매일 당신의 마음에 닿는</p>
-            <p class="text-xl text-primary dark:text-accent font-bold transition-colors">하나님의 편지를 받아보세요</p>
+            <p class="text-lg text-slate-600 dark:text-slate-300 transition-colors">나를 생각하는 사람들이 보내주는</p>
+            <p class="text-xl text-primary dark:text-accent font-bold transition-colors">한 해를 함께할 말씀을 받아보세요</p>
         </div>
 
         <div class="px-8 py-6 bg-white dark:bg-white/10 backdrop-blur-md rounded-2xl border border-slate-200 dark:border-white/20 shadow-xl dark:shadow-2xl hover:scale-105 transition-all duration-500 cursor-default">
@@ -43,7 +44,7 @@
         </div>
 
         <div class="mt-8 flex flex-col gap-3 w-full max-w-[280px]">
-            <button onclick="signInWithGoogle" class="flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md group">
+            <button onclick="signInWithGoogle()" class="flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md group">
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -100,45 +101,73 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const mySupabase = supabase.createClient('https://sbuzrogusicxuvgwpqzw.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNidXpyb2d1c2ljeHV2Z3dwcXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NDI5MDAsImV4cCI6MjA4MTMxODkwMH0.IakZnbVmubrgjVSmCLc7aFU6OQKzF8P3esxpsl4geY8');
+    const SUPABASE_URL = "{{ url }}";
+    const SUPABASE_KEY = "{{ key }}";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 2. 카카오 로그인 함수 (async 필수!)
-async function signInWithKakao() {
-    const { error } = await mySupabase.auth.signInWithOAuth({
-        provider: 'kakao',
-        options: {
-            redirectTo: window.location.origin,
-            // 닉네임 등을 요청하지 않도록 스코프를 명시 (필요한 경우만 사용)
-            // 보통 카카오에서 '사용안함' 처리하면 이메일만 넘어오게 됩니다.
-            queryParams: {
-                scope: 'account_email' 
+    // 1. 카카오 로그인 실행
+    async function signInWithKakao() {
+        // 세션 중복 체크 방지용 세션스토리지 초기화
+        sessionStorage.removeItem('authChecked');
+
+        await supabaseClient.auth.signInWithOAuth({
+            provider: 'kakao',
+            options: {
+                redirectTo: window.location.origin,
+                // 테스트용
+                // 카카오 로그인 화면(동의 화면)을 무조건 다시 띄우는 옵션
+                // queryParams: {
+                //     prompt: 'select_account'
+                // }
+            }
+        });
+        if (error) console.error("로그인 시도 에러:", error.message);
+    }
+
+    // 2. 인증 상태 변경 감지 (가장 중요!)
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        console.log("현재 인증 이벤트:", event);
+
+        // SIGNED_IN 또는 INITIAL_SESSION일 때 세션이 있으면 실행
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+
+            // 락(Lock) 확인: 이미 체크 중이라면 중단
+            if (sessionStorage.getItem('authChecked')) return;
+
+            console.log("로그인 성공! 서버 확인 시작:", session.user.email);
+            sessionStorage.setItem('authChecked', 'true');
+
+            try {
+                const response = await fetch('/auth/check-and-save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: session.access_token,
+                        email: session.user.email
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 서버가 보낸 status에 따라 로그를 찍어주면 디버깅이 편해요.
+                    if (result.status === "existing_user") {
+                        console.log("기존 우체통 발견! 이동합니다.");
+                    } else {
+                        console.log("우체통 미생성 유저. 생성 페이지로 이동합니다.");
+                    }
+
+                    // 서버가 보내준 URL로 리다이렉트
+                    window.location.href = result.redirect_url;
+                } else {
+                    // 서버 처리 실패 시 락을 해제하여 재시도 가능하게 함
+                    sessionStorage.removeItem('authChecked');
+                    alert("서버 통신 실패: " + result.message);
+                }
+            } catch (err) {
+                sessionStorage.removeItem('authChecked');
+                console.error("네트워크 오류:", err);
             }
         }
     });
-    if (error) console.error(error.message);
-}
-
-// 3. 상태 감지 및 Flask 서버 통신
-mySupabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-        // 1. 오직 이메일 정보만 추출
-        const userEmail = session.user.email;
-
-        // 2. Flask 서버로 이메일만 전송
-        const response = await fetch('/auth/check-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: userEmail }) // 이메일만 담기
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            window.location.href = result.redirect_url;
-        } else {
-            alert(result.message);
-            await mySupabase.auth.signOut();
-        }
-    }
-});
 </script>

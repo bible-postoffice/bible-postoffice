@@ -1,59 +1,355 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="flex-1 flex items-center justify-center px-6 py-12">
-    <div class="w-full max-w-md animate-fade-in">
-        
-        <div class="text-center mb-10">
-            <div class="inline-block p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl mb-4">
-                <span class="text-3xl">📮</span>
-            </div>
-            <h2 class="text-2xl font-bold font-serif text-slate-900 dark:text-white">우체통 만들기</h2>
-            <p class="text-slate-500 dark:text-slate-400 mt-2">{{ user_name }}님의 소중한 말씀을 담을 공간입니다.</p>
-        </div>
-
-        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-700">
-            <form id="mailbox-form" class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 ml-1">우체통 이름</label>
-                    <input type="text" id="mailbox-name" 
-                        class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white"
-                        value="{{ user_name }}님의 우체통" 
-                        placeholder="우체통 이름을 정해주세요">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 ml-1">나에게 하고 싶은 한 마디</label>
-                    <textarea id="prayer-topic" rows="3"
-                        class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white resize-none"
-                        placeholder="올해 나에게 주는 응원의 메시지나 기도제목을 적어주세요."></textarea>
-                </div>
-
-                <button type="button" onclick="createMailbox()"
-                    class="w-full py-4 bg-primary dark:bg-accent hover:opacity-90 text-white dark:text-slate-900 font-bold rounded-xl shadow-lg transition-all transform active:scale-[0.98]">
-                    우체통 생성하기
-                </button>
-            </form>
+<div class="flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-2xl mx-auto w-full">
+    <div id="intro-layer"
+        class="fixed inset-0 z-50 bg-slate-50 dark:bg-slate-900 flex items-center justify-center transition-opacity duration-300">
+        <div class="relative">
+            <img id="intro-postbox" src="/static/images/red_postbox.png"
+                class="w-64 h-64 object-contain animate-postbox-entrance" alt="Intro Postbox">
         </div>
     </div>
+
+    <div id="progress-container" class="hidden w-full max-w-md bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full mb-16 overflow-hidden shadow-sm">
+        <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-400 h-full transition-all duration-700 ease-out"
+            style="width: 25%"></div>
+    </div>
+
+    <section id="step-1" class="w-full animate-fade-in text-center max-w-md mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold mb-3 text-slate-800 dark:text-white tracking-tight">우체통의 이름을 정해주세요</h2>
+        <p class="text-slate-500 dark:text-slate-400 mb-12 text-sm md:text-base">친구들이 이 이름을 보고 편지를 보낼 거예요.</p>
+
+        <div class="space-y-8">
+            <div class="relative group">
+                <input type="text" id="postbox-name"
+                    class="w-full px-4 py-5 text-center text-xl font-bold bg-transparent border-b-2 border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:outline-none text-slate-800 dark:text-white transition-all placeholder:text-slate-400"
+                    placeholder="로딩 중...">
+            </div>
+
+            <div class="text-left">
+                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 ml-1 uppercase tracking-wider">나에게 하고 싶은 한 마디</label>
+                <textarea id="prayer-topic" rows="4"
+                    class="w-full px-5 py-4 bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-slate-800 dark:text-white resize-none shadow-sm"
+                    placeholder="올해 나에게 주는 응원의 메시지나 기도제목을 적어주세요."></textarea>
+            </div>
+        </div>
+
+        <button onclick="nextStep(2)" 
+            class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl mt-16 font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98]">
+            다음 단계로
+        </button>
+    </section>
+
+    <section id="step-2" class="w-full hidden animate-fade-in max-w-md mx-auto">
+        <h2 class="text-2xl font-bold mb-2 text-slate-800 dark:text-white text-center">메시지 공개 설정</h2>
+        <p class="text-slate-500 dark:text-slate-400 mb-10 text-center">도착한 메시지를 다른 사람에게 공개할까요?</p>
+
+        <div class="space-y-4">
+            <label class="flex items-center p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-blue-500 cursor-pointer shadow-sm transition-all">
+                <input type="radio" name="privacy" value="public" checked class="w-6 h-6 text-blue-500">
+                <div class="ml-4 text-left">
+                    <p class="font-bold text-slate-800 dark:text-white">모두에게 공개</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">방문자 누구나 메시지를 읽을 수 있습니다.</p>
+                </div>
+            </label>
+            <label class="flex items-center p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-transparent hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer shadow-sm transition-all">
+                <input type="radio" name="privacy" value="private" class="w-6 h-6 text-blue-500">
+                <div class="ml-4 text-left">
+                    <p class="font-bold text-slate-800 dark:text-white">나만 보기</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">우체통 주인인 본인만 확인할 수 있습니다.</p>
+                </div>
+            </label>
+        </div>
+
+        <div class="flex gap-3 mt-12">
+            <button onclick="nextStep(1)" class="flex-1 py-4 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white rounded-2xl font-bold transition-colors">이전으로</button>
+            <button onclick="nextStep(3)" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">설정 완료</button>
+        </div>
+    </section>
+
+    <section id="step-3" class="w-full hidden animate-fade-in max-w-md mx-auto text-center">
+        <h2 class="text-2xl font-bold mb-2 text-slate-800 dark:text-white">우편함 색상 선택</h2>
+        <p class="text-slate-500 dark:text-slate-400 mb-8">나만의 우편함 색상을 골라보세요.</p>
+
+        <div class="relative w-full flex items-center justify-center mb-8 h-72">
+            <img id="postbox-img" src="/static/images/postbox/yellow.png"
+                class="w-64 h-64 object-contain transition-all duration-300 transform scale-110 drop-shadow-2xl"
+                alt="Selected Postbox">
+        </div>
+
+        <div class="flex justify-center gap-5 mb-10">
+            <button onclick="changeColor('yellow')"
+                class="color-btn w-12 h-12 rounded-full bg-yellow-400 border-4 border-white shadow-md transition-transform active:scale-90"
+                data-color="yellow"></button>
+            <button onclick="changeColor('pink')"
+                class="color-btn w-12 h-12 rounded-full bg-pink-500 border-4 border-transparent shadow-lg transition-transform active:scale-90"
+                data-color="pink"></button>
+            <button onclick="changeColor('red')"
+                class="color-btn w-12 h-12 rounded-full bg-red-500 border-4 border-transparent shadow-md transition-transform active:scale-90"
+                data-color="red"></button>
+            <button onclick="changeColor('blue')"
+                class="color-btn w-12 h-12 rounded-full bg-blue-500 border-4 border-transparent shadow-md transition-transform active:scale-90"
+                data-color="blue"></button>
+            <button onclick="changeColor('green')"
+                class="color-btn w-12 h-12 rounded-full bg-green-500 border-4 border-transparent shadow-md transition-transform active:scale-90"
+                data-color="green"></button>
+        </div>
+
+        <div class="flex gap-3">
+            <button onclick="nextStep(2)"
+                class="flex-1 py-4 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white rounded-2xl font-bold transition-colors">이전으로</button>
+            <button onclick="createPostbox()"
+                class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-all">이
+                색상으로 결정하기</button>
+        </div>
+    </section>
+
+    <section id="step-4" class="w-full hidden animate-fade-in text-center max-w-md mx-auto">
+        <div class="mb-6 text-6xl animate-bounce">🎉</div>
+
+        <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center">
+            <img id="final-postbox-img" src="" class="w-48 h-48 object-contain drop-shadow-2xl" alt="Final Postbox">
+
+            <div id="summary-badge"
+                class="absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg transform rotate-12 border-2 border-white text-white">
+            </div>
+        </div>
+
+        <h2 class="text-3xl font-bold mb-2 text-slate-800 dark:text-white" id="summary-name"></h2>
+        <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm">나만의 특별한 우체통이 완성되었습니다!</p>
+
+        <div
+            class="flex items-center gap-2 p-3 bg-white dark:bg-slate-900 rounded-2xl mb-8 border-2 border-slate-200 dark:border-slate-800 shadow-inner">
+            <input id="postbox-url" type="text" readonly
+                class="flex-1 bg-transparent px-3 text-sm text-slate-700 dark:text-slate-300 font-mono outline-none"
+                value="주소를 생성 중입니다...">
+            <button onclick="copyURL()"
+                class="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-bold transition-colors active:scale-95">
+                복사
+            </button>
+        </div>
+
+        <button onclick="goToMyPostbox()"
+            class="w-full py-5 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white rounded-2xl font-bold mb-3 shadow-xl transition-all active:scale-[0.98]">
+            내 우체통으로 이동하기
+        </button>
+    </section>
 </div>
 
 <script>
-async function createMailbox() {
-    const name = document.getElementById('mailbox-name').value;
-    const prayer = document.getElementById('prayer-topic').value;
+    let selectedColor = 'yellow';
+    const SUPABASE_URL = "{{ supabase_url }}";
+    const SUPABASE_KEY = "{{ supabase_key }}";
+    let supabaseClient;
 
-    const response = await fetch('/api/create-mailbox', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name, prayer_topic: prayer })
-    });
+    // 초기화 및 세션 체크 보완
+    async function init() {
+        // 1. Supabase 클라이언트 생성
+        if (typeof supabase !== 'undefined') {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
 
-    const data = await response.json();
-    if (data.mailbox_id) {
-        // 생성 완료 후 본인의 우체통 주소로 이동하거나 모달 띄우기
-        window.location.href = `/mailbox/${data.mailbox_id}`;
+        // 2. 세션 체크를 먼저 실행 (로그인 안 되어 있으면 리다이렉트)
+        const isAuthenticated = await checkUserSession();
+
+        // 3. 인증이 확인된 경우에만 애니메이션 시작
+        if (isAuthenticated) {
+            startIntroAnimation();
+        }
+
+        // 1. Flask가 넘겨준 user_name으로 즉시 placeholder 설정
+        const userName = "{{ user_name }}"; 
+        const nameInput = document.getElementById('postbox-name');
+        if (nameInput) {
+            nameInput.placeholder = `꿈꾸는 ${userName}님의 말씀지기 우체통`;
+        }
     }
-}
+
+        // 유저 정보 UI 업데이트 함수 분리
+        function updateUserInfo(user) {
+            const nameInput = document.getElementById('postbox-name');
+            if (user && nameInput) {
+                const userName = user.user_metadata?.full_name || user.email.split('@')[0];
+                nameInput.placeholder = `꿈꾸는 ${userName}의 말씀지기 우체통`;
+                console.log("Placeholder 설정 완료:", userName);
+            }
+        }
+
+    async function checkUserSession() {
+        try {
+            // 1. 현재 즉시 세션 가져오기 시도
+            let { data: { session } } = await supabaseClient.auth.getSession();
+
+            // 2. 만약 세션이 없다면, 아주 짧은 시간(0.5초) 대기 후 다시 시도 (SDK 초기화 시간 확보)
+            if (!session) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const retry = await supabaseClient.auth.getSession();
+                session = retry.data.session;
+            }
+
+            if (!session) {
+                console.warn("세션을 찾을 수 없습니다.");
+                alert("로그인이 필요한 서비스입니다.");
+                window.location.href = "/login";
+                return false;
+            }
+
+            // 세션이 있다면 유저 정보 설정
+            const user = session.user;
+            const nameInput = document.getElementById('postbox-name');
+            if (nameInput) {
+                const userName = user.user_metadata?.full_name || user.email.split('@')[0];
+                nameInput.placeholder = `꿈꾸는 ${userName}의 말씀지기 우체통`;
+                // placeholder가 잘 안 보일 수 있으니 로그로 확인
+                console.log("Placeholder 설정 완료:", userName);
+            }
+            
+            return true;
+        } catch (e) {
+            console.error("세션 체크 에러:", e);
+            return false;
+        }
+    }
+
+    function startIntroAnimation() {
+        const introLayer = document.getElementById('intro-layer');
+        const introPostbox = document.getElementById('intro-postbox');
+        
+        setTimeout(() => {
+            if (introPostbox) {
+                introPostbox.classList.add('animate-postbox-zoom');
+            }
+            if (introLayer) introLayer.classList.add('white-out');
+
+            setTimeout(() => {
+                if (introLayer) {
+                    introLayer.style.opacity = '0';
+                    setTimeout(() => {
+                        introLayer.classList.add('hidden');
+                        document.getElementById('progress-container').classList.remove('hidden');
+                        nextStep(1);
+                    }, 500);
+                }
+            }, 1000);
+        }, 800);
+    }
+
+    function nextStep(step) {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById(`step-${step}`).classList.remove('hidden');
+        
+        const progressBar = document.getElementById('progress-bar');
+        progressBar.style.width = `${(step / 4) * 100}%`;
+
+        if (step === 4) updateSummary();
+    }
+
+    function changeColor(color) {
+        selectedColor = color;
+        document.getElementById('postbox-img').src = `/static/images/postbox/${color}.png`;
+        
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.classList.remove('border-white');
+            btn.classList.add('border-transparent');
+        });
+        event.currentTarget.classList.replace('border-transparent', 'border-white');
+    }
+
+    async function createPostbox() {
+        try {
+            // 1. 현재 로그인된 유저 가져오기
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                alert("로그인 세션이 만료되었습니다.");
+                window.location.href = "/login";
+                return;
+            }
+            // 2. privacyValue 변수를 정확하게 선언 (여기서 에러가 났을 확률이 높습니다)
+            const privacyElement = document.querySelector('input[name="privacy"]:checked');
+            const privacyValue = privacyElement ? privacyElement.value : 'public';
+
+            // 3. 서버로 보낼 데이터 구성 (0: 공개, 1: 비공개)
+            const payload = {
+                owner_id: user.id,
+                name: document.getElementById('postbox-name').value || document.getElementById('postbox-name').placeholder,
+                privacy: privacyValue === 'private' ? 1 : 0, // 'private'이면 1, 아니면 0
+                color: selectedColor,
+                prayer_topic: document.getElementById('prayer-topic').value
+            };
+
+            console.log("전송 데이터:", payload); // 디버깅용
+
+            // 4. Flask 서버 API 호출
+            const response = await fetch('/create-postbox-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // 1. 서버에서 받은 고유 경로 저장 (예: abcd-1234)
+                createdPostboxPath = result.url;
+
+                // 2. 전체 URL 구성하여 input에 넣기
+                const fullUrl = window.location.origin + "/postbox/" + createdPostboxPath;
+                document.getElementById('postbox-url').value = fullUrl;
+
+                // 3. 요약 화면 업데이트 및 이동
+                updateSummary();
+                nextStep(4);
+            } else {
+                alert("생성 실패: " + result.message);
+            }
+
+        } catch (e) {
+            console.error("createPostbox 에러 발생:", e);
+            alert("오류가 발생했습니다. 다시 시도해주세요.");
+        }
+    }
+
+    function updateSummary() {
+        const name = document.getElementById('postbox-name').value || document.getElementById('postbox-name').placeholder;
+        const privacy = document.querySelector('input[name="privacy"]:checked').value;
+        
+        document.getElementById('summary-name').innerText = name;
+        document.getElementById('final-postbox-img').src = `/static/images/postbox/${selectedColor}.png`;
+        
+        const badge = document.getElementById('summary-badge');
+        badge.innerText = privacy === 'public' ? '🔓 모두 공개' : '🔒 나만 보기';
+        badge.className = `absolute -top-2 -right-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg transform rotate-12 ${privacy === 'public' ? 'bg-green-500' : 'bg-slate-500'} text-white border-2 border-white`;
+    }
+
+    // 내 우체통으로 이동하는 함수
+    function goToMyPostbox() {
+        if (createdPostboxPath) {
+            window.location.href = "/postbox/" + createdPostboxPath;
+        } else {
+            alert("우체통 주소를 찾을 수 없습니다.");
+        }
+    }
+
+    // URL 복사 함수
+    function copyURL() {
+        const copyText = document.getElementById("postbox-url");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // 모바일 대응
+
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            alert("우체통 주소가 복사되었습니다!");
+        });
+    }
+    window.onload = init;
 </script>
+
+<style>
+    /* 애니메이션 효과 동일 */
+    .animate-postbox-zoom { animation: postbox-zoom-in 1.0s cubic-bezier(0.5, 0, 0.75, 0) forwards; }
+    @keyframes postbox-zoom-in {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(15); filter: brightness(8); opacity: 0; }
+    }
+    .white-out { background-color: white !important; }
+</style>
 {% endblock %}

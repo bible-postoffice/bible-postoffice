@@ -4,9 +4,26 @@
 <div class="flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-2xl mx-auto w-full text-center">
 
     <div class="mb-4">
-        <span id="badge" class="px-3 py-1.5 rounded-full text-xs font-bold shadow-sm 
-              {{ 'bg-green-500' if privacy == 'public' else 'bg-slate-500' }} text-white">
-            {{ '🔓 모두에게 공개' if privacy == 'public' else '🔒 나만 보기' }}
+        {# 우체통 색상별 파스텔 배지 테마 정의 #}
+        {% set badge_themes = {
+        'pink': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+        'yellow': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+        'blue': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+        'purple': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+        'green': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+        'red': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+        } %}
+
+        {# 선택된 색상이 없으면 기본적으로 slate(회색) 처리 #}
+        {% set theme = badge_themes.get(color, 'bg-slate-100 text-slate-600') %}
+
+        <span id="badge"
+            class="px-4 py-1.5 rounded-full text-xs font-bold shadow-sm {{ theme }} inline-flex items-center gap-1.5 border border-white/50 dark:border-white/10">
+            {% if privacy == 'public' %}
+            <span class="text-sm">🔓</span> 모두에게 공개
+            {% else %}
+            <span class="text-sm">🔒</span> 나만 보기
+            {% endif %}
         </span>
     </div>
 
@@ -15,7 +32,7 @@
     <div class="relative mb-10 animate-float">
         <img src="/static/images/postbox/{{ color }}.png" class="w-64 h-64 object-contain drop-shadow-2xl mx-auto">
         <div class="mt-6 text-slate-600 dark:text-slate-300">
-            현재 <span class="text-primary font-bold text-2xl">12</span>개의 편지가 담겨있어요!
+            현재 <span class="text-primary font-bold text-2xl"></span>개의 편지가 담겨있어요!
         </div>
     </div>
 
@@ -30,26 +47,31 @@
         <div class="bg-slate-100 dark:bg-slate-800 p-6 rounded-3xl border-2 border-dashed border-slate-300">
             <p class="text-sm text-slate-500 mb-3">메시지 공개까지 남은 시간</p>
             <div id="countdown" class="text-3xl font-black tracking-widest text-primary">00:00:00:00</div>
-            <p class="mt-4 text-xs text-slate-400 font-medium">편지는 1월 1일에 열어볼 수 있어요!</p>
+            <p class="mt-4 text-xs text-slate-400 font-medium">
+                {# '2026-01-01'을 '-' 기준으로 나눠서 월/일을 보여줍니다 #}
+                {% set date_parts = end_date.split('-') %}
+                편지는 {{ date_parts[1]|int }}월 {{ date_parts[2]|int }}일에 열어볼 수 있어요!
+            </p>
         </div>
         {% endif %}
 
         {% else %}
-        <button onclick="location.href='/write/{{ postbox_name }}?color={{ color }}'"
+        <button onclick="checkLoginAndWrite()"
             class="w-full py-5 bg-primary text-white rounded-2xl font-bold text-xl shadow-xl hover:scale-[1.02] transition-all">
             ✍️ 편지 남기기
         </button>
-        <p class="mt-4 text-slate-400 text-sm">익명으로 따뜻한 마음을 전달하세요.</p>
+        <p class="mt-4 text-slate-400 text-sm">소중한 사람에게 따뜻한 마음을 전달하세요.</p>
         {% endif %}
     </div>
 </div>
 
 <script>
-    // 주인이고 아직 시간이 안 지났을 때만 실행
+    // 링크 소유자이고 아직 시간이 안 지났을 때만 실행
     {% if is_owner and not is_expired %}
     function updateCountdown() {
         const now = new Date();
-        const target = new Date("2026-01-01T00:00:00"); // 테스트 시 미래 날짜로 설정
+        const endDateStr = "{{ end_date }}"; // '2026-01-01'이 들어옴
+        const target = new Date(endDateStr + "T00:00:00");
         const diff = target - now;
 
         if (diff <= 0) {
@@ -68,5 +90,24 @@
     setInterval(updateCountdown, 1000);
     updateCountdown();
     {% endif %}
+
+
+    function checkLoginAndWrite() {
+            // Jinja2 변수를 JS에서 사용
+            const isLoggedIn = {{ 'true' if is_logged_in else 'false' }}
+        };
+        const urlPath = "{{ url_path }}";
+        const color = "{{ color }}";
+
+        if (!isLoggedIn) {
+            alert("편지를 남기려면 로그인이 필요합니다.");
+            // 로그인 후 다시 이 우체통으로 돌아오도록 redirect 설정 (선택사항)
+            window.location.href = "/login";
+        } else {
+            // 로그인 되어 있으면 편지 작성 페이지(send_postcard)로 이동
+            // 쿼리 스트링으로 우체통 색상을 넘겨주면 작성 페이지 디자인을 맞출 수 있습니다.
+            window.location.href = `/send_postcard/${urlPath}?color=${color}`;
+        }
+    }
 </script>
 {% endblock %}
