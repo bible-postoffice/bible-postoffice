@@ -32,7 +32,7 @@
     <div class="relative mb-10 animate-float">
         <img src="/static/images/postbox/{{ color }}.png" class="w-64 h-64 object-contain drop-shadow-2xl mx-auto">
         <div class="mt-6 text-slate-600 dark:text-slate-300">
-            현재 <span class="text-primary font-bold text-2xl"></span>개의 편지가 담겨있어요!
+            현재 <span class="text-primary font-bold text-2xl">{{ postcard_count }}</span>개의 편지가 담겨있어요!
         </div>
     </div>
 
@@ -94,8 +94,7 @@
 
     function checkLoginAndWrite() {
             // Jinja2 변수를 JS에서 사용
-            const isLoggedIn = {{ 'true' if is_logged_in else 'false' }}
-        };
+        const isLoggedIn = "{{ 'true' if is_logged_in else 'false' }}";
         const urlPath = "{{ url_path }}";
         const color = "{{ color }}";
 
@@ -106,7 +105,7 @@
         } else {
             // 로그인 되어 있으면 편지 작성 페이지(send_postcard)로 이동
             // 쿼리 스트링으로 우체통 색상을 넘겨주면 작성 페이지 디자인을 맞출 수 있습니다.
-            window.location.href = `/send_postcard/${urlPath}?color=${color}`;
+            window.location.href = `/send_postcard/${urlPath}`;
         }
     }
 </script>

@@ -220,6 +220,13 @@ BOOK_ABBREVIATIONS = {
     "eph": "에베소서", "phil": "빌립보서", "jas": "야고보서",
 }
 
+from popular_verses import (
+    get_popularity_score,
+    extract_chapter_verse,
+    normalize_korean,
+    BOOK_NAME_MAP,
+)  # ⭐ 추가
+
 KOREAN_TO_ENGLISH_BOOK = {v: k for k, v in BOOK_NAME_MAP.items()}
 FULL_BOOK_TO_ABBREVIATIONS = {}
 for abbr, full in BOOK_ABBREVIATIONS.items():
@@ -1065,6 +1072,21 @@ def format_results(results):
     
     return formatted
 
+@app.route('/send_postcard/<url_path>')
+def render_write_page(url_path):
+    # 1. DB에서 이 주소(url_path)를 가진 우체통의 진짜 'id'를 찾습니다.
+    result = supabase.table('postboxes').select("*").eq("url", url_path).execute()
+    
+    if not result.data:
+        return "우체통을 찾을 수 없습니다.", 404
+        
+    postbox = result.data[0]
+    
+    # 2. 작성 페이지로 우체통의 진짜 ID와 이름을 넘깁니다.
+    return render_template('send_postcard.html', 
+                           postbox_id=postbox['id'],  # DB 저장 시 쓸 ID
+                           postbox_name=postbox['name'],
+                           color=postbox['color'])
 
 @app.route('/api/send-postcard', methods=['POST'])
 def send_postcard():
@@ -1324,6 +1346,16 @@ def view_postbox(url_path):
             return "우체통을 찾을 수 없습니다.", 404
 
         postbox = result.data[0] # 첫 번째 검색 결과 가져오기
+        postbox_id = postbox['id']
+
+        # 2. 해당 우체통에 담긴 편지 개수 세기 (count)
+        # .count("exact")를 사용하면 데이터 본문 대신 개수만 효율적으로 가져옵니다.
+        postcard_count_res = supabase.table('postcards') \
+            .select("*", count="exact") \
+            .eq("postbox_id", postbox_id) \
+            .execute()
+        
+        postcard_count = postcard_count_res.count if postcard_count_res.count is not None else 0
 
        # 2. 현재 접속자가 주인인지 확인 (세션 기반)
         # 세션의 이메일과 DB의 owner_id(또는 연동된 이메일)를 비교
@@ -1352,7 +1384,9 @@ def view_postbox(url_path):
         # 4. 템플릿 렌더링 (HTML에서 사용하는 변수명과 일치시킴)
         return render_template('view_postbox.html', 
                                postbox_name=postbox['name'],
+                               url_path=url_path,
                                color=postbox['color'],
+                               postcard_count=postcard_count,
                                # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
                                privacy='public' if postbox['privacy'] == 0 else 'private',
                                end_date=end_date,
@@ -1362,24 +1396,6 @@ def view_postbox(url_path):
     except Exception as e:
         print(f"Error: {e}")
         return "오류가 발생했습니다.", 500
-
-# 편지 작성
-@app.route('/send_postcard/<url_path>')
-def send_postcard(url_path):
-    # 1. 로그인 체크
-    if 'user_email' not in session:
-        return redirect('/login')
-
-    # 2. 우체통 정보 가져오기 (작성 화면 꾸미기용)
-    result = supabase.table('postboxes').select("name, color").eq("url", url_path).execute()
-    if not result.data:
-        return "존재하지 않는 우체통입니다.", 404
-
-    pb = result.data[0]
-    return render_template('send_postcard.html', 
-                           url_path=url_path, 
-                           postbox_name=pb['name'], 
-                           color=pb['color'])
 
 
 @app.route('/')
@@ -1415,19 +1431,13 @@ scheduler.add_job(
 )
 scheduler.start()
 
-
 if __name__ == '__main__':
     print("\n" + "="*50)
     print("🚀 Flask 서버 시작")
+ 
     print("✅ 인기도 필터링 활성화 (3-tier 검색)")
     ensure_reference_index()
     ensure_verse_lookup_index()
-    # 환경 감지
-    is_local = os.environ.get('RENDER') is None  # Render는 자동으로 RENDER 환경변수 설정
-    host = '127.0.0.1' if is_local else '0.0.0.0'
-    port = int(os.environ.get('PORT', 5001))
-    debug = is_local
-    
-    print(f"📍 브라우저에서 접속: http://{host}:{port}")
-    print(f"🔧 환경: {'로컬 개발' if is_local else 'Render 배포'}")
+    print("📍 브라우저에서 접속: http://127.0.0.1:5001")
     print("="*50 + "\n")
+    app.run(host='0.0.0.0', port=5001, debug=True, threaded=True)
