@@ -6,21 +6,26 @@
     <title>엽서 보내기</title>
     <style>
         body {
-            font-family: 'Noto Sans KR', sans-serif;
+            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
             padding: 30px;
-            background: #f5f5f5;
+            background: #f5f7fb;
+            color: #0f172a;
         }
         .container {
             max-width: 700px;
+            width: 100%;
             margin: 0 auto;
             background: white;
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-sizing: border-box;
         }
         h2 {
             text-align: center;
-            color: #333;
+            color: #0f172a;
+            font-family: 'Noto Serif KR', 'Pretendard', serif;
+            font-weight: 800;
         }
         .steps {
             display: flex;
@@ -38,6 +43,17 @@
             text-align: center;
             border: 1px solid #d7dcff;
         }
+        .step.active {
+            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
+            border-color: #2749d8;
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
+        }
+        .step.completed {
+            background: #e0f2fe;
+            border-color: #bfdbfe;
+            color: #2563eb;
+        }
         .step span {
             color: #6b7280;
             font-weight: 500;
@@ -47,8 +63,8 @@
         }
         .pill {
             display: inline-block;
-            background: #ecfdf3;
-            color: #166534;
+            background: rgba(16,185,129,0.12);
+            color: #0f9c68;
             padding: 6px 10px;
             border-radius: 999px;
             font-size: 12px;
@@ -58,8 +74,56 @@
         .section-title {
             font-weight: 700;
             margin: 25px 0 12px;
-            color: #1f2937;
+            color: #0f172a;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
+        .search-box .section-title {
+            display: flex;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: default;
+        }
+        .tooltip .tooltip-content {
+            position: absolute;
+            top: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            min-width: 220px;
+            max-width: 280px;
+            background: white;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 12px 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            font-size: 13px;
+            line-height: 1.5;
+            z-index: 10;
+            display: none;
+        }
+        .tooltip:hover .tooltip-content {
+            display: block;
+        }
+        .tooltip ul {
+            padding-left: 16px;
+            margin: 8px 0 0;
+        }
+        .tooltip li { margin-bottom: 6px; }
         .selected-banner {
             background: #eef2ff;
             border: 1px solid #dfe3ff;
@@ -82,6 +146,7 @@
         }
         .toggle-text { font-weight: 700; color: #111827; }
         .toggle-desc { color: #4b5563; font-size: 13px; margin-top: 4px; }
+        .toggle-row .switch { margin-left: auto; }
         .switch {
             position: relative;
             display: inline-block;
@@ -120,29 +185,98 @@
         }
         input[type="text"] {
             width: 70%;
+            max-width: 100%;
             padding: 15px;
             font-size: 16px;
             border: 2px solid #ddd;
             border-radius: 10px;
+            box-sizing: border-box;
         }
         button {
             padding: 15px 30px;
             font-size: 16px;
-            background: #667eea;
+            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
             color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
             margin: 5px;
+            max-width: 100%;
+            font-weight: 800;
+            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
         }
         button:hover {
-            background: #764ba2;
+            background: linear-gradient(135deg, #244fdd 0%, #5c8dff 100%);
+        }
+        .page-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 10px 0 4px;
+        }
+        .nav-arrow {
+            padding: 12px 14px;
+            min-width: 120px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #2563eb;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .nav-arrow.primary {
+            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
+            border: none;
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
+        }
+        .nav-arrow:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .cta-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .cta-row .btn-primary,
+        .cta-row .btn-secondary {
+            flex: 1 1 260px;
+            max-width: 100%;
+        }
+        .cta-row .btn-secondary {
+            background: #fff;
+            color: #1f2937;
+            border: 1px solid #d1d5db;
+            box-shadow: none;
+            font-weight: 700;
+        }
+        @media (max-width: 640px) {
+            .cta-row { flex-wrap: nowrap; }
+            .cta-row .btn-primary,
+            .cta-row .btn-secondary {
+                flex: 0 0 45%;
+                padding: 16px 12px;
+            }
         }
         @media (max-width: 640px) {
             body { padding: 14px; }
             .container { padding: 24px 18px; }
-            input[type="text"] { width: 100%; margin-bottom: 10px; }
-            .toggle-row { flex-direction: column; align-items: flex-start; }
+            input[type="text"] { width: 100%; max-width: 100%; margin-bottom: 10px; }
+            button { width: 100%; }
+            .toggle-row {
+                flex-direction: row;
+                align-items: center;
+                width: 100%;
+                box-sizing: border-box;
+                gap: 8px;
+            }
+            .toggle-row .switch { margin-left: auto; }
+            .toggle-desc { margin-top: 0; }
         }
         .verse-item {
             padding: 20px;
@@ -174,6 +308,13 @@
             margin: 20px 0;
             font-size: 16px;
             font-family: 'Noto Sans KR', sans-serif;
+            box-sizing: border-box;
+        }
+        .char-counter {
+            text-align: right;
+            color: #6b7280;
+            font-size: 13px;
+            margin: -4px 2px 6px;
         }
         .loading {
             text-align: center;
@@ -185,29 +326,36 @@
 <body>
     <div class="container">
         <h2>💌 성경 구절 엽서 보내기</h2>
+
         <div class="steps">
-            <div class="step">1단계: 템플릿 선택<span>엽서/편지지 고르기</span></div>
-            <div class="step">2단계: 구절 선택<span>검색 후 구절 선택</span></div>
-            <div class="step">3단계: 메시지 작성<span>전달할 마음 적기</span></div>
+            <div class="step completed">1. 템플릿<span>엽서/편지지 선택</span></div>
+            <div class="step active">2. 내용 작성<span>말씀과 편지 입력</span></div>
+            <div class="step">3. 미리보기<span>글씨체 고르고 전송</span></div>
         </div>
 
-        <div>
-            <div class="section-title">1. 선택한 템플릿</div>
-            <p style="color:#4b5563; margin-top:0;">이미 선택한 템플릿으로 진행합니다. 변경하려면 <a href="/send/{{ mailbox_id }}" style="color:#4338ca; font-weight:700;">템플릿 선택 페이지</a>로 돌아가세요.</p>
-            <div class="selected-banner" id="selected-banner">
-                <span class="pill">선택됨</span>
-                <strong id="selected-name"></strong> · <span id="selected-type" class="template-type"></span>
-            </div>
-        </div>
-        
         <div class="search-box">
-            <div class="section-title" style="margin-top:28px;">2. 성경 구절 검색 및 선택</div>
-            <input type="text" id="keyword" placeholder="키워드/구절/문구를 입력하세요 (예: 취업 응원, 사 41:10, 자기 십자가를 지고)">
+            <div class="section-title" style="margin-top:28px;">성경 구절 검색 및 선택
+                <span class="tooltip">?
+                    <div class="tooltip-content">
+                        <strong>검색 예시</strong>
+                        <ul>
+                            <li><strong>키워드:</strong> 건강, 취업응원, 가족, 사랑</li>
+                            <li><strong>구절:</strong> 예 29:11, 마태복음 10:38</li>
+                            <li><strong>문구:</strong> "내 발에 등이요" → 시편 119편 105절</li>
+                        </ul>
+                    </div>
+                </span>
+            </div>
+            <input type="text" id="keyword" placeholder="키워드/구절/문구를 입력하세요">
             <button onclick="searchVerses()">구절 찾기</button>
         </div>
         
         <div class="loading" id="loading">🔍 검색 중...</div>
         <div id="verse-results"></div>
+        <div class="page-nav" id="page-nav" style="display:none;">
+            <button id="prev-page" class="nav-arrow">이전 보기</button>
+            <button id="next-page" class="nav-arrow primary">더 보기</button>
+        </div>
         
         <div class="section-title">익명 여부</div>
         <div class="toggle-row" style="margin-bottom:18px;">
@@ -221,61 +369,135 @@
             </label>
         </div>
 
-        <div class="section-title">3. 편지 작성</div>
-        <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요"></textarea>
+        <div class="section-title">편지 작성</div>
+        <div class="char-counter" id="message-counter">0/150자</div>
+        <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요" maxlength="150"></textarea>
         
-        <div style="text-align: center;">
-            <button onclick="sendPostcard()" style="font-size: 18px; padding: 20px 50px;">엽서 보내기 🎉</button>
+        <div class="cta-row">
+            <button class="btn-primary" onclick="goPreview()">미리보기 & 글씨체 ✨</button>
+            <button class="btn-secondary" onclick="window.location.href='/send/{{ postbox_id }}'">이전</button>
         </div>
     </div>
 
     <script>
         let selectedVerse = null;
         let selectedTemplate = null;
-        const mailboxId = "{{ mailbox_id }}";
+        let lastQuery = '';
+        let currentPage = 0;
+        let totalPages = 0;
+        const postboxId = "{{ postbox_id }}";
+        const draftKey = `postcardDraft-${postboxId}`;
+        const MAX_MESSAGE_LENGTH = 150;
+        const messageInput = document.getElementById('message');
+        const messageCounter = document.getElementById('message-counter');
         const preselectedTemplate = {
             id: "{{ template_id or '' }}",
             type: "{{ template_type or '' }}",
             name: "{{ template_name or '' }}"
         };
-        const selectedBanner = document.getElementById('selected-banner');
-        const selectedNameEl = document.getElementById('selected-name');
-        const selectedTypeEl = document.getElementById('selected-type');
-        const defaultTemplate = { id: 'postcard-sunset', type: '엽서', name: '노을 엽서' };
+        const TYPE_LABEL = { 0: '엽서', 1: '편지지' };
+        const TYPE_MAP = { '엽서': 0, '편지지': 1 };
+        const templateAssets = {
+            1: "{{ url_for('static', filename='images/postcards/POSTCARD1.png') }}",
+            2: "{{ url_for('static', filename='images/postcards/POSTCARD2.png') }}",
+            3: "{{ url_for('static', filename='images/postcards/POSTCARD3.png') }}",
+            4: "{{ url_for('static', filename='images/postcards/POSTCARD4.png') }}",
+            5: "{{ url_for('static', filename='images/letters/letter1.png') }}",
+            6: "{{ url_for('static', filename='images/letters/letter2.png') }}",
+            7: "{{ url_for('static', filename='images/letters/letter3.png') }}",
+            8: "{{ url_for('static', filename='images/letters/letter4.jpg') }}",
+        };
+        const defaultTemplate = { id: 1, type: 0, name: '항공 엽서', typeLabel: '엽서' };
+        function normalizeTemplate(tpl = {}) {
+            const rawId = tpl.id;
+            let id = parseInt(String(rawId).replace(/\D+/g, ''), 10);
+            if (!id) id = 1;
+            const rawType = tpl.type;
+            let typeInt = 0;
+            if (typeof rawType === 'string') {
+                const num = parseInt(rawType, 10);
+                if (!Number.isNaN(num)) typeInt = num;
+                else typeInt = TYPE_MAP[rawType] ?? 0;
+            } else {
+                typeInt = rawType ?? 0;
+            }
+            typeInt = typeInt === 1 ? 1 : 0;
+            const typeLabel = TYPE_LABEL[typeInt] || '엽서';
+            return {
+                id,
+                type: typeInt,
+                typeLabel,
+                name: tpl.name || `템플릿 ${id}`,
+            };
+        }
+
         function setTemplateFromQuery() {
-            const tpl = preselectedTemplate.id ? preselectedTemplate : defaultTemplate;
+            const tpl = preselectedTemplate.id ? normalizeTemplate(preselectedTemplate) : defaultTemplate;
             selectedTemplate = tpl;
-            selectedNameEl.textContent = tpl.name || tpl.id;
-            selectedTypeEl.textContent = tpl.type || '엽서';
-            selectedBanner.style.display = 'block';
         }
         
+        const pageNav = document.getElementById('page-nav');
+        const prevPageBtn = document.getElementById('prev-page');
+        const nextPageBtn = document.getElementById('next-page');
+        
+        async function fetchVerses(page = 0) {
+            const response = await fetch('/api/recommend-verses', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ query: lastQuery, page })
+            });
+            return response.json();
+        }
+
         async function searchVerses() {
             const query = document.getElementById('keyword').value;
             if (!query) {
                 alert('검색어를 입력해주세요');
                 return;
             }
-            
+            lastQuery = query;
+            currentPage = 0;
             document.getElementById('loading').style.display = 'block';
             document.getElementById('verse-results').innerHTML = '';
             
             try {
-                const response = await fetch('/api/recommend-verses', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({query})
-                });
-                
-                const data = await response.json();
+                const data = await fetchVerses(currentPage);
+                totalPages = data.total_pages || (data.has_more ? currentPage + 2 : 1);
                 displayVerses(data.verses || []);
+                updatePager(data.has_more, true);
             } catch (e) {
                 alert('검색 중 오류가 발생했습니다: ' + e.message);
             }
             
             document.getElementById('loading').style.display = 'none';
         }
-        
+
+        async function goPage(delta) {
+            if (!lastQuery) return;
+            const target = currentPage + delta;
+            if (target < 0) return;
+            currentPage = target;
+            document.getElementById('loading').style.display = 'block';
+            try {
+                const data = await fetchVerses(currentPage);
+                totalPages = data.total_pages || (data.has_more ? currentPage + 2 : currentPage + 1);
+                displayVerses(data.verses || []);
+                updatePager(data.has_more, false);
+            } catch (e) {
+                alert('페이지 이동 중 오류가 발생했습니다: ' + e.message);
+            }
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function updatePager(hasMoreFlag, firstPage = false) {
+            const moreAvailable = !!hasMoreFlag;
+            const hasPrev = currentPage > 0;
+            // 첫 페이지에서는 '더 보기'만 노출, 이전 숨김
+            pageNav.style.display = (hasPrev || moreAvailable) ? 'flex' : 'none';
+            prevPageBtn.style.display = hasPrev ? 'inline-block' : 'none';
+            nextPageBtn.style.display = moreAvailable ? 'inline-block' : 'none';
+        }
+
         function displayVerses(verses) {
             const container = document.getElementById('verse-results');
             container.innerHTML = '';
@@ -285,7 +507,7 @@
                 return;
             }
             
-            verses.forEach((verse, index) => {
+            verses.forEach((verse) => {
                 const div = document.createElement('div');
                 div.className = 'verse-item';
                 div.innerHTML = `
@@ -304,51 +526,81 @@
             element.classList.add('selected');
             selectedVerse = verse;
         }
+
+        function updateMessageCounter() {
+            const length = messageInput.value.length;
+            messageCounter.textContent = `${length}/${MAX_MESSAGE_LENGTH}자`;
+        }
+
+        messageInput.addEventListener('input', () => {
+            if (messageInput.value.length > MAX_MESSAGE_LENGTH) {
+                messageInput.value = messageInput.value.slice(0, MAX_MESSAGE_LENGTH);
+            }
+            updateMessageCounter();
+        });
         
-        async function sendPostcard() {
+        function goPreview() {
             if (!selectedVerse) {
                 alert('성경 구절을 먼저 선택해주세요! 📖');
                 return;
             }
             
-            const message = document.getElementById('message').value;
-            const isAnonymous = document.getElementById('anonymous-toggle').checked;
-            
-            try {
-                const response = await fetch('/api/send-postcard', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        mailbox_id: mailboxId,
-                        template_id: selectedTemplate.id,
-                        template_type: selectedTemplate.type,
-                        template_name: selectedTemplate.name,
-                        is_anonymous: isAnonymous,
-                        verse_reference: selectedVerse.reference,
-                        verse_text: selectedVerse.text,
-                        message: message
-                    })
-                });
-                
-                if (response.ok) {
-                    alert('엽서가 성공적으로 전송되었습니다! 🎉\n2026년 1월 1일에 상대방이 확인할 수 있습니다.');
-                    window.location.href = '/';
-                } else {
-                    alert('전송 중 오류가 발생했습니다.');
-                }
-            } catch (e) {
-                alert('전송 실패: ' + e.message);
+            const message = messageInput.value;
+            if (message.length > MAX_MESSAGE_LENGTH) {
+                alert(`편지는 최대 ${MAX_MESSAGE_LENGTH}자까지 작성할 수 있어요.`);
+                return;
             }
+            const isAnonymous = document.getElementById('anonymous-toggle').checked;
+            const draft = {
+                postbox_id: postboxId,
+                template: selectedTemplate,
+                is_anonymous: isAnonymous,
+                verse: selectedVerse,
+                message
+            };
+            try {
+                sessionStorage.setItem(draftKey, JSON.stringify(draft));
+            } catch (e) {
+                console.warn('draft save failed', e);
+            }
+            window.location.href = `/send/${postboxId}/preview`;
         }
         
         // Enter 키로 검색
         document.getElementById('keyword').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 searchVerses();
             }
         });
+        prevPageBtn.addEventListener('click', () => goPage(-1));
+        nextPageBtn.addEventListener('click', () => goPage(1));
 
         setTemplateFromQuery();
+
+        (function restoreDraft() {
+            try {
+                const raw = sessionStorage.getItem(draftKey);
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                if (saved.message) {
+                    messageInput.value = saved.message.slice(0, MAX_MESSAGE_LENGTH);
+                }
+                if (saved.is_anonymous) {
+                    document.getElementById('anonymous-toggle').checked = true;
+                }
+                if (saved.template) {
+                    selectedTemplate = normalizeTemplate(saved.template);
+                }
+                if (saved.verse) {
+                    selectedVerse = saved.verse;
+                }
+                updateMessageCounter();
+            } catch (e) {
+                console.warn('draft restore failed', e);
+            }
+        })();
+        updateMessageCounter();
     </script>
 </body>
 </html>

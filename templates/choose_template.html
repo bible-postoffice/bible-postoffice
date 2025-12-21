@@ -6,287 +6,447 @@
     <title>엽서/편지지 선택</title>
     <style>
         :root {
-            --purple: #6b4de6;
-            --indigo: #4338ca;
-            --gray: #111827;
+            --primary: #3b82f6;
+            --primary-strong: #2563eb;
+            --accent: #10b981;
+            --ink: #0f172a;
+            --frame: #38bdf8;
+            --frame-strong: #0ea5e9;
             --muted: #6b7280;
-            --bg: linear-gradient(135deg, #eef2ff 0%, #e0f2fe 100%);
+            --panel: #ffffff;
+            --bg: #f5f7fb;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            font-family: 'Noto Sans KR', 'Pretendard', system-ui, -apple-system, sans-serif;
+            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
             background: var(--bg);
-            color: var(--gray);
+            color: var(--ink);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .container {
-            max-width: 960px;
+        .shell {
+            max-width: 1180px;
+            width: 100%;
             margin: 0 auto;
             padding: 32px 20px 40px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            color: var(--ink);
         }
         .card {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(67, 56, 202, 0.15);
-            padding: 26px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 24px;
+            padding: 28px 24px 30px;
+            box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
             position: relative;
             overflow: hidden;
         }
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            gap: 16px;
             flex-wrap: wrap;
-            gap: 12px;
         }
         h1 {
             margin: 0;
-            font-size: 24px;
-            color: var(--indigo);
+            font-size: 30px;
+            letter-spacing: -0.03em;
+            font-family: 'Noto Serif KR', 'Pretendard', system-ui, -apple-system, sans-serif;
         }
         .subtitle {
-            color: var(--muted);
-            margin-top: 6px;
-            font-size: 14px;
+            color: #4b5563;
+            margin-top: 8px;
+            font-size: 16px;
         }
-        .steps {
+        .step {
             display: flex;
-            gap: 8px;
             align-items: center;
+            gap: 8px;
             font-weight: 700;
+            color: #475569;
+        }
+        .step span {
+            padding: 6px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .step .current {
+            background: rgba(59,130,246,0.14);
+            border-color: rgba(59,130,246,0.35);
+            color: #1d4ed8;
+        }
+        .toggle-bar {
+            margin-top: 18px;
+            display: flex;
+            justify-content: center;
+        }
+        .toggle {
+            position: relative;
+            background: #f1f5f9;
+            border: 1px solid #dfe3ea;
+            border-radius: 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 270px;
+            overflow: hidden;
+        }
+        .toggle button {
+            position: relative;
+            padding: 12px 0;
+            font-size: 15px;
+            font-weight: 800;
+            color: #475569;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .toggle .thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: calc(50% - 6px);
+            height: calc(100% - 6px);
+            background: linear-gradient(135deg, #3b82f6 0%, #5c9bff 100%);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(59,130,246,0.3);
+            transition: transform 0.2s ease;
+        }
+        .stage {
+            position: relative;
+            margin-top: 20px;
+            background: #f8fafc;
+            border: 1px dashed #d0dbe8;
+            border-radius: 20px;
+            padding: 18px 16px;
+            display: grid;
+            place-items: center;
+            flex: 1;
+            min-height: 320px;
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+        .frame {
+            position: relative;
+            width: min(90vw, 820px);
+            border: 2px solid var(--frame-strong);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: none;
+            transition: width 0.2s ease, height 0.2s ease;
+        }
+        .frame.landscape {
+            aspect-ratio: 3 / 2;
+            height: clamp(320px, 52vh, 520px);
+        }
+        .frame.portrait {
+            aspect-ratio: 2 / 3;
+            height: clamp(360px, 64vh, 680px);
+        }
+        .preview-large {
+            position: absolute;
+            inset: 0;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: background 0.25s ease;
+        }
+        .preview-large::after { display: none; }
+        .label {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.85);
+            color: #0f172a;
+            font-weight: 800;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(15,23,42,0.08);
+        }
+        .meta {
+            position: absolute;
+            left: 16px;
+            right: 16px;
+            bottom: 16px;
+            color: #e2e8f0;
+        }
+        .name {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+        .desc {
+            color: #475569;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+        .counter {
+            font-size: 13px;
             color: var(--muted);
         }
-        .step-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #d9d6ff;
-        }
-        .step-dot.active {
-            background: var(--indigo);
-            box-shadow: 0 0 0 6px rgba(67, 56, 202, 0.18);
-        }
-        .slider-wrap {
-            position: relative;
-            margin-top: 22px;
-        }
-        .slider {
-            display: grid;
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(260px, 1fr);
-            gap: 16px;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            padding: 10px 6px 10px 6px;
-        }
-        .slider::-webkit-scrollbar { height: 10px; }
-        .slider::-webkit-scrollbar-thumb {
-            background: #d1d5db;
-            border-radius: 999px;
-        }
-        .template-card {
-            border: 2px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 14px;
-            background: white;
-            scroll-snap-align: center;
-            min-height: 210px;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.2s ease;
-        }
-        .template-card:hover {
-            transform: translateY(-3px);
-            border-color: var(--purple);
-            box-shadow: 0 15px 25px rgba(107, 77, 230, 0.15);
-        }
-        .template-card.selected {
-            border-color: var(--purple);
-            box-shadow: 0 15px 25px rgba(107, 77, 230, 0.22);
-        }
-        .preview {
-            height: 110px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            background-size: cover;
-            background-position: center;
-            border: 1px solid #e5e7eb;
-        }
-        .preview.postcard-sunset { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
-        .preview.postcard-ocean { background: linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%); }
-        .preview.postcard-midnight { background: linear-gradient(135deg, #141e30 0%, #243b55 100%); }
-        .preview.stationery-cream { background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%); }
-        .preview.stationery-olive { background: linear-gradient(135deg, #d2fbd4 0%, #88c397 100%); }
-        .preview.stationery-lilac { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
-        .label {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-weight: 700;
-            background: #eef2ff;
-            color: var(--indigo);
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-        .name { font-weight: 800; font-size: 16px; margin-bottom: 6px; }
-        .desc { color: var(--muted); font-size: 13px; line-height: 1.5; }
-        .nav-btn {
+        .arrow {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            width: 42px;
-            height: 42px;
+            width: 58px;
+            height: 58px;
             border-radius: 50%;
-            border: none;
-            background: white;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
-            color: var(--indigo);
-            font-weight: 800;
+            border: 2px solid #d0dbe8;
+            background: #fff;
+            color: #2563eb;
+            font-size: 26px;
+            font-weight: 900;
             cursor: pointer;
-            display: none;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 15px 30px rgba(37,99,235,0.18);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
         }
-        .nav-btn.show { display: inline-flex; align-items: center; justify-content: center; }
-        .nav-btn:active { transform: translateY(-50%) scale(0.98); }
-        .nav-prev { left: -14px; }
-        .nav-next { right: -14px; }
-        .cta {
-            margin-top: 22px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+        .arrow:hover { transform: translateY(-50%) scale(1.02); }
+        .arrow:active { transform: translateY(-50%) scale(0.98); }
+        .arrow.left { left: 12px; }
+        .arrow.right { right: 12px; }
+        .actions {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
         }
-        .primary {
-            flex: 1 1 220px;
+        .btn {
             padding: 14px 18px;
             border-radius: 12px;
-            background: linear-gradient(135deg, #6b4de6 0%, #4338ca 100%);
-            color: white;
-            border: none;
-            font-size: 16px;
+            border: 2px solid var(--primary-strong);
+            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
+            color: #f8fafc;
             font-weight: 800;
+            font-size: 15px;
             cursor: pointer;
-            box-shadow: 0 15px 30px rgba(67, 56, 202, 0.25);
+            box-shadow: 0 15px 30px rgba(59,130,246,0.3);
         }
-        .primary:disabled {
-            opacity: 0.5;
+        .btn:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
             box-shadow: none;
         }
-        .secondary {
-            flex: 1 1 150px;
-            padding: 14px 18px;
-            border-radius: 12px;
-            border: 2px solid #e5e7eb;
-            background: white;
-            color: var(--gray);
-            font-weight: 700;
-            cursor: pointer;
+        .btn.secondary {
+            background: #fff;
+            color: #1f2937;
+            border-color: #d0dbe8;
+            box-shadow: none;
         }
-        @media (max-width: 640px) {
+        .hint {
+            text-align: center;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        @media (max-width: 768px) {
+            .frame { width: min(94vw, 560px); max-height: none; }
+            .arrow { display: none; }
             .card { padding: 18px; }
-            .slider { grid-auto-columns: 80%; padding-right: 20px; }
-            .nav-btn { display: none !important; }
+            .shell { padding: 18px 14px 26px; }
+            h1 { font-size: 22px; }
+            .stage { min-height: 280px; padding: 14px 10px; }
+        }
+        @media (min-width: 1024px) {
+            .shell { padding: 26px 22px; }
+            .card { padding: 24px 26px 26px; }
+            .stage { margin-top: 18px; }
+            .frame { height: clamp(340px, 60vh, 640px); }
+        }
+        @media (max-width: 540px) {
+            .header { flex-direction: column; align-items: flex-start; }
+            .stage { padding: 12px 8px; }
+            .frame { width: 100%; max-width: 100%; }
+            .actions { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="shell">
         <div class="card">
             <div class="header">
                 <div>
                     <h1>엽서/편지지 선택</h1>
-                    <div class="subtitle">마음에 드는 스타일을 고르고 다음 단계에서 구절과 편지를 작성하세요.</div>
+                    <div class="subtitle">상단 토글로 종류를 고르고, 좌우 화살표나 스와이프로 템플릿을 살펴보세요.</div>
                 </div>
-                <div class="steps">
-                    <div class="step-dot active"></div>
-                    <span>선택</span>
-                    <div class="step-dot"></div>
-                    <span>작성</span>
+                <div class="step">
+                    <span class="current">1 · 선택</span>
+                    <span>2 · 작성</span>
+                    <span>3 · 미리보기</span>
                 </div>
             </div>
 
-            <div class="slider-wrap">
-                <button class="nav-btn nav-prev" id="nav-prev">&#x2039;</button>
-                <div class="slider" id="slider"></div>
-                <button class="nav-btn nav-next" id="nav-next">&#x203a;</button>
+            <div class="toggle-bar">
+                <div class="toggle" id="toggle">
+                    <div class="thumb" id="thumb"></div>
+                    <button data-type="엽서">엽서</button>
+                    <button data-type="편지지">편지지</button>
+                </div>
             </div>
 
-            <div class="cta">
-                <button class="primary" id="next-btn" disabled>선택한 템플릿으로 편지 쓰기</button>
-                <button class="secondary" onclick="window.location.href='/'">홈으로</button>
+            <div class="stage">
+                <button class="arrow left" id="prev-btn">&#x2039;</button>
+                <div class="frame" id="frame">
+                    <div class="preview-large" id="preview"></div>
+                    <div class="label" id="type-label"></div>
+                    <div class="meta">
+                        <div class="name" id="name"></div>
+                        <div class="desc" id="desc"></div>
+                        <div class="counter" id="counter"></div>
+                    </div>
+                </div>
+                <button class="arrow right" id="next-btn">&#x203a;</button>
             </div>
+
+            <div class="actions">
+                <button class="btn" id="select-btn" disabled>선택</button>
+                <button class="btn secondary" id="back-btn">이전</button>
+            </div>
+            <div class="hint">엽서와 편지지는 서로 다른 템플릿만 보여줘요.</div>
         </div>
     </div>
 
     <script>
-        const mailboxId = "{{ mailbox_id }}";
-        const sliderEl = document.getElementById('slider');
-        const nextBtn = document.getElementById('next-btn');
-        const prevBtn = document.getElementById('nav-prev');
-        const nextNavBtn = document.getElementById('nav-next');
+        const postboxId = "{{ postbox_id }}";
         const templates = [
-            { id: 'postcard-sunset', name: '노을 엽서', type: '엽서', desc: '따뜻한 빛감의 노을 엽서', previewClass: 'postcard-sunset' },
-            { id: 'postcard-ocean', name: '바다 엽서', type: '엽서', desc: '시원한 파도 느낌의 엽서', previewClass: 'postcard-ocean' },
-            { id: 'postcard-midnight', name: '밤하늘 엽서', type: '엽서', desc: '고요한 밤하늘 톤', previewClass: 'postcard-midnight' },
-            { id: 'stationery-cream', name: '크림 편지지', type: '편지지', desc: '차분한 크림 색감', previewClass: 'stationery-cream' },
-            { id: 'stationery-olive', name: '올리브 편지지', type: '편지지', desc: '잔잔한 올리브 톤', previewClass: 'stationery-olive' },
-            { id: 'stationery-lilac', name: '라일락 편지지', type: '편지지', desc: '라일락 그라데이션', previewClass: 'stationery-lilac' },
+            { id: 1, name: '항공 엽서', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/POSTCARD1.png') }}" },
+            { id: 2, name: '화원', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/POSTCARD2.png') }}" },
+            { id: 3, name: '하늘', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/POSTCARD3.png') }}" },
+            { id: 4, name: '크레용', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/POSTCARD4.png') }}" },
+            { id: 5, name: '큰 꽃', typeLabel: '편지지', type: 1, image: "{{ url_for('static', filename='images/letters/letter1.png') }}" },
+            { id: 6, name: '크레용', typeLabel: '편지지', type: 1, image: "{{ url_for('static', filename='images/letters/letter2.png') }}" },
+            { id: 7, name: '성경책', typeLabel: '편지지', type: 1, image: "{{ url_for('static', filename='images/letters/letter3.png') }}" },
+            { id: 8, name: '화원', typeLabel: '편지지', type: 1, image: "{{ url_for('static', filename='images/letters/letter4.jpg') }}" },
         ];
-        let selected = null;
 
-        function renderTemplates() {
-            templates.forEach(tpl => {
-                const card = document.createElement('div');
-                card.className = 'template-card';
-                card.innerHTML = `
-                    <div class="preview ${tpl.previewClass}"></div>
-                    <span class="label">${tpl.type}</span>
-                    <div class="name">${tpl.name}</div>
-                    <div class="desc">${tpl.desc}</div>
-                `;
-                card.onclick = () => selectTemplate(tpl, card);
-                sliderEl.appendChild(card);
-            });
-            updateNavButtons();
-        }
+        const previewEl = document.getElementById('preview');
+        const typeLabelEl = document.getElementById('type-label');
+        const nameEl = document.getElementById('name');
+        const descEl = document.getElementById('desc');
+        const counterEl = document.getElementById('counter');
+        const selectBtn = document.getElementById('select-btn');
+        const backBtn = document.getElementById('back-btn');
+        const thumbEl = document.getElementById('thumb');
+        const toggleEl = document.getElementById('toggle');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const frameEl = document.getElementById('frame');
+        const stageEl = document.querySelector('.stage');
 
-        function selectTemplate(tpl, card) {
-            document.querySelectorAll('.template-card').forEach(el => el.classList.remove('selected'));
-            card.classList.add('selected');
-            selected = tpl;
-            nextBtn.disabled = false;
-        }
+        let currentType = '엽서';
+        let currentIndex = 0;
 
-        function updateNavButtons() {
-            const canScroll = sliderEl.scrollWidth > sliderEl.clientWidth + 40;
-            if (canScroll && window.innerWidth > 640) {
-                prevBtn.classList.add('show');
-                nextNavBtn.classList.add('show');
-            } else {
-                prevBtn.classList.remove('show');
-                nextNavBtn.classList.remove('show');
+        const filteredTemplates = () => templates.filter(t => t.typeLabel === currentType);
+
+        function render() {
+            const list = filteredTemplates();
+            if (!list.length) {
+                selectBtn.disabled = true;
+                previewEl.className = 'preview-large';
+                previewEl.style.backgroundImage = '';
+                nameEl.textContent = '';
+                descEl.textContent = '';
+                typeLabelEl.textContent = '';
+                counterEl.textContent = '';
+                return;
             }
+            if (currentIndex >= list.length) currentIndex = 0;
+            if (currentIndex < 0) currentIndex = list.length - 1;
+
+            const tpl = list[currentIndex];
+            previewEl.className = 'preview-large';
+            previewEl.style.backgroundImage = tpl.image ? `url(${tpl.image})` : '';
+            nameEl.textContent = '';
+            descEl.textContent = '';
+            typeLabelEl.textContent = '';
+            counterEl.textContent = `${currentIndex + 1} / ${list.length}`;
+            selectBtn.disabled = false;
+            frameEl.classList.remove('landscape', 'portrait');
+            frameEl.classList.add(tpl.typeLabel === '엽서' ? 'landscape' : 'portrait');
         }
 
-        function scrollSlider(direction) {
-            const amount = sliderEl.clientWidth * 0.8;
-            sliderEl.scrollBy({ left: direction * amount, behavior: 'smooth' });
+        function setType(type) {
+            currentType = type;
+            currentIndex = 0;
+            thumbEl.style.transform = type === '엽서' ? 'translateX(0)' : 'translateX(100%)';
+            toggleEl.querySelectorAll('button').forEach(btn => {
+                btn.style.color = btn.dataset.type === type ? '#fff1f2' : '#fecdd3';
+            });
+            render();
         }
 
-        prevBtn.onclick = () => scrollSlider(-1);
-        nextNavBtn.onclick = () => scrollSlider(1);
-        window.addEventListener('resize', updateNavButtons);
+        toggleEl.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => setType(btn.dataset.type));
+        });
 
-        nextBtn.onclick = () => {
-            if (!selected) return;
-            const url = new URL(window.location.origin + `/send/${mailboxId}/write`);
-            url.searchParams.set('template_id', selected.id);
-            url.searchParams.set('template_type', selected.type);
-            url.searchParams.set('template_name', selected.name);
+        prevBtn.addEventListener('click', () => {
+            currentIndex -= 1;
+            render();
+        });
+        nextBtn.addEventListener('click', () => {
+            currentIndex += 1;
+            render();
+        });
+
+        // swipe support for touch devices
+        function enableSwipe(el) {
+            let startX = 0;
+            let startY = 0;
+            let isTouch = false;
+            const threshold = 40;
+            el.addEventListener('touchstart', (e) => {
+                if (!e.touches.length) return;
+                isTouch = true;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+            el.addEventListener('touchend', (e) => {
+                if (!isTouch) return;
+                const endX = (e.changedTouches && e.changedTouches[0].clientX) || startX;
+                const endY = (e.changedTouches && e.changedTouches[0].clientY) || startY;
+                const dx = endX - startX;
+                const dy = endY - startY;
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+                    currentIndex += dx < 0 ? 1 : -1;
+                    render();
+                }
+                isTouch = false;
+            }, { passive: true });
+        }
+        // 터치 스와이프는 스테이지에서만 감지해 중복 이동을 방지
+        enableSwipe(stageEl);
+
+        selectBtn.addEventListener('click', () => {
+            const list = filteredTemplates();
+            if (!list.length) return;
+            const tpl = list[currentIndex];
+            const url = new URL(window.location.origin + `/send/${postboxId}/write`);
+            url.searchParams.set('template_id', tpl.id);
+            url.searchParams.set('template_type', tpl.type);
+            url.searchParams.set('template_name', tpl.name);
             window.location.href = url.toString();
-        };
+        });
 
-        renderTemplates();
+        backBtn.addEventListener('click', () => {
+            if (window.history.length > 1) window.history.back();
+            else window.location.href = '/';
+        });
+
+        setType(currentType);
     </script>
 </body>
 </html>
