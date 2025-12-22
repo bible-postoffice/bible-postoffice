@@ -1,5 +1,4 @@
 .env
-확인용.py
 
 # 환경변수 파일
 *.env
@@ -25,6 +24,10 @@ vectordb*
 source_docs/
 embeddings_cache/
 *.log
+rebuild_chroma.py 
+update_popularity.py
+확인용.py
+
 
 # IDE 관련 파일
 .vscode/

@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, url_for
 import chromadb
 import uuid
 from datetime import datetime
@@ -9,6 +9,8 @@ import os
 import re
 import requests
 from dotenv import load_dotenv
+from supabase import create_client, Client
+
 
 from popular_verses import (
     get_popularity_score,
@@ -19,25 +21,53 @@ from popular_verses import (
 
 load_dotenv()
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
 
 app = Flask(__name__)
 
-# 1024차원 임베딩 모델 로드
-print("🔄 임베딩 모델 로딩 중...")
-embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
-print(f"✅ 임베딩 모델 로드 완료: {embedding_model.get_sentence_embedding_dimension()}차원")
+SUPABASE_APP_URL = os.environ.get("SUPABASE_APP_URL") or os.environ.get("SUPABASE_URL")
+SUPABASE_APP_KEY = os.environ.get("SUPABASE_APP_KEY") or os.environ.get("SUPABASE_KEY")
+SUPABASE_VEC_URL = os.environ.get("SUPABASE_VEC_URL")
+SUPABASE_VEC_KEY = os.environ.get("SUPABASE_VEC_KEY")
 
-# ChromaDB 초기화
-try:
-    chroma_client = chromadb.PersistentClient(path="./vectordb_e5small")
-    bible_collection = chroma_client.get_collection(name="bible")
-    print(f"✅ 컬렉션 로드 성공: {bible_collection.name}")
-    print(f"   총 구절 수: {bible_collection.count()}")
-except Exception as e:
-    print(f"❌ ChromaDB 에러: {e}")
+# Supabase 클라이언트 초기화 (앱용 / 벡터용 분리)
+supabase_app: Client = None
+if SUPABASE_APP_URL and SUPABASE_APP_KEY:
+    supabase_app = create_client(SUPABASE_APP_URL, SUPABASE_APP_KEY)
+
+supabase_vec: Client = None
+if SUPABASE_VEC_URL and SUPABASE_VEC_KEY:
+    supabase_vec = create_client(SUPABASE_VEC_URL, SUPABASE_VEC_KEY)
+
+
+embedding_model = None
+
+
+def get_embedding_model():
+    """Lazy-load embedding model so Cloud Run can start fast."""
+    global embedding_model
+    if embedding_model is None:
+        print("🔄 임베딩 모델 로딩 중...", flush=True)
+        embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
+        print(f"✅ 임베딩 모델 로드 완료: {embedding_model.get_sentence_embedding_dimension()}차원", flush=True)
+    return embedding_model
+
+# ChromaDB는 Cloud Run 등에서는 사용하지 않도록 건너뛴다 (로컬 개발 시만 필요)
+IS_CLOUD_RUN = bool(os.environ.get("K_SERVICE"))
+# 기본값을 OFF로 두고, 로컬에서 필요할 때만 USE_CHROMA=1로 켠다.
+USE_CHROMA = os.environ.get("USE_CHROMA", "0").lower() not in ("0", "false", "no")
+if not IS_CLOUD_RUN and USE_CHROMA:
+    try:
+        chroma_client = chromadb.PersistentClient(path="./vectordb_e5small")
+        bible_collection = chroma_client.get_collection(name="bible")
+        print(f"✅ 컬렉션 로드 성공: {bible_collection.name}")
+        print(f"   총 구절 수: {bible_collection.count()}")
+    except Exception as e:
+        print(f"❌ ChromaDB 에러: {e}")
+        bible_collection = None
+else:
     bible_collection = None
+    print("ℹ️ ChromaDB 초기화 건너뜀 (Cloud Run/Supabase 전용 모드)")
 
 # 검색 주제를 문맥/대표 구절과 함께 확장하기 위한 힌트 세트
 DEFAULT_CONTEXT_DESCRIPTION = (
@@ -470,7 +500,7 @@ def extract_exact_verse_text(book, chapter, verse, document):
 
 def get_exact_verse_entry(ref_input: str):
     parsed = parse_reference_input(ref_input)
-    if not parsed:
+    if not parsed or not supabase_vec:
         return None
 
     book = parsed["book"]
@@ -479,54 +509,17 @@ def get_exact_verse_entry(ref_input: str):
     target_label = f"{book} {chapter}:{verse}"
     target_key = normalize_reference(target_label)
 
-    ensure_verse_lookup_index()
-    if target_key in VERSE_LOOKUP_INDEX:
-        return VERSE_LOOKUP_INDEX[target_key]
+    res = supabase_vec.table("bible_embeddings") \
+        .select("reference, content, popularity, metadata") \
+        .eq("reference_norm", target_key) \
+        .limit(1).execute()
 
-    def doc_has_target(doc: str):
-        doc_compact = re.sub(r"\s+", "", normalize_korean(doc or ""))
-        markers = [
-            f"{abbr}{chapter}:{verse}"
-            for abbr in FULL_BOOK_TO_ABBREVIATIONS.get(book, [])
-        ]
-        markers += [re.sub(r"\s+", "", f"{book} {chapter}:{verse}")]
-        return any(m in doc_compact for m in markers if m)
-
-    for src in [book, KOREAN_TO_ENGLISH_BOOK.get(book)]:
-        if not src:
-            continue
-        for doc, meta in iter_collection_documents(
-            where={"source": src},
-            include=["documents", "metadatas"],
-        ):
-            if normalize_reference(build_reference_label(meta, doc)) == target_key:
-                return {"text": doc, "metadata": meta}
-            if doc_has_target(doc):
-                text = extract_exact_verse_text(book, chapter, verse, doc) or doc
-                meta = dict(meta or {})
-                meta["_reference_override"] = target_label
-                return {"text": text, "metadata": meta}
-
-    try:
-        emb = embedding_model.encode(f"{target_label} 성경 구절").tolist()
-        res = bible_collection.query(
-            query_embeddings=[emb],
-            n_results=200,
-            include=["documents", "metadatas", "distances"],
-        )
-        docs = (res.get("documents") or [[]])[0]
-        metas = (res.get("metadatas") or [[]])[0]
-        for doc, meta in zip(docs, metas):
-            if normalize_reference(build_reference_label(meta, doc)) == target_key:
-                return {"text": doc, "metadata": meta}
-            if doc_has_target(doc):
-                text = extract_exact_verse_text(book, chapter, verse, doc) or doc
-                meta = dict(meta or {})
-                meta["_reference_override"] = target_label
-                return {"text": text, "metadata": meta}
-    except Exception:
-        pass
-
+    if res.data:
+        row = res.data[0]
+        meta = dict(row.get("metadata") or {})
+        meta["reference"] = row.get("reference")
+        meta["popularity"] = row.get("popularity", 0)
+        return {"text": row.get("content"), "metadata": meta}
     return None
 
 
@@ -555,16 +548,34 @@ TEMPLATE_TYPE_MAP = {
 
 def supabase_headers():
     return {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "apikey": SUPABASE_APP_KEY,
+        "Authorization": f"Bearer {SUPABASE_APP_KEY}",
         "Content-Type": "application/json",
     }
 
 
-def fetch_postbox_supabase(postbox_id: str):
-    if not SUPABASE_URL or not SUPABASE_KEY:
+def fetch_template_meta(template_id: int):
+    """템플릿 메타데이터를 Supabase templates 테이블에서 조회."""
+    if not SUPABASE_APP_URL or not SUPABASE_APP_KEY or template_id is None:
         return None
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postboxes"
+    endpoint = f"{SUPABASE_APP_URL.rstrip('/')}/rest/v1/templates"
+    params = {"id": f"eq.{template_id}", "limit": 1}
+    try:
+        resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
+        if resp.status_code != 200:
+            print(f"⚠️ Supabase template fetch 실패 status={resp.status_code}, body={resp.text}")
+            return None
+        data = resp.json()
+        return data[0] if data else None
+    except Exception as exc:
+        print(f"⚠️ Supabase template fetch 예외: {exc}")
+        return None
+
+
+def fetch_postbox_supabase(postbox_id: str):
+    if not SUPABASE_APP_URL or not SUPABASE_APP_KEY:
+        return None
+    endpoint = f"{SUPABASE_APP_URL.rstrip('/')}/rest/v1/postboxes"
     params = {"id": f"eq.{postbox_id}", "limit": 1}
     try:
         resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
@@ -579,9 +590,9 @@ def fetch_postbox_supabase(postbox_id: str):
 
 
 def fetch_postcards_supabase(postbox_id: str):
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    if not SUPABASE_APP_URL or not SUPABASE_APP_KEY:
         return []
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postcards"
+    endpoint = f"{SUPABASE_APP_URL.rstrip('/')}/rest/v1/postcards"
     params = {"postbox_id": f"eq.{postbox_id}", "order": "created_at.asc"}
     try:
         resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
@@ -605,8 +616,8 @@ def fetch_postcard_by_id(postcard_id: str):
                 return card
 
     # 2) Supabase 조회
-    if SUPABASE_URL and SUPABASE_KEY:
-        endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postcards"
+    if SUPABASE_APP_URL and SUPABASE_APP_KEY:
+        endpoint = f"{SUPABASE_APP_URL.rstrip('/')}/rest/v1/postcards"
         params = {"id": f"eq.{postcard_id}", "limit": 1}
         try:
             resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
@@ -621,10 +632,10 @@ def fetch_postcard_by_id(postcard_id: str):
 
 
 def store_postbox_supabase(postbox: dict):
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    if not SUPABASE_APP_URL or not SUPABASE_APP_KEY:
         print("⚠️ Supabase 설정이 없어 postboxes 저장을 건너뜁니다.")
         return None
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postboxes"
+    endpoint = f"{SUPABASE_APP_URL.rstrip('/')}/rest/v1/postboxes"
     headers = supabase_headers()
     headers["Prefer"] = "return=representation"
     payload = {
@@ -648,7 +659,7 @@ def store_postbox_supabase(postbox: dict):
 
 def ensure_postbox_supabase(postbox_id: str):
     """Supabase postboxes에 해당 postbox가 없으면 저장을 시도."""
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    if not SUPABASE_APP_URL or not SUPABASE_APP_KEY:
         return
     if fetch_postbox_supabase(postbox_id):
         return
@@ -658,12 +669,12 @@ def ensure_postbox_supabase(postbox_id: str):
 
 
 def store_postcard_supabase(postbox_id: str, postcard: dict):
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    if not SUPABASE_APP_URL or not SUPABASE_APP_KEY:
         print("⚠️ Supabase 설정이 없어 postcards 저장을 건너뜁니다.")
         return None
     # 외래키 충돌 방지를 위해 postbox 레코드 확보
     ensure_postbox_supabase(postbox_id)
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postcards"
+    endpoint = f"{SUPABASE_APP_URL.rstrip('/')}/rest/v1/postcards"
     headers = supabase_headers()
     headers["Prefer"] = "return=representation"
     # template_id를 integer로 변환 시도 (문자열에 숫자가 섞여 있으면 숫자만 추출)
@@ -731,8 +742,29 @@ def view_postcard(postcard_id):
     message = card.get("message") or ""
     font_family = card.get("font_family") or ""
     tpl_id_raw = card.get("template_id") or 1
+    tpl_type_raw = card.get("template_type") or 0
+    try:
+        tpl_type = int(tpl_type_raw)
+    except Exception:
+        tpl_type = 0
+
+    # 템플릿 경로 매핑 (정확한 파일명으로 매핑해 404 방지)
+    TEMPLATE_IMAGE_MAP = {
+        0: {  # 엽서
+            1: "images/postcards/POSTCARD1.png",
+            2: "images/postcards/POSTCARD2.png",
+            3: "images/postcards/POSTCARD3.png",
+            4: "images/postcards/POSTCARD4.png",
+        },
+        1: {  # 편지지
+            1: "images/letters/letter1.png",
+            2: "images/letters/letter2.png",
+            3: "images/letters/letter3.png",
+            4: "images/letters/letter4.jpg",
+        },
+    }
+
     tpl_img = None
-    tpl_type = card.get("template_type") or 0
     try:
         tpl_meta = fetch_template_meta(int(tpl_id_raw))
         if tpl_meta:
@@ -740,8 +772,22 @@ def view_postcard(postcard_id):
             tpl_type = tpl_meta.get("template_type", tpl_type)
     except Exception:
         tpl_meta = None
-    # 파일 시스템은 대소문자 구분이 있을 수 있으니 소문자로 정규화
-    template_image = (tpl_img or "images/postcards/POSTCARD1.png").lower()
+
+    # 우선순위: DB image_path → 매핑된 기본 경로 → POSTCARD1
+    template_image = tpl_img
+    try:
+        tpl_id_int = int(tpl_id_raw)
+    except Exception:
+        tpl_id_int = None
+    if not template_image:
+        template_image = TEMPLATE_IMAGE_MAP.get(tpl_type, {}).get(tpl_id_int) or "images/postcards/POSTCARD1.png"
+
+    if template_image.startswith("static/"):
+        template_image = template_image[len("static/"):]
+    template_image = template_image.lstrip("/")
+    template_image_url = template_image
+    if not (template_image_url.startswith("http://") or template_image_url.startswith("https://")):
+        template_image_url = url_for('static', filename=template_image)
     template_type = tpl_type
     return render_template(
         'postcard_view.html',
@@ -754,13 +800,14 @@ def view_postcard(postcard_id):
         template_id=tpl_id_raw,
         template_type=template_type,
         template_image=template_image,
+        template_image_url=template_image_url,
     )
 
 def store_generated_url(original_url: str, base_url: str):
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    if not SUPABASE_APP_URL or not SUPABASE_APP_KEY:
         print("⚠️ Supabase 설정이 없어 generated_urls 저장을 건너뜁니다.")
         return None
-    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/generated_urls"
+    endpoint = f"{SUPABASE_APP_URL.rstrip('/')}/rest/v1/generated_urls"
     headers = supabase_headers()
     headers["Prefer"] = "return=representation"
 
@@ -940,8 +987,8 @@ def create_mailbox_legacy():
 @app.route('/api/recommend-verses', methods=['POST'])
 def recommend_verses():
     """레퍼런스 직접 매칭 → 문구 검색(greedy+semantic) 추천."""
-    if not bible_collection:
-        return jsonify({'error': 'ChromaDB 컬렉션이 로드되지 않았습니다'}), 500
+    if not supabase_vec:
+        return jsonify({'error': 'Supabase 클라이언트가 초기화되지 않았습니다'}), 500
     
     try:
         data = request.get_json(silent=True) or {}
@@ -1013,16 +1060,22 @@ def recommend_verses():
         expanded_terms = greedy_terms(query)
         normalized_query = re.sub(r"\s+", "", normalize_korean(query or "").lower())
         print(f"   🔎 greedy 핵심어: {expanded_terms if expanded_terms else '없음'}")
-        query_embedding = embedding_model.encode(query_text).tolist()
-        raw_results = bible_collection.query(
-            query_embeddings=[query_embedding],
-            n_results=200,
-            include=["documents", "metadatas", "distances"],
-        )
+        query_embedding = get_embedding_model().encode(query_text).tolist()
+        rpc = supabase_vec.rpc(
+            "match_bible_candidates",
+            {
+                "query_embedding": query_embedding,
+                "match_count": 200
+            }
+        ).execute()
 
-        docs = (raw_results.get("documents") or [[]])[0]
-        metas = (raw_results.get("metadatas") or [[]])[0]
-        dists = (raw_results.get("distances") or [[]])[0]
+        rows = rpc.data or []
+        docs = [r.get("content") for r in rows]
+        metas = [
+            dict(r.get("metadata") or {}, reference=r.get("reference"), popularity=r.get("popularity", 0))
+            for r in rows
+        ]
+        dists = [r.get("distance") for r in rows]
 
         scored = []
         for doc, meta, dist in zip(docs, metas, dists):
@@ -1292,7 +1345,10 @@ if __name__ == '__main__':
     # 환경 감지
     is_local = os.environ.get('RENDER') is None  # Render는 자동으로 RENDER 환경변수 설정
     host = '127.0.0.1' if is_local else '0.0.0.0'
-    port = int(os.environ.get('PORT', 5001))
+    # Cloud Run에서 제공하는 PORT 환경변수 사용
+    port = int(os.environ.get("PORT", 8080))
+    # 0.0.0.0으로 바인딩 (컨테이너 외부 접근 허용)
+    app.run(host='0.0.0.0', port=port, debug=False)
     debug = is_local
     
     print(f"📍 브라우저에서 접속: http://{host}:{port}")

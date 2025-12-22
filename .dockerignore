@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Node
+node_modules/
+package-lock.json
+
+# ChromaDB 로컬 데이터 (재빌드할 것이므로)
+chroma_data/
+*.db
+
+# Jupyter Notebook
+*.ipynb
+.ipynb_checkpoints/
+
+# 기타
+*.log
+.DS_Store
+Thumbs.db
+README.md
+vectorstore/
+vectordb*
+*.pkl
+*.bin
+source_docs/
+embeddings_cache/
+*.log
+rebuild_chroma.py 
+update_popularity.py
+확인용.py

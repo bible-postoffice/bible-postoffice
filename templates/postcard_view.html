@@ -48,7 +48,7 @@
         }
         .card {
             position: relative;
-            background: url("{{ url_for('static', filename=template_image) }}") center/cover no-repeat;
+            background: url("{{ template_image_url }}") center/cover no-repeat;
             width: 100%;
             aspect-ratio: 16 / 10;
             border: 1px solid #e5e7eb;
@@ -116,6 +116,9 @@
             font-weight: 600;
             overflow: hidden;
             font-family: var(--user-font);
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
         
         /* 발신자 영역 (검정색) */
