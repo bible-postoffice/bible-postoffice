@@ -114,11 +114,10 @@
             provider: 'kakao',
             options: {
                 redirectTo: window.location.origin,
-                // 테스트용
-                // 카카오 로그인 화면(동의 화면)을 무조건 다시 띄우는 옵션
-                // queryParams: {
-                //     prompt: 'select_account'
-                // }
+                // 카카오 로그인 화면을 항상 띄워서 이전 세션으로 자동로그인되지 않도록 함
+                queryParams: {
+                    prompt: 'login'
+                }
             }
         });
         if (error) console.error("로그인 시도 에러:", error.message);

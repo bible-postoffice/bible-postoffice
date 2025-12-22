@@ -1391,7 +1391,8 @@ def view_postbox(url_path):
                                privacy='public' if postbox['privacy'] == 0 else 'private',
                                end_date=end_date,
                                is_owner=is_owner,
-                               is_expired=is_expired)
+                               is_expired=is_expired,
+                               is_logged_in=bool(session.get('user_email')))
 
     except Exception as e:
         print(f"Error: {e}")
@@ -1416,6 +1417,12 @@ def index():
     return render_template('index.html',
                             url=os.environ.get('SUPABASE_URL'), 
                             key=os.environ.get('SUPABASE_KEY'))
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
 
 
 

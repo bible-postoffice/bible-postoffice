@@ -1,7 +1,14 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-2xl mx-auto w-full text-center">
+<div class="flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-2xl mx-auto w-full text-center relative">
+
+    {% if is_logged_in %}
+    <a href="/logout"
+       class="fixed top-16 right-4 z-50 text-sm font-bold px-3 py-1.5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 shadow pointer-events-auto">
+        로그아웃
+    </a>
+    {% endif %}
 
     <div class="mb-4">
         {# 우체통 색상별 파스텔 배지 테마 정의 #}
