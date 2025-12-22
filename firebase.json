@@ -12,7 +12,6 @@
         "run": {
           "serviceId": "bible-agent",
           "region": "asia-northeast3"
-          // "pinTag": true   <-- 이 줄 삭제
         }
       }
     ]
