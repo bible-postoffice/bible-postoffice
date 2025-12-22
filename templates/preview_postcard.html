@@ -166,9 +166,10 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: auto;
             white-space: pre-wrap;
-            word-break: keep-all;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         .verse-box .ref {
             font-weight: 800;
@@ -191,7 +192,9 @@
         .msg-box .body {
             flex: 1;
             white-space: pre-wrap;
-            word-break: keep-all;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            overflow: auto;
         }
         .sender-box {
             color: var(--ink);
@@ -227,25 +230,64 @@
         /* 편지지 템플릿: 세로 배치 */
         .template-frame.letter .overlay {
             flex-direction: column;
-            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6%;
             padding: 10% 8%;
+            height: 80%;
+            margin: auto;
+        }
+        .template-frame.letter .left,
+        .template-frame.letter .right {
+            width: 80%;
+            max-width: 760px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .template-frame.letter .left {
+            flex: 0 0 40%;
+            justify-content: center;
+        }
+        .template-frame.letter .right {
+            flex: 0 0 40%;
+            justify-content: flex-start;
+            gap: 8px;
         }
         
         .template-frame.letter .verse-box,
         .template-frame.letter .msg-box,
         .template-frame.letter .sender-box {
-            background: rgba(255,255,255,0.86);
-            border: 1px solid rgba(148,163,184,0.5);
-            border-radius: 14px;
-            padding: 12px 14px;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
-        }     
+            background: none;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+        }
+        .template-frame.letter .verse-box,
         .template-frame.letter .msg-box {
-            min-height: 220px;
+            width: 100%;
+            max-width: 760px;
+        }
+        .template-frame.letter .msg-box {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: auto;
+            height: 100%;
+        }
+        .template-frame.letter .msg-box .body {
+            height: 100%;
+            display: flex;
+            align-items: center;
         }
         .template-frame.letter .sender-box {
-            width: fit-content;
-            border-radius: 10px;
+            width: 100%;
+            max-width: 760px;
+            border-radius: 0;
+            align-self: center;
+            text-align: right;
+            margin-top: 0;
         }
         
         .side {
@@ -373,6 +415,24 @@
             .font-grid { grid-template-columns: 1fr; }
             .actions { grid-template-columns: 1fr; gap: 8px; }
             button { width: 100%; }
+            /* 편지지 모드에서 중앙 80% 영역에 텍스트 배치 */
+            .template-frame.letter .overlay {
+                padding: 8% 6%;
+                gap: 6%;
+                justify-content: space-between;
+            }
+            .template-frame.letter .verse-box {
+                min-height: 40%;
+                display: flex;
+                align-items: center;
+            }
+            .template-frame.letter .msg-box,
+            .template-frame.letter .sender-box {
+                max-width: none;
+            }
+            .template-frame.letter .msg-box {
+                min-height: 0;
+            }
         }
     </style>
 </head>
@@ -752,11 +812,11 @@
             if (msgBox && msgBoxContainer) {
                 let msgMin, msgMax;
                 if (isMobile) {
-                    msgMin = 4; msgMax = 10;
+                    msgMin = 4; msgMax = 14;
                 } else if (isTablet) {
-                    msgMin = 6; msgMax = 14;
+                    msgMin = 6; msgMax = 18;
                 } else {
-                    msgMin = 8; msgMax = 16;
+                    msgMin = 10; msgMax = 24;
                 }
                 
                 // 컨테이너 크기를 기준으로 조절

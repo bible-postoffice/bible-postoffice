@@ -395,6 +395,7 @@
             type: "{{ template_type or '' }}",
             name: "{{ template_name or '' }}"
         };
+        const hasQueryTemplate = !!(preselectedTemplate.id || preselectedTemplate.type);
         const TYPE_LABEL = { 0: '엽서', 1: '편지지' };
         const TYPE_MAP = { '엽서': 0, '편지지': 1 };
         const templateAssets = {
@@ -405,7 +406,7 @@
             5: "{{ url_for('static', filename='images/letters/letter1.png') }}",
             6: "{{ url_for('static', filename='images/letters/letter2.png') }}",
             7: "{{ url_for('static', filename='images/letters/letter3.png') }}",
-            8: "{{ url_for('static', filename='images/letters/letter4.jpg') }}",
+            8: "{{ url_for('static', filename='images/letters/letter4.png') }}",
         };
         const defaultTemplate = { id: 1, type: 0, name: '항공 엽서', typeLabel: '엽서' };
         function normalizeTemplate(tpl = {}) {
@@ -589,8 +590,20 @@
                 if (saved.is_anonymous) {
                     document.getElementById('anonymous-toggle').checked = true;
                 }
-                if (saved.template) {
-                    selectedTemplate = normalizeTemplate(saved.template);
+                const savedTemplate = saved.template ? normalizeTemplate(saved.template) : null;
+                const queryTemplate = hasQueryTemplate ? normalizeTemplate(preselectedTemplate) : null;
+
+                // 쿼리로 넘어온 템플릿이 있으면 saved 템플릿을 덮어써서 이전 선택이 남는 문제를 방지
+                if (queryTemplate) {
+                    selectedTemplate = queryTemplate;
+                    saved.template = queryTemplate;
+                    try {
+                        sessionStorage.setItem(draftKey, JSON.stringify(saved));
+                    } catch (e) {
+                        console.warn('draft overwrite failed', e);
+                    }
+                } else if (savedTemplate) {
+                    selectedTemplate = savedTemplate;
                 }
                 if (saved.verse) {
                     selectedVerse = saved.verse;

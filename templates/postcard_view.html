@@ -40,21 +40,37 @@
             background: #f5f7fb;
             color: var(--ink);
             font-family: var(--user-font);
-            padding: 18px;
+            padding: 12px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
         }
         .wrap {
-            max-width: 1100px;
-            margin: 0 auto;
+            width: min(1100px, 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
         .card {
             position: relative;
             background: url("{{ url_for('static', filename=template_image) }}") center/cover no-repeat;
             width: 100%;
             aspect-ratio: 16 / 10;
+            max-width: 1100px;
+            max-height: 82vh;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.12);
             overflow: hidden;
+        }
+        .card.letter {
+            aspect-ratio: 10.5 / 15;
+            width: min(90vw, calc(90vh * 0.7));  /* 10.5/15 = 0.7 */
+            max-height: 90vh;
+            max-width: none;
         }
         .overlay {
             position: absolute;
@@ -63,12 +79,29 @@
             display: flex;
             gap: 1.5%;
         }
+        .card.letter .overlay {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6%;
+            padding: 10% 8%;
+        }
         .left, .right {
             position: relative;
             flex: 1;
             display: flex;
             flex-direction: column;
         }
+        .card.letter .left,
+        .card.letter .right {
+            width: 80%;
+            max-width: 760px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .card.letter .left { flex: 0 0 40%; justify-content: center; }
+        .card.letter .right { flex: 0 0 40%; justify-content: flex-start; gap: 8px; }
         
         /* 왼쪽: 성경 구절 영역 (노란색) */
         .verse-box {
@@ -84,6 +117,13 @@
             flex-direction: column;
             overflow: hidden;
             font-family: var(--user-font);
+        }
+        .card.letter .verse-box {
+            position: relative;
+            inset: auto;
+            width: 100%;
+            max-width: 760px;
+            background: none;
         }
         .verse-box .text {
             flex: 1;
@@ -116,6 +156,26 @@
             font-weight: 600;
             overflow: hidden;
             font-family: var(--user-font);
+            display: flex;
+            flex-direction: column;
+        }
+        .msg-box .msg-body {
+            flex: 1;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .card.letter .msg-box {
+            position: relative;
+            inset: auto;
+            width: 100%;
+            max-width: 760px;
+            flex: 1 1 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            white-space: normal;
         }
         
         /* 발신자 영역 (검정색) */
@@ -128,6 +188,13 @@
             font-weight: 700;
             overflow: hidden;
             font-family: var(--user-font);
+        }
+        .card.letter .sender-box {
+            position: relative;
+            inset: auto;
+            width: 100%;
+            max-width: 760px;
+            text-align: right;
         }
         
         /* 반응형 조정 */
@@ -147,6 +214,21 @@
             .sender-box {
                 bottom: 10%;
                 right: 30%;
+            }
+        }
+
+        @media (min-width: 769px) {
+            body {
+                padding: 10px;
+            }
+            .wrap {
+                width: min(1100px, 96vw);
+            }
+            .card {
+                max-height: 82vh;
+            }
+            .card.letter {
+                max-height: 86vh;
             }
         }
         
@@ -182,7 +264,7 @@
         })();
     </script>
     <div class="wrap">
-        <div class="card" id="postcard">
+        <div class="card {{ 'letter' if template_is_letter else 'postcard' }}" id="postcard">
             <div class="overlay">
                 <div class="left">
                     <div class="verse-box">
@@ -192,7 +274,7 @@
                 </div>
                 <div class="right">
                     <div class="msg-box">
-                        {{ message if message else '전달할 메시지가 없습니다.' }}
+                        <div class="msg-body">{{ message if message else '전달할 메시지가 없습니다.' }}</div>
                     </div>
                     <div class="sender-box">
                         From. {{ sender or '익명' }}
@@ -200,7 +282,7 @@
                 </div>
             </div>
         </div>
-        <div style="margin-top:14px; text-align:center;">
+        <div style="margin-top:8px; text-align:center;">
             <button onclick="saveImage()" style="padding:10px 16px; border-radius:10px; border:none; background:#2563eb; color:#fff; font-weight:800; cursor:pointer;">이미지 저장</button>
         </div>
     </div>
@@ -274,25 +356,26 @@
 
         function adjustAllText() {
             const msgBox = document.querySelector('.msg-box');
+            const msgBody = document.querySelector('.msg-box .msg-body');
             const senderBox = document.querySelector('.sender-box');
-            
+
             const isMobile = window.innerWidth <= 480;
             const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
-            
+
             // 성경 구절 영역 (제목 + 본문)
             fitVerseBox();
-            
-            // 메시지 영역
-            if (msgBox) {
+
+            // 메시지 영역 (본문 요소 기준으로 맞춤)
+            if (msgBody && msgBox) {
                 if (isMobile) {
-                    fitTextToContainer(msgBox, 5, 12);
+                    fitTextToContainer(msgBody, 5, 14);
                 } else if (isTablet) {
-                    fitTextToContainer(msgBox, 7, 16);
+                    fitTextToContainer(msgBody, 7, 18);
                 } else {
-                    fitTextToContainer(msgBox, 10, 24);
+                    fitTextToContainer(msgBody, 10, 24);
                 }
             }
-            
+
             // 발신자 영역
             if (senderBox) {
                 if (isMobile) {
