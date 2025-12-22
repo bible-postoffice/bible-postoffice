@@ -8,8 +8,11 @@ from sentence_transformers import SentenceTransformer
 import os
 import re
 import requests
+import time
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from collections import OrderedDict
+from threading import Lock
 
 
 from popular_verses import (
@@ -41,6 +44,12 @@ if SUPABASE_VEC_URL and SUPABASE_VEC_KEY:
 
 
 embedding_model = None
+MODEL_LOAD_COUNT = 0
+QUERY_EMBED_CACHE_MAX = int(os.environ.get("QUERY_EMBED_CACHE_MAX", "512"))
+_embed_cache = OrderedDict()
+_embed_cache_lock = Lock()
+WARMUP_EMBED_ENABLED = os.environ.get("WARMUP_EMBED", "1").lower() not in ("0", "false", "no")
+_warmup_done = False
 
 
 def get_embedding_model():
@@ -49,8 +58,56 @@ def get_embedding_model():
     if embedding_model is None:
         print("🔄 임베딩 모델 로딩 중...", flush=True)
         embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
-        print(f"✅ 임베딩 모델 로드 완료: {embedding_model.get_sentence_embedding_dimension()}차원", flush=True)
+        globals()["MODEL_LOAD_COUNT"] += 1
+        print(
+            f"✅ 임베딩 모델 로드 완료: {embedding_model.get_sentence_embedding_dimension()}차원 (loads: {MODEL_LOAD_COUNT})",
+            flush=True,
+        )
     return embedding_model
+
+
+def log_query_stats(text: str):
+    model = get_embedding_model()
+    char_len = len(text or "")
+    try:
+        tokens = model.tokenizer.tokenize(text or "")
+        tok_len = len(tokens)
+    except Exception:
+        tok_len = "n/a"
+    print(f"   🧮 query stats: chars={char_len}, tokens={tok_len}", flush=True)
+
+
+def warmup_embedding():
+    global _warmup_done
+    if _warmup_done or not WARMUP_EMBED_ENABLED:
+        return
+    try:
+        t0 = time.time()
+        get_embedding_model().encode("warmup", show_progress_bar=False)
+        print(f"🔥 embedding warmup completed in {time.time() - t0:.3f}s", flush=True)
+    except Exception as exc:
+        print(f"⚠️ embedding warmup failed: {exc}", flush=True)
+    _warmup_done = True
+
+
+def get_cached_embedding(key: str):
+    if not key:
+        return None
+    with _embed_cache_lock:
+        hit = _embed_cache.get(key)
+        if hit is not None:
+            _embed_cache.move_to_end(key)
+        return hit
+
+
+def put_cached_embedding(key: str, value):
+    if not key or value is None:
+        return
+    with _embed_cache_lock:
+        _embed_cache[key] = value
+        _embed_cache.move_to_end(key)
+        while len(_embed_cache) > QUERY_EMBED_CACHE_MAX:
+            _embed_cache.popitem(last=False)
 
 # ChromaDB는 Cloud Run 등에서는 사용하지 않도록 건너뛴다 (로컬 개발 시만 필요)
 IS_CLOUD_RUN = bool(os.environ.get("K_SERVICE"))
@@ -1060,7 +1117,18 @@ def recommend_verses():
         expanded_terms = greedy_terms(query)
         normalized_query = re.sub(r"\s+", "", normalize_korean(query or "").lower())
         print(f"   🔎 greedy 핵심어: {expanded_terms if expanded_terms else '없음'}")
-        query_embedding = get_embedding_model().encode(query_text).tolist()
+        cache_key = (query_text or "").strip()
+        log_query_stats(cache_key)
+        cached_embedding = get_cached_embedding(cache_key)
+        if cached_embedding is not None:
+            query_embedding = cached_embedding
+            print(f"   ⚡ embedding cache hit (key='{cache_key[:40]}...')", flush=True)
+        else:
+            t0 = time.time()
+            query_embedding = get_embedding_model().encode(query_text).tolist()
+            elapsed = time.time() - t0
+            print(f"   ⏱️ embedding took {elapsed:.3f}s (query='{cache_key[:40]}...')", flush=True)
+            put_cached_embedding(cache_key, query_embedding)
         rpc = supabase_vec.rpc(
             "match_bible_candidates",
             {
