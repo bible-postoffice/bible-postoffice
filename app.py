@@ -1,28 +1,35 @@
 # app.py
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, url_for, session, redirect
+import os
+import re
+import requests
 import chromadb
 import uuid
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from sentence_transformers import SentenceTransformer
-import os
-import re
-import requests
-from flask import Flask, render_template, request, jsonify, session, redirect # redirect 추가
-from supabase import create_client, Client
 from dotenv import load_dotenv
 
-load_dotenv()
-app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e48ca7312db5b8f76c0c095e845c9eaf')
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+from postcard_routes import create_postcard_blueprint
+from supabase import create_client, Client
+
+from popular_verses import (
+    get_popularity_score,
+    extract_chapter_verse,
+    normalize_korean,
+    BOOK_NAME_MAP,
+)  # ⭐ 추가
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+
+# SUPABASE_* (APP/기본 둘 다 허용)
+SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("SUPABASE_APP_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_APP_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e48ca7312db5b8f76c0c095e845c9eaf')
 
-#
-# 하영
-#
 # 1024차원 임베딩 모델 로드
 print("🔄 임베딩 모델 로딩 중...")
 embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
@@ -219,13 +226,6 @@ BOOK_ABBREVIATIONS = {
     "jn": "요한복음", "rom": "로마서", "1th": "데살로니가전서", "2th": "데살로니가후서",
     "eph": "에베소서", "phil": "빌립보서", "jas": "야고보서",
 }
-
-from popular_verses import (
-    get_popularity_score,
-    extract_chapter_verse,
-    normalize_korean,
-    BOOK_NAME_MAP,
-)  # ⭐ 추가
 
 KOREAN_TO_ENGLISH_BOOK = {v: k for k, v in BOOK_NAME_MAP.items()}
 FULL_BOOK_TO_ABBREVIATIONS = {}
@@ -684,7 +684,17 @@ def store_postcard_supabase(postbox_id: str, postcard: dict):
     except Exception:
         tpl_id = None
     tpl_type_raw = postcard.get("template_type")
-    tpl_type = TEMPLATE_TYPE_MAP.get(tpl_type_raw, tpl_type_raw if isinstance(tpl_type_raw, int) else None)
+    tpl_type = None
+    try:
+        if isinstance(tpl_type_raw, str):
+            digits = ''.join(ch for ch in tpl_type_raw if ch.isdigit())
+            tpl_type = int(digits) if digits else None
+        elif tpl_type_raw is not None:
+            tpl_type = int(tpl_type_raw)
+    except Exception:
+        tpl_type = None
+    if tpl_type is None:
+        tpl_type = TEMPLATE_TYPE_MAP.get(tpl_type_raw)
     payload = {
         "id": postcard["id"],
         "postbox_id": postbox_id,
@@ -726,6 +736,18 @@ def store_postcard_supabase(postbox_id: str, postcard: dict):
         return None
 
 
+# 카드 작성/미리보기/전송 관련 라우트는 별도 블루프린트로 분리
+postcard_bp = create_postcard_blueprint(
+    postboxes=postboxes,
+    postcards=postcards,
+    fetch_postbox_supabase=fetch_postbox_supabase,
+    fetch_postcards_supabase=fetch_postcards_supabase,
+    store_postbox_supabase=store_postbox_supabase,
+    store_postcard_supabase=store_postcard_supabase,
+)
+app.register_blueprint(postcard_bp)
+
+
 @app.route('/view-postcard/<postcard_id>')
 def view_postcard(postcard_id):
     card = fetch_postcard_by_id(postcard_id)
@@ -738,7 +760,32 @@ def view_postcard(postcard_id):
     font_family = card.get("font_family") or ""
     tpl_id_raw = card.get("template_id") or 1
     tpl_img = None
-    tpl_type = card.get("template_type") or 0
+    tpl_type_raw = card.get("template_type")
+    tpl_type = None
+    try:
+        tpl_type = int(tpl_type_raw) if tpl_type_raw is not None else None
+    except Exception:
+        tpl_type = None
+
+    TEMPLATE_IMAGE_MAP = {
+        0: {  # 엽서
+            1: "images/postcards/POSTCARD1.png",
+            2: "images/postcards/POSTCARD2.png",
+            3: "images/postcards/POSTCARD3.png",
+            4: "images/postcards/POSTCARD4.png",
+        },
+        1: {  # 편지지 (ID 5~8도 매핑)
+            1: "images/letters/letter1.png",
+            2: "images/letters/letter2.png",
+            3: "images/letters/letter3.png",
+            4: "images/letters/letter4.png",
+            5: "images/letters/letter1.png",
+            6: "images/letters/letter2.png",
+            7: "images/letters/letter3.png",
+            8: "images/letters/letter4.png",
+        },
+    }
+
     try:
         tpl_meta = fetch_template_meta(int(tpl_id_raw))
         if tpl_meta:
@@ -746,9 +793,28 @@ def view_postcard(postcard_id):
             tpl_type = tpl_meta.get("template_type", tpl_type)
     except Exception:
         tpl_meta = None
+
+    try:
+        tpl_id_int = int(tpl_id_raw)
+    except Exception:
+        tpl_id_int = None
+
+    # 템플릿 타입이 없거나 잘못되었으면 ID로 유추 (5 이상은 편지지로 취급)
+    if tpl_type not in (0, 1):
+        tpl_type = 1 if (tpl_id_int and tpl_id_int >= 5) else 0
+
+    template_image = tpl_img
+    if not template_image:
+        template_image = TEMPLATE_IMAGE_MAP.get(tpl_type, {}).get(tpl_id_int) or "images/postcards/POSTCARD1.png"
+
     # 파일 시스템은 대소문자 구분이 있을 수 있으니 소문자로 정규화
-    template_image = (tpl_img or "images/postcards/POSTCARD1.png").lower()
-    template_type = tpl_type
+    template_image = template_image.lstrip("/").lower()
+    template_image_url = template_image
+    if not (template_image_url.startswith("http://") or template_image_url.startswith("https://")):
+        template_image_url = url_for('static', filename=template_image)
+
+    template_is_letter = tpl_type == 1
+
     return render_template(
         'postcard_view.html',
         postcard_id=postcard_id,
@@ -758,8 +824,10 @@ def view_postcard(postcard_id):
         message=message,
         font_family=font_family,
         template_id=tpl_id_raw,
-        template_type=template_type,
+        template_type=tpl_type,
         template_image=template_image,
+        template_image_url=template_image_url,
+        template_is_letter=template_is_letter,
     )
 
 def store_generated_url(original_url: str, base_url: str):
@@ -896,6 +964,50 @@ def greedy_match_count(terms, doc: str):
     return sum(1 for t in terms if t and re.sub(r"\s+", "", t) in docc)
 
 
+
+
+@app.route('/api/create-postbox', methods=['POST'])
+def create_postbox():
+    data = request.get_json(silent=True) or {}
+    name = data.get('name')
+    prayer_topic = data.get('prayer_topic', '')
+
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+
+    postbox_id = str(uuid.uuid4())[:8]
+    base_url = request.url_root.rstrip('/')
+    postbox_path = f'/postbox/{postbox_id}'
+    original_url = f"{base_url}{postbox_path}"
+    postboxes[postbox_id] = {
+        'id': postbox_id,
+        'name': name,
+        'prayer_topic': prayer_topic,
+        'url': postbox_path,
+        'full_url': original_url,
+        'created_at': datetime.now().isoformat(),
+        'is_opened': False
+    }
+    postcards[postbox_id] = []
+
+    short_url = store_generated_url(original_url=original_url, base_url=base_url)
+    store_postbox_supabase(postboxes[postbox_id])
+    response_payload = {
+        'postbox_id': postbox_id,
+        'url': postbox_path,
+        'original_url': original_url
+    }
+    if short_url:
+        response_payload['short_url'] = short_url
+    return jsonify(response_payload)
+
+
+# 호환성: 기존 /api/create-mailbox 엔드포인트를 /api/create-postbox로 포워딩
+@app.route('/api/create-mailbox', methods=['POST'])
+def create_mailbox_legacy():
+    return create_postbox()
+
+
 @app.route('/api/recommend-verses', methods=['POST'])
 def recommend_verses():
     """레퍼런스 직접 매칭 → 문구 검색(greedy+semantic) 추천."""
@@ -928,8 +1040,14 @@ def recommend_verses():
             print(f"   🎯 레퍼런스 직접 매칭 성공: {reference}")
 
             return jsonify({
-                "success": True, 
-                "url": unique_path
+                "verses": [
+                    {
+                        "reference": reference,
+                        "text": exact_hit["text"],
+                        "metadata": meta,
+                        "score": 1.0,
+                    }
+                ]
             })
         else:
             print("   ⚠️ 레퍼런스 직접 매칭 없음 → 시맨틱/greedy 검색으로 진행")
@@ -1072,143 +1190,9 @@ def format_results(results):
     
     return formatted
 
-@app.route('/send_postcard/<url_path>')
-def render_write_page(url_path):
-    # 1. DB에서 이 주소(url_path)를 가진 우체통의 진짜 'id'를 찾습니다.
-    result = supabase.table('postboxes').select("*").eq("url", url_path).execute()
-    
-    if not result.data:
-        return "우체통을 찾을 수 없습니다.", 404
-        
-    postbox = result.data[0]
-    
-    # 2. 작성 페이지로 우체통의 진짜 ID와 이름을 넘깁니다.
-    return render_template('send_postcard.html', 
-                           postbox_id=postbox['id'],  # DB 저장 시 쓸 ID
-                           postbox_name=postbox['name'],
-                           color=postbox['color'])
-
-@app.route('/api/send-postcard', methods=['POST'])
-def send_postcard():
-    data = request.json
-    postbox_id = data.get('postbox_id')
-    
-    if postbox_id not in postboxes:
-        loaded = fetch_postbox_supabase(postbox_id)
-        if not loaded:
-            # Supabase에도 없으면 최소 정보로 생성 후 진행
-            base_url = request.url_root.rstrip('/')
-            postbox_path = f"/postboxes/{postbox_id}"
-            fallback = {
-                'id': postbox_id,
-                'name': '우체통',
-                'nickname': '우체통',
-                'prayer_topic': '',
-                'url': postbox_path,
-                'created_at': datetime.now().isoformat(),
-                'is_opened': False
-            }
-            postboxes[postbox_id] = fallback
-            postcards[postbox_id] = []
-            store_postbox_supabase(fallback)
-        else:
-            postboxes[postbox_id] = loaded
-            postcards[postbox_id] = fetch_postcards_supabase(postbox_id)
-    
-    postcard = {
-        'id': str(uuid.uuid4()),
-        'template_id': data.get('template_id') or 1,
-        'template_type': data.get('template_type') if data.get('template_type') is not None else 0,
-        'template_name': data.get('template_name') or '',
-        'is_anonymous': bool(data.get('is_anonymous')),
-        'verse_reference': data.get('verse_reference'),
-        'verse_text': data.get('verse_text'),
-        'message': data.get('message', ''),
-        'font_family': data.get('font_family') or '',
-        'font_style': data.get('font_style') or '',
-        'created_at': datetime.now().isoformat()
-    }
-    
-    postcards[postbox_id].append(postcard)
-    store_postcard_supabase(postbox_id, postcard)
-    
-    return jsonify({'success': True, 'postcard_id': postcard['id']})
-
-
-@app.route('/send/<postbox_id>/write')
-def send_page_write(postbox_id):
-    if postbox_id not in postboxes:
-        loaded = fetch_postbox_supabase(postbox_id)
-        if not loaded:
-            # Supabase에도 없으면 최소 정보로 생성하여 진행
-            base_url = request.url_root.rstrip('/')
-            postbox_path = f"/postboxes/{postbox_id}"
-            fallback = {
-                'id': postbox_id,
-                'name': '우체통',
-                'nickname': '우체통',
-                'prayer_topic': '',
-                'url': postbox_path,
-                'full_url': f"{base_url}{postbox_path}",
-                'created_at': datetime.now().isoformat(),
-                'is_opened': False
-            }
-            postboxes[postbox_id] = fallback
-            postcards.setdefault(postbox_id, [])
-            store_postbox_supabase(fallback)
-        else:
-            postboxes[postbox_id] = loaded
-            postcards.setdefault(postbox_id, fetch_postcards_supabase(postbox_id))
-
-    template_id = request.args.get('template_id')
-    template_type = request.args.get('template_type')
-    template_name = request.args.get('template_name')
-
-    return render_template(
-        'send_postcard.html',
-        postbox_id=postbox_id,
-        template_id=template_id,
-        template_type=template_type,
-        template_name=template_name,
-    )
-
-
-@app.route('/send/<postbox_id>/preview')
-def send_page_preview(postbox_id):
-    if postbox_id not in postboxes:
-        loaded = fetch_postbox_supabase(postbox_id)
-        if not loaded:
-            base_url = request.url_root.rstrip('/')
-            postbox_path = f"/postboxes/{postbox_id}"
-            fallback = {
-                'id': postbox_id,
-                'name': '우체통',
-                'nickname': '우체통',
-                'prayer_topic': '',
-                'url': postbox_path,
-                'full_url': f"{base_url}{postbox_path}",
-                'created_at': datetime.now().isoformat(),
-                'is_opened': False
-            }
-            postboxes[postbox_id] = fallback
-            postcards.setdefault(postbox_id, [])
-            store_postbox_supabase(fallback)
-        else:
-            postboxes[postbox_id] = loaded
-            postcards.setdefault(postbox_id, fetch_postcards_supabase(postbox_id))
-
-    return render_template('preview_postcard.html', postbox_id=postbox_id)
-
-
 def open_all_postboxes():
     for postbox_id in postboxes:
         postboxes[postbox_id]['is_opened'] = True
-
-
-# -----------------------
-#
-# 세림
-#
 
 @app.route('/auth/check-and-save', methods=['POST'])
 def check_and_save():
@@ -1385,6 +1369,7 @@ def view_postbox(url_path):
         return render_template('view_postbox.html', 
                                postbox_name=postbox['name'],
                                url_path=url_path,
+                               postbox_id=postbox_id,
                                color=postbox['color'],
                                postcard_count=postcard_count,
                                # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
@@ -1438,13 +1423,22 @@ scheduler.add_job(
 )
 scheduler.start()
 
+
 if __name__ == '__main__':
     print("\n" + "="*50)
     print("🚀 Flask 서버 시작")
- 
     print("✅ 인기도 필터링 활성화 (3-tier 검색)")
     ensure_reference_index()
     ensure_verse_lookup_index()
-    print("📍 브라우저에서 접속: http://127.0.0.1:5001")
+    
+    # 환경 감지
+    is_local = os.environ.get('RENDER') is None  # Render는 자동으로 RENDER 환경변수 설정
+    host = '127.0.0.1' if is_local else '0.0.0.0'
+    port = int(os.environ.get('PORT', 5001))
+    debug = is_local
+    
+    print(f"📍 브라우저에서 접속: http://{host}:{port}")
+    print(f"🔧 환경: {'로컬 개발' if is_local else 'Render 배포'}")
     print("="*50 + "\n")
-    app.run(host='0.0.0.0', port=5001, debug=True, threaded=True)
+
+    app.run(host=host, port=port, debug=debug)

@@ -1,6 +1,6 @@
 from datetime import datetime
 import uuid
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, redirect, url_for
 
 
 def create_postcard_blueprint(
@@ -116,5 +116,11 @@ def create_postcard_blueprint(
     def send_page_preview(postbox_id):
         ensure_postbox_exists(postbox_id)
         return render_template("preview_postcard.html", postbox_id=postbox_id)
+
+    # 레거시 경로 호환: /send_postcard/<id> -> 새 경로로 리다이렉트
+    @bp.route("/send_postcard/<postbox_id>")
+    def legacy_send_postcard(postbox_id):
+        ensure_postbox_exists(postbox_id)
+        return redirect(url_for("postcard_routes.send_page", postbox_id=postbox_id))
 
     return bp

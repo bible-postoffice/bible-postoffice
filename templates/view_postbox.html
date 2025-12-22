@@ -102,7 +102,7 @@
     function checkLoginAndWrite() {
             // Jinja2 변수를 JS에서 사용
         const isLoggedIn = "{{ 'true' if is_logged_in else 'false' }}";
-        const urlPath = "{{ url_path }}";
+        const postboxId = "{{ postbox_id }}";
         const color = "{{ color }}";
 
         if (!isLoggedIn) {
@@ -112,7 +112,7 @@
         } else {
             // 로그인 되어 있으면 편지 작성 페이지(send_postcard)로 이동
             // 쿼리 스트링으로 우체통 색상을 넘겨주면 작성 페이지 디자인을 맞출 수 있습니다.
-            window.location.href = `/send_postcard/${urlPath}`;
+            window.location.href = `/send/${postboxId}`;
         }
     }
 </script>
