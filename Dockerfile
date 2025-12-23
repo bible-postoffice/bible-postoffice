@@ -34,4 +34,6 @@ RUN mkdir -p /app/chroma_data
 ENV PORT=8080
 
 # ✅ timeout 0 제거, ✅ workers 증가
-CMD exec gunicorn --bind :$PORT --workers 2 --threads 4 --timeout 300 app:app
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 2 --timeout 300 app:app
+
+

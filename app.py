@@ -35,15 +35,21 @@ print("🔄 임베딩 모델 로딩 중...")
 embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
 print(f"✅ 임베딩 모델 로드 완료: {embedding_model.get_sentence_embedding_dimension()}차원")
 
-# ChromaDB 초기화
-try:
-    chroma_client = chromadb.PersistentClient(path="./vectordb_e5small")
-    bible_collection = chroma_client.get_collection(name="bible")
-    print(f"✅ 컬렉션 로드 성공: {bible_collection.name}")
-    print(f"   총 구절 수: {bible_collection.count()}")
-except Exception as e:
-    print(f"❌ ChromaDB 에러: {e}")
+# ChromaDB 초기화 (Cloud Run에서는 기본 비활성화)
+IS_CLOUD_RUN = bool(os.environ.get("K_SERVICE"))
+USE_CHROMA = os.environ.get("USE_CHROMA", "0").lower() not in ("0", "false", "no")
+if not IS_CLOUD_RUN and USE_CHROMA:
+    try:
+        chroma_client = chromadb.PersistentClient(path="./vectordb_e5small")
+        bible_collection = chroma_client.get_collection(name="bible")
+        print(f"✅ 컬렉션 로드 성공: {bible_collection.name}")
+        print(f"   총 구절 수: {bible_collection.count()}")
+    except Exception as e:
+        print(f"❌ ChromaDB 에러: {e}")
+        bible_collection = None
+else:
     bible_collection = None
+    print("ℹ️ ChromaDB 초기화 건너뜀 (Cloud Run/Supabase 전용 모드)")
 
 # 검색 주제를 문맥/대표 구절과 함께 확장하기 위한 힌트 세트
 DEFAULT_CONTEXT_DESCRIPTION = (

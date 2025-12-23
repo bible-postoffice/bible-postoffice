@@ -103,70 +103,109 @@
 <script>
     const SUPABASE_URL = "{{ url }}";
     const SUPABASE_KEY = "{{ key }}";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let supabaseClient = null;
 
-    // 1. 카카오 로그인 실행
-    async function signInWithKakao() {
-        // 세션 중복 체크 방지용 세션스토리지 초기화
+    function initSupabase() {
+        if (!supabaseClient && window.supabase) {
+            const hasValidUrl = typeof SUPABASE_URL === 'string'
+                && (SUPABASE_URL.startsWith('http://') || SUPABASE_URL.startsWith('https://'));
+            if (!hasValidUrl) {
+                console.error('Invalid SUPABASE_URL:', SUPABASE_URL);
+                return null;
+            }
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+        return supabaseClient;
+    }
+
+    initSupabase();
+
+    function getRedirectBase() {
+        const origin = window.location.origin;
+        const host = window.location.hostname;
+        const allowedHosts = new Set([
+            '127.0.0.1',
+            'localhost',
+            'bible-agent-497880616364.asia-northeast3.run.app',
+            'bible-postoffice-2025.web.app',
+        ]);
+        if (allowedHosts.has(host)) {
+            return origin;
+        }
+        return "https://bible-postoffice-2025.web.app";
+    }
+
+    // ✅ 수정된 카카오 로그인 함수
+    window.signInWithKakao = async function() {
+        if (!initSupabase()) {
+            alert("로그인 초기화에 실패했습니다. 잠시 후 다시 시도해주세요.");
+            return;
+        }
         sessionStorage.removeItem('authChecked');
-
-        await supabaseClient.auth.signInWithOAuth({
+        
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'kakao',
             options: {
-                redirectTo: window.location.origin,
-                // 카카오 로그인 화면을 항상 띄워서 이전 세션으로 자동로그인되지 않도록 함
-                queryParams: {
-                    prompt: 'login'
+                redirectTo: getRedirectBase(),
+                queryParams: { prompt: 'login' }
+            }
+        });
+        
+        if (error) {
+            console.error("로그인 시도 에러:", error.message);
+            alert("로그인 중 오류가 발생했습니다: " + error.message);
+            return;
+        }
+        
+        console.log("카카오 로그인 요청 성공");
+    }
+
+    // 구글 로그인도 동일하게 수정
+    window.signInWithGoogle = async function() {
+        if (!initSupabase()) {
+            alert("로그인 초기화에 실패했습니다. 잠시 후 다시 시도해주세요.");
+            return;
+        }
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: getRedirectBase() }
+        });
+        
+        if (error) console.error("구글 로그인 에러:", error.message);
+    }
+
+    // 인증 상태 변경 감지
+    if (initSupabase()) {
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            console.log("현재 인증 이벤트:", event);
+
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+                if (sessionStorage.getItem('authChecked')) return;
+                sessionStorage.setItem('authChecked', 'true');
+
+                try {
+                    const response = await fetch('/auth/check-and-save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            token: session.access_token,
+                            email: session.user.email
+                        })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        window.location.href = result.redirect_url;
+                    } else {
+                        sessionStorage.removeItem('authChecked');
+                        alert("서버 통신 실패: " + result.message);
+                    }
+                } catch (err) {
+                    sessionStorage.removeItem('authChecked');
+                    console.error("네트워크 오류:", err);
                 }
             }
         });
-        if (error) console.error("로그인 시도 에러:", error.message);
     }
-
-    // 2. 인증 상태 변경 감지 (가장 중요!)
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        console.log("현재 인증 이벤트:", event);
-
-        // SIGNED_IN 또는 INITIAL_SESSION일 때 세션이 있으면 실행
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-
-            // 락(Lock) 확인: 이미 체크 중이라면 중단
-            if (sessionStorage.getItem('authChecked')) return;
-
-            console.log("로그인 성공! 서버 확인 시작:", session.user.email);
-            sessionStorage.setItem('authChecked', 'true');
-
-            try {
-                const response = await fetch('/auth/check-and-save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        token: session.access_token,
-                        email: session.user.email
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // 서버가 보낸 status에 따라 로그를 찍어주면 디버깅이 편해요.
-                    if (result.status === "existing_user") {
-                        console.log("기존 우체통 발견! 이동합니다.");
-                    } else {
-                        console.log("우체통 미생성 유저. 생성 페이지로 이동합니다.");
-                    }
-
-                    // 서버가 보내준 URL로 리다이렉트
-                    window.location.href = result.redirect_url;
-                } else {
-                    // 서버 처리 실패 시 락을 해제하여 재시도 가능하게 함
-                    sessionStorage.removeItem('authChecked');
-                    alert("서버 통신 실패: " + result.message);
-                }
-            } catch (err) {
-                sessionStorage.removeItem('authChecked');
-                console.error("네트워크 오류:", err);
-            }
-        }
-    });
 </script>
+
