@@ -769,10 +769,10 @@ def view_postcard(postcard_id):
 
     TEMPLATE_IMAGE_MAP = {
         0: {  # 엽서
-            1: "images/postcards/POSTCARD1.png",
-            2: "images/postcards/POSTCARD2.png",
-            3: "images/postcards/POSTCARD3.png",
-            4: "images/postcards/POSTCARD4.png",
+            1: "images/postcards/postcard1.jpg",
+            2: "images/postcards/postcard2.jpg",
+            3: "images/postcards/postcard3.jpg",
+            4: "images/postcards/postcard4.jpg",
         },
         1: {  # 편지지 (ID 5~8도 매핑)
             1: "images/letters/letter1.png",
@@ -805,7 +805,7 @@ def view_postcard(postcard_id):
 
     template_image = tpl_img
     if not template_image:
-        template_image = TEMPLATE_IMAGE_MAP.get(tpl_type, {}).get(tpl_id_int) or "images/postcards/POSTCARD1.png"
+        template_image = TEMPLATE_IMAGE_MAP.get(tpl_type, {}).get(tpl_id_int) or "images/postcards/postcard1.jpg"
 
     # 파일 시스템은 대소문자 구분이 있을 수 있으니 소문자로 정규화
     template_image = template_image.lstrip("/").lower()

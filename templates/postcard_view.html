@@ -12,6 +12,12 @@
             font-display: swap;
         }
         @font-face {
+            font-family: 'Pretendard';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Thin.woff2') format('woff2');
+            font-weight: 100;
+            font-display: swap;
+        }
+        @font-face {
             font-family: 'KimJeongcheolMyoungjo';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/KimjungchulMyungjo-Light.woff2') format('woff2');
             font-weight: 300;
@@ -46,37 +52,24 @@
             background: #f5f7fb;
             color: var(--ink);
             font-family: var(--user-font);
-            padding: 12px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
+            padding: 18px;
         }
         .wrap {
-            width: min(1100px, 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
+            max-width: 1100px;
+            margin: 0 auto;
         }
         .card {
             position: relative;
             background: url("{{ url_for('static', filename=template_image) }}") center/cover no-repeat;
             width: 100%;
             aspect-ratio: 16 / 10;
-            max-width: 1100px;
-            max-height: 82vh;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.12);
             overflow: hidden;
         }
         .card.letter {
-            aspect-ratio: 10.5 / 15;
-            width: min(90vw, calc(90vh * 0.7));  /* 10.5/15 = 0.7 */
-            max-height: 90vh;
-            max-width: none;
+            aspect-ratio: 2 / 3;
         }
         .overlay {
             position: absolute;
@@ -85,32 +78,94 @@
             display: flex;
             gap: 1.5%;
         }
-        .card.letter .overlay {
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6%;
-            padding: 10% 8%;
-        }
         .left, .right {
             position: relative;
             flex: 1;
             display: flex;
             flex-direction: column;
         }
-        .card.letter .left,
+
+        /* ============ 편지지 템플릿: 50/50 상하 분할 ============ */
+        .card.letter .overlay {
+            flex-direction: column;
+            gap: 0;
+            padding: 5% 8%;
+            height: 90%;
+            width: 90%;
+            margin: auto;
+            justify-content: flex-start;
+        }
+        
+        /* 위쪽 50%: verse 영역 */
+        .card.letter .left {
+            position: relative;
+            flex: 0 0 50%; /* 정확히 50% */
+            padding: 3% 4%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 아래쪽 50%: msg + sender 영역 */
         .card.letter .right {
-            width: 80%;
-            max-width: 760px;
+            flex: 0 0 50%; /* 정확히 50% */
+            padding: 3% 4%;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            gap: 8px;
+            align-items: stretch;
         }
-        .card.letter .left { flex: 0 0 40%; justify-content: center; }
-        .card.letter .right { flex: 0 0 40%; justify-content: flex-start; gap: 8px; }
         
-        /* 왼쪽: 성경 구절 영역 (노란색) */
-        .verse-box {
+        .card.letter .verse-box {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            color: var(--ink);
+            line-height: 1.5;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-family: var(--user-font);
+        }
+        
+        .card.letter .msg-box {
+            position: relative;
+            flex: 1 1 0; /* 남은 공간 채움 */
+            color: var(--ink);
+            line-height: 1.5;
+            font-weight: 600;
+            overflow: hidden;
+            font-family: var(--user-font);
+        }
+        
+        .card.letter .sender-box {
+            position: relative;
+            flex-shrink: 0;
+            margin-top: 4px;
+            text-align: right;
+            color: var(--ink);
+            font-weight: 700;
+            overflow: hidden;
+            font-family: var(--user-font);
+            align-self: flex-end;
+            max-width: 70%;
+        }
+
+        /* ============ 엽서 템플릿: 좌우 2단 ============ */
+        .card.postcard .overlay {
+            flex-direction: row;
+            gap: 1.5%;
+            padding: 3% 2.5%;
+        }
+        
+        .card.postcard .left,
+        .card.postcard .right {
+            flex: 1;
+            position: relative;
+        }
+        
+        .card.postcard .verse-box {
             position: absolute;
             top: 12%;
             left: 4%;
@@ -124,34 +179,8 @@
             overflow: hidden;
             font-family: var(--user-font);
         }
-        .card.letter .verse-box {
-            position: relative;
-            inset: auto;
-            width: 100%;
-            max-width: 760px;
-            background: none;
-        }
-        .verse-box .text {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .verse-box .text .body {
-            flex: 1;
-            overflow: hidden;
-        }
-        .verse-box  .ref {
-            font-weight: 800;
-            text-align: right;
-            flex-shrink: 0;
-            margin-top: 0.3em;
-            align-self: flex-end;
-            display: block;
-        }
         
-        /* 오른쪽: 메시지 영역 (파란색) */
-        .msg-box {
+        .card.postcard .msg-box {
             position: absolute;
             top: 25%;
             left: 5%;
@@ -162,103 +191,113 @@
             font-weight: 600;
             overflow: hidden;
             font-family: var(--user-font);
-            display: flex;
-            flex-direction: column;
-        }
-        .msg-box .msg-body {
-            flex: 1;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow-wrap: anywhere;
-        }
-        .card.letter .msg-box {
-            position: relative;
-            inset: auto;
-            width: 100%;
-            max-width: 760px;
-            flex: 1 1 0;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            white-space: normal;
         }
         
-        /* 발신자 영역 (검정색) */
-        .sender-box {
+        .card.postcard .sender-box {
             position: absolute;
             bottom: 8%;
-            left: 5%;
-            right: 35%;
+            left: auto;
+            right: 8%;
+            max-width: 55%;
+            text-align: right;
             color: var(--ink);
             font-weight: 700;
             overflow: hidden;
             font-family: var(--user-font);
         }
-        .card.letter .sender-box {
-            position: relative;
-            inset: auto;
-            width: 100%;
-            max-width: 760px;
+
+        /* ============ 공통 스타일 ============ */
+        .verse-box .text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .verse-box .text .body {
+            flex: 1;
+            overflow: hidden;
+        }
+        .verse-box .ref {
+            font-weight: 800;
             text-align: right;
+            flex-shrink: 0;
+            margin-top: 0;
+            align-self: flex-end;
+            display: block;
         }
         
-        /* 반응형 조정 */
+        .msg-box {
+            color: var(--ink);
+            line-height: 1.5;
+            font-weight: 600;
+            overflow: hidden;
+            font-family: var(--user-font);
+        }
+        
+        .sender-box {
+            color: var(--ink);
+            font-weight: 700;
+            overflow: hidden;
+            text-align: right;
+            font-family: var(--user-font);
+        }
+        
+        /* ============ 반응형 조정 ============ */
         @media (max-width: 768px) {
-            .overlay { 
+            .card.postcard .overlay { 
                 padding: 2.5% 2%;
                 gap: 1%;
             }
-            .verse-box {
+            .card.postcard .verse-box {
                 top: 20%;
                 bottom: 12%;
             }
-            .msg-box {
+            .card.postcard .msg-box {
                 top: 30%;
                 bottom: 25%;
             }
-            .sender-box {
+            .card.postcard .sender-box {
                 bottom: 10%;
-                right: 30%;
+                right: 10%;
+                max-width: 60%;
             }
-        }
-
-        @media (min-width: 769px) {
-            body {
-                padding: 10px;
-            }
-            .wrap {
-                width: min(1100px, 96vw);
-            }
-            .card {
-                max-height: 82vh;
-            }
-            .card.letter {
-                max-height: 86vh;
+            
+            .card.letter .overlay {
+                height: 90%;
+                width: 90%;
+                padding: 5% 8%;
             }
         }
         
         @media (max-width: 480px) {
             body { padding: 10px; }
             .card { border-radius: 8px; }
-            .verse-box {
+            
+            .card.postcard .verse-box {
                 top: 18%;
                 left: 3%;
                 right: 3%;
             }
-            .msg-box {
+            .card.postcard .msg-box {
                 top: 30%;
                 left: 4%;
                 right: 4%;
                 bottom: 28%;
             }
-            .sender-box {
+            .card.postcard .sender-box {
                 bottom: 12%;
-                right: 25%;
+                right: 12%;
+                max-width: 70%;
+            }
+            
+            .card.letter .overlay {
+                height: 90%;
+                width: 90%;
+                padding: 5% 7%;
             }
         }
-</style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     <script>
@@ -280,7 +319,7 @@
                 </div>
                 <div class="right">
                     <div class="msg-box">
-                        <div class="msg-body">{{ message if message else '전달할 메시지가 없습니다.' }}</div>
+                        {{ message if message else '' }}
                     </div>
                     <div class="sender-box">
                         From. {{ sender or '익명' }}
@@ -288,24 +327,24 @@
                 </div>
             </div>
         </div>
-        <div style="margin-top:8px; text-align:center;">
+        <div style="margin-top:14px; text-align:center;">
             <button onclick="saveImage()" style="padding:10px 16px; border-radius:10px; border:none; background:#2563eb; color:#fff; font-weight:800; cursor:pointer;">이미지 저장</button>
         </div>
     </div>
 
     <script>
-        function fitTextToContainer(element, minSize, maxSize) {
+        function fitTextToContainer(element, minSize, maxSize, containerEl) {
             if (!element || !element.textContent.trim()) return;
             
+            const target = containerEl || element;
             let fontSize = maxSize;
             element.style.fontSize = fontSize + 'px';
             
-            // 텍스트가 컨테이너를 넘치면 글씨 크기를 줄임 (반드시 들어갈 때까지)
             let iterations = 0;
-            const maxIterations = 200; // 무한루프 방지
+            const maxIterations = 200;
             
-            while ((element.scrollHeight > element.clientHeight + 1 || 
-                    element.scrollWidth > element.clientWidth + 1) && 
+            while ((element.scrollHeight > target.clientHeight + 1 || 
+                    element.scrollWidth > target.clientWidth + 1) && 
                    fontSize > minSize && iterations < maxIterations) {
                 fontSize -= 0.3;
                 element.style.fontSize = fontSize + 'px';
@@ -326,25 +365,26 @@
             let refMin, refMax, textMin, textMax;
             
             if (isMobile) {
-                refMin = 8; refMax = 10;
-                textMin = 5; textMax = 12;
+                refMin = 10; refMax = 14;
+                textMin = 8; textMax = 14;
             } else if (isTablet) {
-                refMin = 8; refMax = 15;
-                textMin = 7; textMax = 16;
+                refMin = 14; refMax = 20;
+                textMin = 12; textMax = 24;
             } else {
-                refMin = 12; refMax = 20;
-                textMin = 10; textMax = 24;
+                // 데스크톱: 크게 증가
+                refMin = 18; refMax = 32;
+                textMin = 16; textMax = 42;
             }
             
-            // 제목을 먼저 맞춤
-            fitTextToContainer(verseRef, refMin, refMax);
+            // ref 먼저 조정
+            fitTextToContainer(verseRef, refMin, refMax, verseBox);
             
-            // 제목이 차지한 공간을 제외한 나머지 공간에 본문을 맞춤
+            // ref 높이 제외한 영역에 본문 맞춤
             const verseBoxHeight = verseBox.clientHeight;
             const refHeight = verseRef.offsetHeight;
-            const availableHeight = verseBoxHeight - refHeight;
+            const refMargin = parseInt(getComputedStyle(verseRef).marginTop || 0, 10);
+            const availableHeight = verseBoxHeight - refHeight - refMargin;
             
-            // 본문 영역의 높이 계산
             let textFontSize = textMax;
             verseText.style.fontSize = textFontSize + 'px';
             
@@ -361,42 +401,42 @@
         }
 
         function adjustAllText() {
-            const msgBox = document.querySelector('.msg-box');
-            const msgBody = document.querySelector('.msg-box .msg-body');
-            const senderBox = document.querySelector('.sender-box');
-
-            const isMobile = window.innerWidth <= 480;
-            const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
-
-            // 성경 구절 영역 (제목 + 본문)
-            fitVerseBox();
-
-            // 메시지 영역 (본문 요소 기준으로 맞춤)
-            if (msgBody && msgBox) {
-                if (isMobile) {
-                    fitTextToContainer(msgBody, 5, 14);
-                } else if (isTablet) {
-                    fitTextToContainer(msgBody, 7, 18);
-                } else {
-                    fitTextToContainer(msgBody, 10, 24);
-                }
-            }
-
-            // 발신자 영역
-            if (senderBox) {
-                if (isMobile) {
-                    fitTextToContainer(senderBox, 5, 10);
-                } else if (isTablet) {
-                    fitTextToContainer(senderBox, 7, 15);
-                } else {
-                    fitTextToContainer(senderBox, 11, 20);
-                }
+        const msgBox = document.querySelector('.msg-box');
+        const senderBox = document.querySelector('.sender-box');
+        
+        const isMobile = window.innerWidth <= 480;
+        const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
+        
+        fitVerseBox();
+        
+        // 메시지 영역 - 모바일 크기 축소
+        if (msgBox) {
+            if (isMobile) {
+                fitTextToContainer(msgBox, 6, 12);  // 이전: 10~18
+            } else if (isTablet) {
+                fitTextToContainer(msgBox, 12, 22);  // 이전: 16~28
+            } else {
+                fitTextToContainer(msgBox, 20, 60);
             }
         }
+        
+        // 발신자 영역 - 모바일 크기 축소
+        if (senderBox) {
+            if (isMobile) {
+                fitTextToContainer(senderBox, 5, 10);  // 이전: 8~14
+            } else if (isTablet) {
+                fitTextToContainer(senderBox, 10, 16);  // 이전: 12~20
+            } else {
+                fitTextToContainer(senderBox, 16, 36);
+            }
+        }
+    }
+
+
 
         // 페이지 로드 및 리사이즈 시 실행
         window.addEventListener('load', () => {
-            setTimeout(adjustAllText, 100); // 폰트 로딩을 위한 짧은 지연
+            setTimeout(adjustAllText, 100);
         });
         window.addEventListener('resize', adjustAllText);
 
