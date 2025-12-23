@@ -56,15 +56,12 @@
             font-size: 12px;
             margin-bottom: 10px;
         }
-        .anon-badge {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: rgba(67, 56, 202, 0.12);
-            color: #312e81;
-            font-weight: 700;
-            font-size: 12px;
-            margin-left: 8px;
+        .sender-name {
+            display: block;
+            margin-top: 6px;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
         }
         @font-face {
             font-family: 'PyeojinGothic';
@@ -143,9 +140,7 @@
             {% set font_family = postcard.font_family or postcard.font_style %}
             <div class="postcard template-{{ tpl_id }}">
                 <div class="template-badge">{{ tpl_type }} | {{ postcard.template_name or tpl_id }}</div>
-                {% if postcard.is_anonymous %}
-                <span class="anon-badge">익명</span>
-                {% endif %}
+                <span class="sender-name">From. {{ postcard.sender_name or '익명' }}</span>
                 <div class="verse-reference">📖 {{ postcard.verse_reference }}</div>
                 <div class="verse-text" style="{{ 'font-family: ' ~ font_family ~ ';' if font_family else '' }}">{{ postcard.verse_text }}</div>
                 {% if postcard.message %}

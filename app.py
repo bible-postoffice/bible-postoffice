@@ -603,14 +603,8 @@ def fetch_postcards_supabase(postbox_id: str):
 
 
 def fetch_postcard_by_id(postcard_id: str):
-    """우편 ID로 엽서 1건을 가져온다 (메모리 캐시 → Supabase)."""
-    # 1) 메모리 캐시 우선
-    for plist in postcards.values():
-        for card in plist:
-            if card.get("id") == postcard_id:
-                return card
-
-    # 2) Supabase 조회
+    """우편 ID로 엽서 1건을 가져온다 (Supabase → 메모리 캐시)."""
+    # 1) Supabase 우선 조회 (DB 수정 사항 즉시 반영)
     if SUPABASE_URL and SUPABASE_KEY:
         endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postcards"
         params = {"id": f"eq.{postcard_id}", "limit": 1}
@@ -618,11 +612,25 @@ def fetch_postcard_by_id(postcard_id: str):
             resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
             if resp.status_code == 200:
                 data = resp.json() or []
-                return data[0] if data else None
+                if data:
+                    card = data[0]
+                    # 캐시에도 반영해 일관성 유지
+                    for plist in postcards.values():
+                        for idx, cached in enumerate(plist):
+                            if cached.get("id") == postcard_id:
+                                plist[idx] = card
+                                return card
+                    return card
             else:
                 print(f"⚠️ Supabase postcard fetch 실패 status={resp.status_code}, body={resp.text}")
         except Exception as exc:
             print(f"⚠️ Supabase postcard fetch 예외: {exc}")
+
+    # 2) 메모리 캐시 fallback
+    for plist in postcards.values():
+        for card in plist:
+            if card.get("id") == postcard_id:
+                return card
     return None
 
 
@@ -706,6 +714,9 @@ def store_postcard_supabase(postbox_id: str, postcard: dict):
         "message": postcard.get("message", ""),
         "created_at": postcard.get("created_at"),
     }
+    sender_name = postcard.get("sender_name")
+    if sender_name:
+        payload["sender_name"] = sender_name
     if postcard.get("font_family"):
         payload["font_family"] = postcard.get("font_family")
     if postcard.get("font_style"):
@@ -714,14 +725,18 @@ def store_postcard_supabase(postbox_id: str, postcard: dict):
         resp = requests.post(endpoint, headers=headers, json=payload, timeout=8)
         if resp.status_code in (200, 201):
             return resp.json()
-        if resp.status_code == 400 and ("font_family" in resp.text or "font_style" in resp.text):
+        if resp.status_code == 400:
             fallback_payload = dict(payload)
-            fallback_payload.pop("font_family", None)
-            fallback_payload.pop("font_style", None)
-            resp_font_retry = requests.post(endpoint, headers=headers, json=fallback_payload, timeout=8)
-            if resp_font_retry.status_code in (200, 201):
-                print("ℹ️ Supabase가 글씨체 컬럼을 지원하지 않아 기본 필드로 저장했습니다.")
-                return resp_font_retry.json()
+            if "font_family" in resp.text or "font_style" in resp.text:
+                fallback_payload.pop("font_family", None)
+                fallback_payload.pop("font_style", None)
+            if "sender_name" in resp.text:
+                fallback_payload.pop("sender_name", None)
+            if fallback_payload != payload:
+                resp_retry = requests.post(endpoint, headers=headers, json=fallback_payload, timeout=8)
+                if resp_retry.status_code in (200, 201):
+                    print("ℹ️ Supabase가 일부 컬럼을 지원하지 않아 기본 필드로 저장했습니다.")
+                    return resp_retry.json()
         # 외래키 부족 등으로 실패하면 한번 더 postbox upsert 시도 후 재시도
         if resp.status_code == 409:
             ensure_postbox_supabase(postbox_id)
@@ -1377,7 +1392,9 @@ def view_postbox(url_path):
                                end_date=end_date,
                                is_owner=is_owner,
                                is_expired=is_expired,
-                               is_logged_in=bool(session.get('user_email')))
+                               is_logged_in=bool(session.get('user_email')),
+                               supabase_url=os.environ.get('SUPABASE_URL'),
+                               supabase_key=os.environ.get('SUPABASE_KEY'))
 
     except Exception as e:
         print(f"Error: {e}")

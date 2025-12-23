@@ -70,12 +70,22 @@ def create_postcard_blueprint(
                 postboxes[postbox_id] = loaded
                 postcards[postbox_id] = fetch_postcards_supabase(postbox_id)
 
+        sender_name = (data.get("sender_name") or "").strip()
+        is_anonymous = data.get("is_anonymous")
+        if is_anonymous is None:
+            is_anonymous = not sender_name
+        else:
+            is_anonymous = bool(is_anonymous)
+        if sender_name:
+            is_anonymous = False
+
         postcard = {
             "id": str(uuid.uuid4()),
             "template_id": data.get("template_id") or 1,
             "template_type": data.get("template_type") if data.get("template_type") is not None else 0,
             "template_name": data.get("template_name") or "",
-            "is_anonymous": bool(data.get("is_anonymous")),
+            "sender_name": sender_name,
+            "is_anonymous": is_anonymous,
             "verse_reference": data.get("verse_reference"),
             "verse_text": data.get("verse_text"),
             "message": data.get("message", ""),

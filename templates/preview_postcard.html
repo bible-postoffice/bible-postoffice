@@ -491,8 +491,8 @@
                         <span id="summary-verse"></span>
                     </div>
                     <div class="summary-row">
-                        <span>익명 여부</span>
-                        <span id="summary-anon"></span>
+                        <span>보여줄 이름</span>
+                        <span id="summary-name"></span>
                     </div>
                     
                 </div>
@@ -582,7 +582,7 @@
         const senderLabelEl = document.getElementById('sender-label');
         const summaryTemplateEl = document.getElementById('summary-template');
         const summaryVerseEl = document.getElementById('summary-verse');
-        const summaryAnonEl = document.getElementById('summary-anon');
+        const summaryNameEl = document.getElementById('summary-name');
         const summaryMessageEl = document.getElementById('summary-message');
         const fontGridEl = document.getElementById('font-grid');
         const sendBtn = document.getElementById('send-btn');
@@ -661,10 +661,12 @@
             verseRefEl.textContent = verse.reference || '선택한 말씀';
             verseTextEl.textContent = verse.text || '';
             messageTextEl.textContent = draft.message ? draft.message : '';
-            senderLabelEl.textContent = draft.is_anonymous ? '익명' : '보내는 친구';
+            const senderName = (draft.sender_name || '').trim();
+            const displayName = senderName || '익명';
+            senderLabelEl.textContent = displayName;
 
             summaryVerseEl.textContent = verse.reference || '-';
-            summaryAnonEl.textContent = draft.is_anonymous ? '익명' : '이름 공개';
+            summaryNameEl.textContent = displayName;
             summaryMessageEl.textContent = draft.message ? `${draft.message.length}자` : '작성하지 않음';
             setTimeout(adjustAllText, 100);
         }
@@ -711,7 +713,8 @@
                         template_id: tpl.id,
                         template_type: tpl.type,
                         template_name: tpl.name,
-                        is_anonymous: !!draft.is_anonymous,
+                        sender_name: (draft.sender_name || '').trim(),
+                        is_anonymous: !(draft.sender_name || '').trim(),
                         verse_reference: draft.verse.reference,
                         verse_text: draft.verse.text,
                         message: draft.message || '',

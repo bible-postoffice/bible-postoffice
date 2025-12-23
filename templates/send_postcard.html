@@ -134,52 +134,27 @@
         }
         .selected-banner strong { color: #4338ca; }
         .selected-banner .template-type { color: #374151; font-weight: 600; }
-        .toggle-row {
+        .name-field {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+            flex-direction: column;
+            gap: 8px;
             padding: 12px 14px;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
             background: #f9fafb;
         }
-        .toggle-text { font-weight: 700; color: #111827; }
-        .toggle-desc { color: #4b5563; font-size: 13px; margin-top: 4px; }
-        .toggle-row .switch { margin-left: auto; }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 52px;
-            height: 28px;
+        .name-field label { font-weight: 700; color: #111827; }
+        .name-field .name-input {
+            width: 100%;
+            max-width: 100%;
+            padding: 14px 16px;
+            font-size: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            box-sizing: border-box;
+            background: #fff;
         }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            inset: 0;
-            background-color: #e5e7eb;
-            transition: .2s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 22px;
-            width: 22px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .2s;
-            border-radius: 50%;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
-        }
-        input:checked + .slider {
-            background-color: #6366f1;
-        }
-        input:checked + .slider:before {
-            transform: translateX(24px);
-        }
+        .name-help { color: #4b5563; font-size: 13px; }
         .search-box {
             margin: 30px 0;
         }
@@ -357,16 +332,16 @@
             <button id="next-page" class="nav-arrow primary">더 보기</button>
         </div>
         
-        <div class="section-title">익명 여부</div>
-        <div class="toggle-row" style="margin-bottom:18px;">
-            <div>
-                <div class="toggle-text">익명으로 보낼래요</div>
-                <div class="toggle-desc">이름을 숨기고 마음만 전할 수 있어요.</div>
-            </div>
-            <label class="switch">
-                <input type="checkbox" id="anonymous-toggle">
-                <span class="slider"></span>
-            </label>
+        <div class="section-title">
+            보여줄 이름
+            <span class="tooltip">?
+                <div class="tooltip-content">
+                    입력하지 않으면 익명으로 표시됩니다.
+                </div>
+            </span>
+        </div>
+        <div class="name-field" style="margin-bottom:18px;">
+            <input type="text" id="sender-name" class="name-input" placeholder="예: 하영, 온유한친구" maxlength="20">
         </div>
 
         <div class="section-title">편지 작성</div>
@@ -551,11 +526,13 @@
                 alert(`편지는 최대 ${MAX_MESSAGE_LENGTH}자까지 작성할 수 있어요.`);
                 return;
             }
-            const isAnonymous = document.getElementById('anonymous-toggle').checked;
+            const senderNameInput = document.getElementById('sender-name');
+            const senderName = senderNameInput ? senderNameInput.value.trim() : '';
             const draft = {
                 postbox_id: postboxId,
                 template: selectedTemplate,
-                is_anonymous: isAnonymous,
+                sender_name: senderName,
+                is_anonymous: !senderName,
                 verse: selectedVerse,
                 message
             };
@@ -587,8 +564,9 @@
                 if (saved.message) {
                     messageInput.value = saved.message.slice(0, MAX_MESSAGE_LENGTH);
                 }
-                if (saved.is_anonymous) {
-                    document.getElementById('anonymous-toggle').checked = true;
+                if (saved.sender_name) {
+                    const senderNameInput = document.getElementById('sender-name');
+                    if (senderNameInput) senderNameInput.value = saved.sender_name;
                 }
                 const savedTemplate = saved.template ? normalizeTemplate(saved.template) : null;
                 const queryTemplate = hasQueryTemplate ? normalizeTemplate(preselectedTemplate) : null;
