@@ -505,10 +505,11 @@
         function getShareMeta() {
             const senderName = {{ sender|tojson }};
             const safeSender = senderName && senderName.trim() ? senderName : '익명';
+            const url = window.location.href;
             return {
-                url: window.location.href,
+                url,
                 title: '말씀 우체통',
-                text: `${safeSender}이 보낸 성경 말씀 편지입니다.`,
+                text: `${safeSender}이 보낸 성경 말씀 편지입니다. ${url}`,
             };
         }
 
@@ -574,7 +575,7 @@
                 content: {
                     title: '말씀 우체통',
                     description: meta.text,
-                    imageUrl: "{{ template_image_url }}",
+                    imageUrl: "https://bible-postoffice-2025.web.app/view-postcard/adae057c-0902-4d77-b46b-541e60241532",
                     link: {
                         mobileWebUrl: meta.url,
                         webUrl: meta.url,
