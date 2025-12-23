@@ -768,7 +768,7 @@ def view_postcard(postcard_id):
     card = fetch_postcard_by_id(postcard_id)
     if not card:
         return "엽서를 찾을 수 없습니다.", 404
-    sender = "익명"
+    sender = card.get("sender_name") or "익명"
     verse_ref = card.get("verse_reference") or "말씀"
     verse_text = card.get("verse_text") or ""
     message = card.get("message") or ""
@@ -843,6 +843,7 @@ def view_postcard(postcard_id):
         template_image=template_image,
         template_image_url=template_image_url,
         template_is_letter=template_is_letter,
+        kakao_js_key=os.environ.get("KAKAO_JS_KEY", ""),
     )
 
 def store_generated_url(original_url: str, base_url: str):

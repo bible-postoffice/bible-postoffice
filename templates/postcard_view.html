@@ -58,6 +58,35 @@
             max-width: 1100px;
             margin: 0 auto;
         }
+        .actions {
+            margin-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-light { background: #fff; color: #111827; border: 1px solid #e5e7eb; }
+        .btn-x { background: #0f172a; color: #fff; }
+        .btn-kakao { background: #FEE500; color: #191919; }
+        .btn-instagram { background: linear-gradient(135deg, #F58529 0%, #DD2A7B 45%, #8134AF 75%, #515BD4 100%); color: #fff; }
+        .share-section {
+            margin-top: 18px;
+            text-align: center;
+        }
+        .share-title {
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
         .card {
             position: relative;
             background: url("{{ url_for('static', filename=template_image) }}") center/cover no-repeat;
@@ -298,6 +327,7 @@
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
 </head>
 <body>
     <script>
@@ -305,6 +335,12 @@
             const fontFamily = {{ font_family|tojson }};
             if (fontFamily) {
                 document.documentElement.style.setProperty('--user-font', fontFamily);
+            }
+        })();
+        (function() {
+            const kakaoKey = {{ kakao_js_key|tojson }};
+            if (kakaoKey && window.Kakao && !Kakao.isInitialized()) {
+                Kakao.init(kakaoKey);
             }
         })();
     </script>
@@ -327,8 +363,17 @@
                 </div>
             </div>
         </div>
-        <div style="margin-top:14px; text-align:center;">
-            <button onclick="saveImage()" style="padding:10px 16px; border-radius:10px; border:none; background:#2563eb; color:#fff; font-weight:800; cursor:pointer;">이미지 저장</button>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="saveImage()">이미지 저장</button>
+        </div>
+        <div class="share-section">
+            <div class="share-title">공유하기</div>
+            <div class="actions">
+                <button class="btn btn-instagram" onclick="shareInstagram()">Instagram</button>
+                <button class="btn btn-x" onclick="shareX()">X</button>
+                <button class="btn btn-kakao" onclick="shareKakao()">KakaoTalk</button>
+                <button class="btn btn-light" onclick="copyShareUrl()">URL 복사</button>
+            </div>
         </div>
     </div>
 
@@ -455,6 +500,125 @@
                 alert('이미지 저장 중 오류가 발생했습니다.');
                 console.error(err);
             });
+        }
+
+        function getShareMeta() {
+            const senderName = {{ sender|tojson }};
+            const safeSender = senderName && senderName.trim() ? senderName : '익명';
+            return {
+                url: window.location.href,
+                title: '말씀 우체통',
+                text: `${safeSender}이 보낸 성경 말씀 편지입니다.`,
+            };
+        }
+
+        async function createShareImageFile() {
+            const cardEl = document.getElementById('postcard');
+            if (!cardEl || typeof html2canvas === 'undefined') return null;
+            const canvas = await html2canvas(cardEl, { scale: 2 });
+            return new Promise(resolve => {
+                canvas.toBlob(blob => {
+                    if (!blob) return resolve(null);
+                    resolve(new File([blob], 'postcard.png', { type: 'image/png' }));
+                }, 'image/png');
+            });
+        }
+
+        async function shareWithSystem(preferImage = false) {
+            const meta = getShareMeta();
+            if (!navigator.share) {
+                copyShareUrl(true);
+                return false;
+            }
+            try {
+                if (preferImage && navigator.canShare) {
+                    const file = await createShareImageFile();
+                    if (file && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ ...meta, files: [file] });
+                        return true;
+                    }
+                }
+                await navigator.share(meta);
+                return true;
+            } catch (err) {
+                console.warn('share failed', err);
+                return false;
+            }
+        }
+
+        async function shareInstagram() {
+            const ok = await shareWithSystem(true);
+            if (!ok) {
+                alert('모바일 공유 기능이 필요합니다. URL을 복사했습니다.');
+            }
+        }
+
+        function shareX() {
+            const meta = getShareMeta();
+            const shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(meta.url)}&text=${encodeURIComponent(meta.text)}`;
+            window.open(shareUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        async function shareKakao() {
+            const kakaoKey = {{ kakao_js_key|tojson }};
+            if (!kakaoKey || !window.Kakao || !Kakao.isInitialized()) {
+                const ok = await shareWithSystem(true);
+                if (!ok) {
+                    alert('모바일 공유 기능이 필요합니다. URL을 복사했습니다.');
+                }
+                return;
+            }
+            const meta = getShareMeta();
+            Kakao.Share.sendDefault({
+                objectType: 'feed',
+                content: {
+                    title: '말씀 우체통',
+                    description: meta.text,
+                    imageUrl: "{{ template_image_url }}",
+                    link: {
+                        mobileWebUrl: meta.url,
+                        webUrl: meta.url,
+                    },
+                },
+                buttons: [
+                    {
+                        title: '엽서 보러가기',
+                        link: {
+                            mobileWebUrl: meta.url,
+                            webUrl: meta.url,
+                        },
+                    },
+                ],
+            });
+        }
+
+        function copyShareUrl(silent = false) {
+            const { url } = getShareMeta();
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    if (!silent) alert('URL이 복사되었습니다.');
+                }).catch(() => {
+                    fallbackCopy(url, silent);
+                });
+            } else {
+                fallbackCopy(url, silent);
+            }
+        }
+
+        function fallbackCopy(text, silent) {
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            temp.style.position = 'fixed';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+                document.execCommand('copy');
+                if (!silent) alert('URL이 복사되었습니다.');
+            } catch (e) {
+                if (!silent) alert('URL 복사에 실패했습니다.');
+            }
+            document.body.removeChild(temp);
         }
     </script>
 </body>
