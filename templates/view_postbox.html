@@ -3,12 +3,12 @@
 {% block content %}
 <div class="flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-2xl mx-auto w-full text-center relative">
 
-    {% if is_logged_in %}
-    <a href="/logout"
-       class="fixed top-16 right-4 z-50 text-sm font-bold px-3 py-1.5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 shadow pointer-events-auto">
+    <button type="button"
+       id="logoutButton"
+       onclick="handleLogout()"
+       class="fixed top-16 right-4 z-50 text-sm font-bold px-3 py-1.5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 shadow pointer-events-auto {{ '' if is_logged_in else 'hidden' }}">
         로그아웃
-    </a>
-    {% endif %}
+    </button>
 
     <div class="mb-4">
         {# 우체통 색상별 파스텔 배지 테마 정의 #}
@@ -150,11 +150,24 @@
 
     document.getElementById('loginModalOverlay')?.addEventListener('click', closeLoginModal);
 
+    async function handleLogout() {
+        try {
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
+        } catch (err) {
+            console.warn("Supabase 로그아웃 실패:", err);
+        } finally {
+            window.location.href = '/logout';
+        }
+    }
+
     async function signInWithGoogle() {
         if (!supabaseClient) {
             alert("로그인 설정이 준비되지 않았습니다.");
             return;
         }
+        sessionStorage.setItem('postboxReturnTo', window.location.pathname);
         sessionStorage.removeItem(`postboxAuthChecked-{{ postbox_id }}`);
         await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
@@ -172,6 +185,7 @@
             alert("로그인 설정이 준비되지 않았습니다.");
             return;
         }
+        sessionStorage.setItem('postboxReturnTo', window.location.pathname);
         sessionStorage.removeItem(`postboxAuthChecked-{{ postbox_id }}`);
         await supabaseClient.auth.signInWithOAuth({
             provider: 'kakao',
@@ -184,8 +198,33 @@
         });
     }
 
+    let isLoggedIn = {{ 'true' if is_logged_in else 'false' }};
+    function updateLogoutVisibility() {
+        const btn = document.getElementById('logoutButton');
+        if (!btn) return;
+        btn.classList.toggle('hidden', !isLoggedIn);
+    }
+    function detectSupabaseSessionFromStorage() {
+        try {
+            for (let i = 0; i < localStorage.length; i += 1) {
+                const key = localStorage.key(i);
+                if (!key || !key.includes('auth-token')) continue;
+                const raw = localStorage.getItem(key);
+                if (!raw) continue;
+                const data = JSON.parse(raw);
+                if (data && data.access_token) return true;
+            }
+        } catch (err) {
+            console.warn("로그인 상태 확인 실패:", err);
+        }
+        return false;
+    }
+    updateLogoutVisibility();
+    if (!isLoggedIn && detectSupabaseSessionFromStorage()) {
+        isLoggedIn = true;
+        updateLogoutVisibility();
+    }
     function checkLoginAndWrite() {
-        const isLoggedIn = {{ 'true' if is_logged_in else 'false' }};
         const postboxId = "{{ postbox_id }}";
 
         if (!isLoggedIn) {
@@ -193,6 +232,15 @@
             return;
         }
         window.location.href = `/send/${postboxId}`;
+    }
+
+    async function syncLoginStateFromSupabase() {
+        if (!supabaseClient) return;
+        const { data } = await supabaseClient.auth.getSession();
+        if (data && data.session) {
+            isLoggedIn = true;
+            updateLogoutVisibility();
+        }
     }
 
     if (supabaseClient) {
@@ -214,7 +262,10 @@
                     });
                     const result = await response.json();
                     if (result.success) {
-                        window.location.href = `/send/${postboxId}`;
+                        isLoggedIn = true;
+                        closeLoginModal();
+                        updateLogoutVisibility();
+                        alert("로그인이 완료되었습니다. 다시 편지 남기기를 눌러주세요.");
                         return;
                     }
                     sessionStorage.removeItem(guardKey);
@@ -226,6 +277,7 @@
                 }
             }
         });
+        syncLoginStateFromSupabase();
     }
 </script>
 {% endblock %}

@@ -195,6 +195,12 @@
                     const result = await response.json();
 
                     if (result.success) {
+                        const returnTo = sessionStorage.getItem('postboxReturnTo');
+                        if (returnTo) {
+                            sessionStorage.removeItem('postboxReturnTo');
+                            window.location.href = returnTo;
+                            return;
+                        }
                         window.location.href = result.redirect_url;
                     } else {
                         sessionStorage.removeItem('authChecked');
