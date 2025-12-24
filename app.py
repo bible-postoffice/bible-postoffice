@@ -1,5 +1,6 @@
 # app.py
 from flask import Flask, render_template, request, jsonify, url_for, session, redirect
+import json
 import os
 import re
 import requests
@@ -25,7 +26,10 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 # SUPABASE_* (APP/기본 둘 다 허용)
 SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("SUPABASE_APP_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_APP_KEY")
+SUPABASE_VEC_URL = os.environ.get("SUPABASE_VEC_URL") or SUPABASE_URL
+SUPABASE_VEC_KEY = os.environ.get("SUPABASE_VEC_KEY") or SUPABASE_KEY
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase_vec: Client = create_client(SUPABASE_VEC_URL, SUPABASE_VEC_KEY) if SUPABASE_VEC_URL and SUPABASE_VEC_KEY else None
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e48ca7312db5b8f76c0c095e845c9eaf')
@@ -37,7 +41,10 @@ print(f"✅ 임베딩 모델 로드 완료: {embedding_model.get_sentence_embedd
 
 # ChromaDB 초기화 (Cloud Run에서는 기본 비활성화)
 IS_CLOUD_RUN = bool(os.environ.get("K_SERVICE"))
-USE_CHROMA = os.environ.get("USE_CHROMA", "0").lower() not in ("0", "false", "no")
+use_chroma_env = os.environ.get("USE_CHROMA")
+if use_chroma_env is None and not IS_CLOUD_RUN:
+    use_chroma_env = "1"
+USE_CHROMA = str(use_chroma_env).lower() not in ("0", "false", "no")
 if not IS_CLOUD_RUN and USE_CHROMA:
     try:
         chroma_client = chromadb.PersistentClient(path="./vectordb_e5small")
@@ -986,6 +993,139 @@ def greedy_match_count(terms, doc: str):
     return sum(1 for t in terms if t and re.sub(r"\s+", "", t) in docc)
 
 
+def _parse_supabase_metadata(raw_meta):
+    if not raw_meta:
+        return {}
+    if isinstance(raw_meta, dict):
+        return raw_meta
+    if isinstance(raw_meta, str):
+        try:
+            parsed = json.loads(raw_meta)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _extract_supabase_row(row: dict):
+    if not isinstance(row, dict):
+        return None
+    meta = _parse_supabase_metadata(row.get("metadata"))
+    doc = row.get("text") or row.get("content") or row.get("document") or row.get("verse_text")
+    reference = row.get("reference") or row.get("verse_reference") or row.get("ref")
+    distance = row.get("distance")
+    similarity = row.get("similarity")
+    if distance is None and similarity is not None:
+        distance = 1 - similarity
+    popularity = row.get("popularity")
+    if popularity is None:
+        popularity = meta.get("popularity", 0) if isinstance(meta, dict) else 0
+    return {
+        "doc": doc,
+        "reference": reference,
+        "meta": meta,
+        "distance": distance,
+        "popularity": popularity,
+    }
+
+
+def _supabase_vector_query(query_embedding, match_count=200):
+    if not supabase_vec:
+        return None, "SUPABASE_VEC_URL 또는 SUPABASE_VEC_KEY가 설정되지 않았습니다."
+    rpc_candidates = [
+        os.environ.get("SUPABASE_VEC_RPC"),
+        "match_bible_verses",
+        "match_bible",
+        "match_verses",
+        "match_documents",
+    ]
+    last_error = None
+    for rpc_name in rpc_candidates:
+        if not rpc_name:
+            continue
+        try:
+            result = supabase_vec.rpc(
+                rpc_name,
+                {
+                    "query_embedding": query_embedding,
+                    "match_count": match_count,
+                },
+            ).execute()
+            if result.data is not None:
+                return result.data, None
+        except Exception as exc:
+            last_error = exc
+    return None, last_error or "Supabase RPC 호출에 실패했습니다."
+
+
+def recommend_verses_supabase(query: str, page: int):
+    try:
+        print(f"\n🔍 검색 쿼리(Supabase): '{query}'")
+        query_text, _ = build_contextual_query(query)
+        expanded_terms = greedy_terms(query)
+        normalized_query = re.sub(r"\s+", "", normalize_korean(query or "").lower())
+
+        query_embedding = embedding_model.encode(query_text).tolist()
+        raw_rows, error = _supabase_vector_query(query_embedding, match_count=200)
+        if raw_rows is None:
+            return jsonify({"error": f"Supabase 검색 실패: {error}"}), 500
+
+        scored = []
+        for row in raw_rows:
+            parsed = _extract_supabase_row(row)
+            if not parsed:
+                continue
+            doc = parsed["doc"]
+            if not doc:
+                continue
+            meta = parsed["meta"]
+            reference = parsed["reference"] or build_reference_label(meta, doc)
+            pop = parsed["popularity"] or 0
+            dist = parsed["distance"]
+            semantic = 1 - dist if dist is not None else 0
+            greedy_hits = greedy_match_count(expanded_terms, doc)
+            greedy_bonus = min(0.18, greedy_hits * 0.06)
+            coverage = greedy_hits / max(1, len(expanded_terms)) if expanded_terms else 0
+            phrase_bonus = coverage * 0.1
+            if coverage >= 0.99:
+                phrase_bonus += 0.08
+            if normalized_query and normalized_query in re.sub(r"\s+", "", normalize_korean(doc or "").lower()):
+                phrase_bonus += 0.06
+            phrase_bonus = min(0.24, phrase_bonus)
+            final_score = semantic * 0.6 + (pop / 100.0) * 0.4 + phrase_bonus + greedy_bonus
+            scored.append((final_score, reference, doc, meta))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        page_size = 5
+        start_idx = page * page_size
+        end_idx = start_idx + page_size
+        page_slice = scored[start_idx:end_idx]
+        total_pages = (len(scored) + page_size - 1) // page_size if scored else 0
+
+        verses = []
+        for score, reference, doc, meta in page_slice:
+            verses.append(
+                {
+                    "reference": reference,
+                    "text": doc,
+                    "metadata": meta,
+                    "score": score,
+                }
+            )
+
+        has_more = end_idx < len(scored)
+        return jsonify({
+            "verses": verses,
+            "has_more": has_more,
+            "total_pages": total_pages,
+            "page": page,
+        })
+    except Exception as e:
+        print(f"❌ Supabase 검색 오류: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"검색 실패: {str(e)}"}), 500
+
 
 
 @app.route('/api/create-postbox', methods=['POST'])
@@ -1033,19 +1173,19 @@ def create_mailbox_legacy():
 @app.route('/api/recommend-verses', methods=['POST'])
 def recommend_verses():
     """레퍼런스 직접 매칭 → 문구 검색(greedy+semantic) 추천."""
-    if not bible_collection:
-        return jsonify({'error': 'ChromaDB 컬렉션이 로드되지 않았습니다'}), 500
-    
+    data = request.get_json(silent=True) or {}
+    query = (data.get('query') or data.get('keyword') or '').strip()
+    page = 0
     try:
-        data = request.get_json(silent=True) or {}
-        query = (data.get('query') or data.get('keyword') or '').strip()
+        page = max(0, int(data.get('page', 0)))
+    except Exception:
         page = 0
-        try:
-            page = max(0, int(data.get('page', 0)))
-        except Exception:
-            page = 0
-        if not query:
-            return jsonify({'error': '검색어가 필요합니다'}), 400
+    if not query:
+        return jsonify({'error': '검색어가 필요합니다'}), 400
+    if not bible_collection:
+        return recommend_verses_supabase(query, page)
+
+    try:
         print(f"\n🔍 검색 쿼리: '{query}'")
         ensure_reference_index()
         ensure_verse_lookup_index()
