@@ -1369,60 +1369,38 @@ def check_and_save():
         if not user_info:
             return jsonify({"success": False, "message": "유효하지 않은 토큰"}), 401
 
-        # Supabase 유저 메타데이터에서 display_name 추출
+        # Supabase 유저 메타데이터에서 display_name 추출.0
+        uid = user_info.user.id # Supabase 고유 UUID
         user_metadata = user_info.user.user_metadata
-        nickname = user_metadata.get('display_name') or user_metadata.get('full_name') or email.split('@')[0]
+        nickname = (user_metadata.get('display_name') 
+                    or user_metadata.get('full_name') 
+                    or user_metadata.get('name') 
+                    or email.split('@')[0])
         
         # 2. bible_users 테이블에 Upsert (없으면 생성, 있으면 업데이트)
         # email 컬럼이 Primary Key로 설정되어 있어야 합니다.
         user_data = {
+            "id": uid, # 고유 UUID 저장
             "email": email,
             "nickname" : nickname,
             "last_login_at": datetime.now().isoformat() # 파이썬에서 시간 생성
         }
         
-        # upsert는 기본적으로 on_conflict를 Primary Key로 잡습니다.
         response = supabase.table('bible_users').upsert(user_data).execute()
-
-        if not response.data:
-            return jsonify({"success": False, "message": "유저 정보를 찾을 수 없습니다."}), 404
-        
-        user = response.data[0]
-        user_id = user.get('id')
-        user_flag = user.get('flag', False) # flag 값 확인 (True/False)
-        
-        # 세션에 이메일 저장 (로그인 유지용)
+                
+        # 세션 보안 관리
+        session['user_id'] = uid 
         session['user_email'] = email
         session['user_nickname'] = nickname
 
-
-        # 2. 로직 분기
-        if user_flag:
-            # [Case: flag=true] 우체통 정보 조회
-            postbox_res = supabase.table('postboxes').select('url').eq('owner_id', user_id).execute()
-            
-            if postbox_res.data:
-                # 우체통 URL이 존재하면 해당 주소로 안내
-                postbox_url = postbox_res.data[0].get('url')
-                print(f"Redirecting to: /postbox/{postbox_url}")
-                return jsonify({
-                    "success": True,
-                    "redirect_url": f"/postbox/{postbox_url}", # 실제 우체통 주소
-                    "status": "existing_user",
-                    "nickname": nickname
-                })
-            else:
-                        # 데이터 정합성 방어: flag는 true인데 postbox가 없는 경우
-                        return jsonify({"success": True, "redirect_url": "/create-postbox", "status": "new_user"})
-            
-        else:
-                    # [Case: flag=false] 계정은 있으나 우체통은 없음 -> 생성 페이지로
-                    return jsonify({
-                        "success": True, 
-                        "redirect_url": "/create-postbox", 
-                        "status": "new_user",
-                        "nickname": nickname
-                    })
+        user = response.data[0]
+        if user.get('flag'):
+            pb_res = supabase.table('postboxes').select('url').eq('owner_id', uid).execute()
+            url = pb_res.data[0].get('url') if pb_res.data else ""
+            return jsonify({"success": True, "redirect_url": f"/postbox/{url}", "status": "existing_user"})
+        
+        return jsonify({"success": True, "redirect_url": "/create-postbox", "status": "new_user"})
+    
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1547,6 +1525,28 @@ def view_postbox(url_path):
         print(f"Error: {e}")
         return "오류가 발생했습니다.", 500
 
+
+@app.route('/error')
+def error_page():
+    # 1. 쿼리 파라미터 안전하게 가져오기
+    error_code = request.args.get('code', '400')
+    raw_message = request.args.get('message', '알 수 없는 오류')
+
+    # 2. 보안 및 UX: 기술적인 에러 메시지를 사용자 친화적으로 변경
+    if "not enabled" in raw_message.lower():
+        display_message = "해당 로그인 방식(Google/Kakao)이 아직 활성화되지 않았습니다. 관리자에게 문의하세요."
+    elif "init_failed" in raw_message:
+        display_message = "서비스 초기화 중 오류가 발생했습니다."
+    else:
+        display_message = raw_message
+
+    # 3. 데이터베이스 기록 (선택 사항: 에러 로그 수집용)
+    # supabase.table('error_logs').insert({"code": error_code, "msg": raw_message}).execute()
+
+    return render_template('error.html', 
+                           code=error_code, 
+                           message=display_message,
+                           is_logged_in=bool(session.get('user_id')))
 
 @app.route('/')
 def index():

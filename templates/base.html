@@ -44,6 +44,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="font-serif">
 
@@ -57,6 +58,12 @@
         <button id="theme-toggle" class="p-2.5 rounded-xl transition-all hover:bg-slate-200/50 dark:hover:bg-slate-800/50 active:scale-95">
             <span id="theme-toggle-light-icon" class="hidden dark:block text-xl">☀️</span>
             <span id="theme-toggle-dark-icon" class="block dark:hidden text-xl text-slate-700">🌙</span>
+        </button>
+        <button type="button"
+            id="logoutButton"
+            onclick="handleLogout()"
+            class="fixed top-16 right-4 z-50 text-sm font-bold px-3 py-1.5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 shadow pointer-events-auto {{ '' if is_logged_in else 'hidden' }}">
+            로그아웃
         </button>
     </nav>
 
@@ -95,6 +102,18 @@
         });
 
         initTheme();
+
+        async function handleLogout() {
+            try {
+                if (supabaseClient) {
+                    await supabaseClient.auth.signOut();
+                }
+            } catch (err) {
+                console.warn("Supabase 로그아웃 실패:", err);
+            } finally {
+                window.location.href = '/logout';
+            }
+        }
     </script>
 </body>
 </html>

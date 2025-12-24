@@ -162,16 +162,30 @@
 
     // 구글 로그인도 동일하게 수정
     window.signInWithGoogle = async function() {
-        if (!initSupabase()) {
-            alert("로그인 초기화에 실패했습니다. 잠시 후 다시 시도해주세요.");
-            return;
+        try {
+            if (!initSupabase()) {
+                window.location.href = '/error?message=init_failed';
+                return;
+            }
+
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { 
+                    redirectTo: getRedirectBase(),
+                    queryParams: { prompt: 'login' } // 강제 계정 선택 (보안/UX)
+                }
+            });
+            
+            // Supabase 설정 에러(not enabled 등)가 발생한 경우
+            if (error) {
+                console.error("구글 로그인 에러:", error.message);
+                window.location.href = `/error?code=${error.status || 400}&message=${encodeURIComponent(error.message)}`;
+                return;
+            }
+        } catch (err) {
+            // 네트워크 장애 등 예외 상황 처리
+            window.location.href = `/error?message=${encodeURIComponent(err.message)}`;
         }
-        const { data, error } = await supabaseClient.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: getRedirectBase() }
-        });
-        
-        if (error) console.error("구글 로그인 에러:", error.message);
     }
 
     // 인증 상태 변경 감지

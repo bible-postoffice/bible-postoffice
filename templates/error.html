@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+        <span class="text-4xl">⚠️</span>
+    </div>
+    
+    <h1 class="text-2xl font-bold text-slate-900 mb-2">로그인 중에 문제가 생겼어요</h1>
+    <p class="text-slate-600 mb-8 leading-relaxed">
+        {{ message }}<br>
+        <small class="text-slate-400">(에러 코드: {{ code }})</small>
+    </p>
+
+    <div class="flex flex-col gap-3 w-full max-w-xs">
+        <a href="/" class="py-3 bg-primary text-white rounded-xl font-bold shadow-lg hover:opacity-90 transition-all">
+            홈으로 돌아가기
+        </a>
+        <button onclick="history.back()" class="py-3 bg-slate-100 text-slate-600 rounded-xl font-medium">
+            이전 페이지로
+        </button>
+    </div>
+</div>
+{% endblock %}
