@@ -181,25 +181,26 @@
             max-width: 70%;
         }
 
-        /* ============ 엽서 템플릿: 좌우 2단 ============ */
+        /* ============ 엽서 템플릿: 상하 2단 ============ */
         .card.postcard .overlay {
-            flex-direction: row;
-            gap: 1.5%;
-            padding: 3% 2.5%;
+            display: grid;
+            grid-template-rows: 60% 40%;
+            gap: 0;
+            padding: 12% 6% 6%;
+            justify-content: space-between;
         }
         
         .card.postcard .left,
         .card.postcard .right {
-            flex: 1;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 0;
+            align-self: stretch;
         }
         
         .card.postcard .verse-box {
-            position: absolute;
-            top: 12%;
-            left: 4%;
-            right: 4%;
-            bottom: 10%;
             color: var(--ink);
             line-height: 1.5;
             font-weight: 600;
@@ -207,32 +208,26 @@
             flex-direction: column;
             overflow: hidden;
             font-family: var(--user-font);
+            flex: 1 1 auto;
         }
         
         .card.postcard .msg-box {
-            position: absolute;
-            top: 25%;
-            left: 5%;
-            right: 5%;
-            bottom: 22%;
             color: var(--ink);
             line-height: 1.5;
             font-weight: 600;
             overflow: hidden;
             font-family: var(--user-font);
+            flex: 1 1 auto;
         }
         
         .card.postcard .sender-box {
-            position: absolute;
-            bottom: 8%;
-            left: auto;
-            right: 8%;
-            max-width: 55%;
             text-align: right;
             color: var(--ink);
             font-weight: 700;
             overflow: hidden;
             font-family: var(--user-font);
+            flex: 0 0 auto;
+            align-self: flex-end;
         }
 
         /* ============ 공통 스타일 ============ */
@@ -273,22 +268,8 @@
         
         /* ============ 반응형 조정 ============ */
         @media (max-width: 768px) {
-            .card.postcard .overlay { 
-                padding: 2.5% 2%;
-                gap: 1%;
-            }
-            .card.postcard .verse-box {
-                top: 20%;
-                bottom: 12%;
-            }
-            .card.postcard .msg-box {
-                top: 30%;
-                bottom: 25%;
-            }
-            .card.postcard .sender-box {
-                bottom: 10%;
-                right: 10%;
-                max-width: 60%;
+            .card.postcard .overlay {
+                padding: 12% 5% 6%;
             }
             
             .card.letter .overlay {
@@ -301,22 +282,8 @@
         @media (max-width: 480px) {
             body { padding: 10px; }
             .card { border-radius: 8px; }
-            
-            .card.postcard .verse-box {
-                top: 18%;
-                left: 3%;
-                right: 3%;
-            }
-            .card.postcard .msg-box {
-                top: 30%;
-                left: 4%;
-                right: 4%;
-                bottom: 28%;
-            }
-            .card.postcard .sender-box {
-                bottom: 12%;
-                right: 12%;
-                max-width: 70%;
+            .card.postcard .overlay {
+                padding: 14% 7% 10%;
             }
             
             .card.letter .overlay {
@@ -448,11 +415,16 @@
         function adjustAllText() {
         const msgBox = document.querySelector('.msg-box');
         const senderBox = document.querySelector('.sender-box');
+        const verseRef = document.querySelector('.verse-box .ref');
+        const verseText = document.querySelector('.verse-box .text');
         
         const isMobile = window.innerWidth <= 480;
         const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
         
         fitVerseBox();
+        if (verseRef && verseText) {
+            verseRef.style.fontSize = getComputedStyle(verseText).fontSize;
+        }
         
         // 메시지 영역 - 모바일 크기 축소
         if (msgBox) {
