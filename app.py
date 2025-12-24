@@ -21,15 +21,24 @@ from popular_verses import (
     BOOK_NAME_MAP,
 )  # ⭐ 추가
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
 # SUPABASE_* (APP/기본 둘 다 허용)
-SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("SUPABASE_APP_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_APP_KEY")
-SUPABASE_VEC_URL = os.environ.get("SUPABASE_VEC_URL") or SUPABASE_URL
-SUPABASE_VEC_KEY = os.environ.get("SUPABASE_VEC_KEY") or SUPABASE_KEY
+def _clean_env(value):
+    if value is None:
+        return None
+    return value.strip()
+
+SUPABASE_URL = _clean_env(os.environ.get("SUPABASE_URL") or os.environ.get("SUPABASE_APP_URL"))
+SUPABASE_ANON_KEY = _clean_env(os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_APP_KEY"))
+SUPABASE_SERVICE_KEY = _clean_env(os.environ.get("SUPABASE_SERVICE_KEY"))
+# 서버는 서비스 키 우선, 없으면 익명 키 사용
+SUPABASE_KEY = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+SUPABASE_VEC_URL = _clean_env(os.environ.get("SUPABASE_VEC_URL")) or SUPABASE_URL
+SUPABASE_VEC_KEY = _clean_env(os.environ.get("SUPABASE_VEC_KEY")) or SUPABASE_KEY
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 supabase_vec: Client = create_client(SUPABASE_VEC_URL, SUPABASE_VEC_KEY) if SUPABASE_VEC_URL and SUPABASE_VEC_KEY else None
+supabase_auth: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY or SUPABASE_KEY)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e48ca7312db5b8f76c0c095e845c9eaf')
@@ -40,23 +49,11 @@ embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
 print(f"✅ 임베딩 모델 로드 완료: {embedding_model.get_sentence_embedding_dimension()}차원")
 
 # ChromaDB 초기화 (Cloud Run에서는 기본 비활성화)
+# ChromaDB 초기화 비활성화 (항상 Supabase 벡터DB 사용)
 IS_CLOUD_RUN = bool(os.environ.get("K_SERVICE"))
-use_chroma_env = os.environ.get("USE_CHROMA")
-if use_chroma_env is None and not IS_CLOUD_RUN:
-    use_chroma_env = "1"
-USE_CHROMA = str(use_chroma_env).lower() not in ("0", "false", "no")
-if not IS_CLOUD_RUN and USE_CHROMA:
-    try:
-        chroma_client = chromadb.PersistentClient(path="./vectordb_e5small")
-        bible_collection = chroma_client.get_collection(name="bible")
-        print(f"✅ 컬렉션 로드 성공: {bible_collection.name}")
-        print(f"   총 구절 수: {bible_collection.count()}")
-    except Exception as e:
-        print(f"❌ ChromaDB 에러: {e}")
-        bible_collection = None
-else:
-    bible_collection = None
-    print("ℹ️ ChromaDB 초기화 건너뜀 (Cloud Run/Supabase 전용 모드)")
+USE_CHROMA = False
+bible_collection = None
+print("ℹ️ ChromaDB 초기화 건너뜀 (Supabase 벡터DB 전용 모드)")
 
 # 검색 주제를 문맥/대표 구절과 함께 확장하기 위한 힌트 세트
 DEFAULT_CONTEXT_DESCRIPTION = (
@@ -1055,6 +1052,7 @@ def _supabase_vector_query(query_embedding, match_count=200):
                 return result.data, None
         except Exception as exc:
             last_error = exc
+            print(f"❌ Supabase RPC 실패: {rpc_name} -> {exc}", flush=True)
     return None, last_error or "Supabase RPC 호출에 실패했습니다."
 
 
@@ -1356,54 +1354,95 @@ def open_all_postboxes():
     for postbox_id in postboxes:
         postboxes[postbox_id]['is_opened'] = True
 
+
+
 @app.route('/auth/check-and-save', methods=['POST'])
 def check_and_save():
-
-    data = request.get_json()
-    token = data.get('token')
-    email = data.get('email')
-
-    try:
-        # 1. 토큰 검증 (Supabase Auth 연동)
-        user_info = supabase.auth.get_user(token)
+    print("🔍 /auth/check-and-save 호출됨")
+    
+    try:  # ← try 시작
+        data = request.get_json()
+        print(f"📥 받은 데이터: {data}")
+        
+        token = data.get('token')
+        email = data.get('email')
+        
+        if not token or not email:
+            print("❌ 토큰 또는 이메일 누락")
+            return jsonify({"success": False, "message": "토큰 또는 이메일이 없습니다."}), 400
+        
+        print(f"🔑 토큰 검증: {email}")
+        
+        if not supabase:
+            print("❌ Supabase 클라이언트 없음")
+            return jsonify({"success": False, "error": "서비스 준비중입니다."}), 503
+        
+        # 기존 로직 그대로
+        user_info = supabase_auth.auth.get_user(token)
+        print(f"👤 Supabase 사용자: {user_info.user.email if user_info else '없음'}")
+        
         if not user_info:
             return jsonify({"success": False, "message": "유효하지 않은 토큰"}), 401
 
-        # Supabase 유저 메타데이터에서 display_name 추출.0
-        uid = user_info.user.id # Supabase 고유 UUID
         user_metadata = user_info.user.user_metadata
-        nickname = (user_metadata.get('display_name') 
-                    or user_metadata.get('full_name') 
-                    or user_metadata.get('name') 
-                    or email.split('@')[0])
+        nickname = user_metadata.get('display_name') or user_metadata.get('full_name') or email.split('@')[0]
         
-        # 2. bible_users 테이블에 Upsert (없으면 생성, 있으면 업데이트)
-        # email 컬럼이 Primary Key로 설정되어 있어야 합니다.
         user_data = {
-            "id": uid, # 고유 UUID 저장
             "email": email,
-            "nickname" : nickname,
-            "last_login_at": datetime.now().isoformat() # 파이썬에서 시간 생성
+            "nickname": nickname,
+            "last_login_at": datetime.now().isoformat()
         }
         
-        response = supabase.table('bible_users').upsert(user_data).execute()
-                
-        # 세션 보안 관리
-        session['user_id'] = uid 
+        try:
+            response = supabase.table('bible_users').upsert(user_data, on_conflict="email").execute()
+            print(f"📝 Upsert 결과: {response.data}")
+            if not response.data:
+                return jsonify({"success": False, "message": "유저 정보를 찾을 수 없습니다."}), 404
+            user = response.data[0]
+        except Exception as exc:
+            err_text = str(exc)
+            if "duplicate key value violates unique constraint" in err_text or "code': '23505" in err_text:
+                existing = supabase.table('bible_users').select("*").eq("email", email).limit(1).execute()
+                if existing.data:
+                    user = existing.data[0]
+                else:
+                    return jsonify({"success": False, "message": "기존 유저 정보를 찾을 수 없습니다."}), 404
+            else:
+                raise
+        user_id = user.get('id')
+        user_flag = user.get('flag', False)
+        
         session['user_email'] = email
         session['user_nickname'] = nickname
 
-        user = response.data[0]
-        if user.get('flag'):
-            pb_res = supabase.table('postboxes').select('url').eq('owner_id', uid).execute()
-            url = pb_res.data[0].get('url') if pb_res.data else ""
-            return jsonify({"success": True, "redirect_url": f"/postbox/{url}", "status": "existing_user"})
-        
-        return jsonify({"success": True, "redirect_url": "/create-postbox", "status": "new_user"})
+        if user_flag:
+            postbox_res = supabase.table('postboxes').select('url').eq('owner_id', user_id).execute()
+            
+            if postbox_res.data:
+                postbox_url = postbox_res.data[0].get('url')
+                print(f"Redirecting to: /postbox/{postbox_url}")
+                return jsonify({
+                    "success": True,
+                    "redirect_url": f"/postbox/{postbox_url}",
+                    "status": "existing_user",
+                    "nickname": nickname
+                })
+            else:
+                return jsonify({"success": True, "redirect_url": "/create-postbox", "status": "new_user"})
+        else:
+            return jsonify({
+                "success": True, 
+                "redirect_url": "/create-postbox", 
+                "status": "new_user",
+                "nickname": nickname
+            })
     
-    except Exception as e:
-        print(f"Error: {e}")
+    except Exception as e:  # ← try와 같은 레벨! (들여쓰기 4칸)
+        print(f"❌ 상세 에러: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
+
 
 
 import uuid
@@ -1451,11 +1490,12 @@ def create_postbox_page():
     
     user_nickname = session.get('user_nickname', '사용자')
 
-    return render_template('create_postbox.html',
-                           user_name=user_nickname,
-                           supabase_url=os.environ.get('SUPABASE_URL'), 
-                           supabase_key=os.environ.get('SUPABASE_KEY')
-                           )
+    return render_template(
+        'create_postbox.html',
+        user_name=user_nickname,
+        supabase_url=SUPABASE_URL,
+        supabase_key=SUPABASE_ANON_KEY,
+    )
 
 # 우체통 확인
 @app.route('/postbox/<url_path>')
@@ -1506,47 +1546,27 @@ def view_postbox(url_path):
         is_expired = datetime.now() >= target_dt
 
         # 4. 템플릿 렌더링 (HTML에서 사용하는 변수명과 일치시킴)
-        return render_template('view_postbox.html', 
-                               postbox_name=postbox['name'],
-                               url_path=url_path,
-                               postbox_id=postbox_id,
-                               color=postbox['color'],
-                               postcard_count=postcard_count,
-                               # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
-                               privacy='public' if postbox['privacy'] == 0 else 'private',
-                               end_date=end_date,
-                               is_owner=is_owner,
-                               is_expired=is_expired,
-                               is_logged_in=bool(session.get('user_email')),
-                               supabase_url=os.environ.get('SUPABASE_URL'),
-                               supabase_key=os.environ.get('SUPABASE_KEY'))
+        return render_template(
+            'view_postbox.html',
+            postbox_name=postbox['name'],
+            url_path=url_path,
+            postbox_id=postbox_id,
+            color=postbox['color'],
+            postcard_count=postcard_count,
+            # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
+            privacy='public' if postbox['privacy'] == 0 else 'private',
+            end_date=end_date,
+            is_owner=is_owner,
+            is_expired=is_expired,
+            is_logged_in=bool(session.get('user_email')),
+            supabase_url=SUPABASE_URL,
+            supabase_key=SUPABASE_ANON_KEY,
+        )
 
     except Exception as e:
         print(f"Error: {e}")
         return "오류가 발생했습니다.", 500
 
-
-@app.route('/error')
-def error_page():
-    # 1. 쿼리 파라미터 안전하게 가져오기
-    error_code = request.args.get('code', '400')
-    raw_message = request.args.get('message', '알 수 없는 오류')
-
-    # 2. 보안 및 UX: 기술적인 에러 메시지를 사용자 친화적으로 변경
-    if "not enabled" in raw_message.lower():
-        display_message = "해당 로그인 방식(Google/Kakao)이 아직 활성화되지 않았습니다. 관리자에게 문의하세요."
-    elif "init_failed" in raw_message:
-        display_message = "서비스 초기화 중 오류가 발생했습니다."
-    else:
-        display_message = raw_message
-
-    # 3. 데이터베이스 기록 (선택 사항: 에러 로그 수집용)
-    # supabase.table('error_logs').insert({"code": error_code, "msg": raw_message}).execute()
-
-    return render_template('error.html', 
-                           code=error_code, 
-                           message=display_message,
-                           is_logged_in=bool(session.get('user_id')))
 
 @app.route('/')
 def index():
@@ -1563,9 +1583,11 @@ def index():
             
             # flag가 false면 생성 페이지로
             return redirect('/create-postbox')
-    return render_template('index.html',
-                            url=os.environ.get('SUPABASE_URL'), 
-                            key=os.environ.get('SUPABASE_KEY'))
+    return render_template(
+        'index.html',
+        url=SUPABASE_URL,
+        key=SUPABASE_ANON_KEY,
+    )
 
 
 @app.route('/logout')
