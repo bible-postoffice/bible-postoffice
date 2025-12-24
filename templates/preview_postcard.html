@@ -77,30 +77,7 @@
             margin-top: 6px;
             color: var(--muted);
         }
-        .steps {
-            display: flex;
-            gap: 8px;
-        }
-        .step {
-            padding: 10px 14px;
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-            background: #f8fafc;
-            color: #4b5563;
-            font-weight: 700;
-            min-width: 120px;
-        }
-        .step.active {
-            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
-            border: none;
-            color: #fff;
-            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
-        }
-        .step.completed {
-            background: #e0f2fe;
-            color: #2563eb;
-            border-color: #bfdbfe;
-        }
+        
         .layout {
             display: grid;
             grid-template-columns: 1.1fr 0.9fr;
@@ -321,33 +298,34 @@
             width: 100%;
             box-sizing: border-box;
         }
-        .pill {
-            align-self: flex-start;
-            background: rgba(16,185,129,0.12);
-            color: #0f9c68;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-weight: 800;
-            font-size: 12px;
-        }
-        .summary {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 12px 14px;
-            background: #fff;
-        }
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 6px 0;
-            color: #374151;
-            font-weight: 600;
+        .font-section {
+            flex: 1 1 auto;
         }
         .font-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 10px;
+        }
+        .font-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .font-tab {
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 8px 12px;
+            background: #fff;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: border 0.15s ease, box-shadow 0.15s ease;
+        }
+        .font-tab.active {
+            border-color: #6366f1;
+            box-shadow: 0 8px 16px rgba(79,70,229,0.2);
+            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
         }
         .font-option {
             border: 1px solid #d1d5db;
@@ -370,16 +348,12 @@
             font-weight: 800;
             color: #0f172a;
         }
-        .font-preview {
-            margin-top: 8px;
-            color: #374151;
-            line-height: 1.4;
-        }
+        
         .actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-top: 4px;
+            margin-top: auto;
         }
         button {
             padding: 14px 16px;
@@ -414,8 +388,7 @@
             body { padding: 14px 12px 18px; }
             .shell { padding: 16px 12px 20px; border-radius: 14px; }
             .header { flex-direction: column; gap: 10px; }
-            .steps { width: 100%; gap: 6px; }
-            .step { flex: 1; text-align: center; padding: 10px 8px; min-width: auto; }
+            
             .preview-card { width: 100%; }
             .template-frame { min-height: 240px; border-radius: 12px; width: 100%; max-width: 100%; margin: 0 auto; }
             .template-frame.postcard {
@@ -441,6 +414,8 @@
             .msg-box { font-size: 13px; word-break: break-word; }
             .verse-box .ref { font-size: 11px; }
             .side { padding: 12px; border-radius: 12px; }
+            .font-tabs { flex-wrap: nowrap; }
+            .font-tab { flex: 1 1 0; text-align: center; padding: 8px 6px; }
             .font-grid { grid-template-columns: 1fr; }
             .actions { grid-template-columns: 1fr; gap: 8px; }
             button { width: 100%; }
@@ -472,11 +447,7 @@
                 <h2>전송 전 미리보기</h2>
                 <div class="sub">선택한 말씀과 편지를 원하는 글씨체로 확인하고 보내주세요.</div>
             </div>
-            <div class="steps">
-                <div class="step completed">1. 템플릿</div>
-                <div class="step completed">2. 작성</div>
-                <div class="step active">3. 미리보기</div>
-            </div>
+            
         </div>
 
         <div class="layout">
@@ -502,31 +473,17 @@
             </div>
 
             <div class="side">
-                <span class="pill">전송 전 확인</span>
-                <div class="summary">
-                    <div class="summary-row">
-                        <span>선택한 템플릿</span>
-                        <span id="summary-template"></span>
-                    </div>
-                    <div class="summary-row">
-                        <span>말씀</span>
-                        <span id="summary-verse"></span>
-                    </div>
-                    <div class="summary-row">
-                        <span>보여줄 이름</span>
-                        <span id="summary-name"></span>
-                    </div>
-                    
-                </div>
+                
 
-                <div>
+                <div class="font-section">
                     <div style="font-weight:800; margin-bottom:8px; color:#0f172a;">글씨체 선택</div>
+                    <div class="font-tabs" id="font-tabs"></div>
                     <div class="font-grid" id="font-grid"></div>
                 </div>
 
                 <div class="actions">
-                    <button class="btn-primary" id="send-btn">이대로 보낼게요 🚀</button>
                     <button id="edit-btn">수정하기</button>
+                    <button class="btn-primary" id="send-btn">이대로 보낼게요 🚀</button>
                 </div>
             </div>
         </div>
@@ -603,17 +560,21 @@
         const verseTextEl = document.getElementById('verse-text');
         const messageTextEl = document.getElementById('message-text');
         const senderLabelEl = document.getElementById('sender-label');
-        const summaryTemplateEl = document.getElementById('summary-template');
-        const summaryVerseEl = document.getElementById('summary-verse');
-        const summaryNameEl = document.getElementById('summary-name');
-        const summaryMessageEl = document.getElementById('summary-message');
+        const fontTabsEl = document.getElementById('font-tabs');
         const fontGridEl = document.getElementById('font-grid');
         const sendBtn = document.getElementById('send-btn');
         const editBtn = document.getElementById('edit-btn');
 
         let draft = null;
         let selectedFont = 'serif';
+        let activeFontCategory = 'sans';
         let templateImageSize = null;
+        const FONT_CATEGORIES = [
+            { id: 'sans', label: '고딕' },
+            { id: 'serif', label: '명조' },
+            { id: 'hand', label: '손글씨' }
+        ];
+        const SERIF_FONT_IDS = ['serif', 'kimmyoungjo', 'yesmyungjo'];
 
         function normalizeTemplate(tpl = {}) {
             const rawId = tpl.id;
@@ -637,16 +598,37 @@
             };
         }
 
+        function renderFontTabs() {
+            fontTabsEl.innerHTML = '';
+            FONT_CATEGORIES.forEach(category => {
+                const tab = document.createElement('button');
+                tab.type = 'button';
+                tab.className = 'font-tab' + (category.id === activeFontCategory ? ' active' : '');
+                tab.textContent = category.label;
+                tab.onclick = () => {
+                    activeFontCategory = category.id;
+                    renderFontTabs();
+                    renderFontOptions();
+                };
+                fontTabsEl.appendChild(tab);
+            });
+        }
+
         function renderFontOptions() {
             fontGridEl.innerHTML = '';
-            Object.values(FONT_OPTIONS).forEach(opt => {
+            const filtered = Object.values(FONT_OPTIONS).filter(opt => {
+                if (activeFontCategory === 'sans') return ['sans', 'pyeojin'].includes(opt.id);
+                if (activeFontCategory === 'serif') return SERIF_FONT_IDS.includes(opt.id);
+                if (activeFontCategory === 'hand') return ['hand', 'schoolsafety'].includes(opt.id);
+                return true;
+            });
+            filtered.forEach(opt => {
                 const card = document.createElement('div');
                 card.className = 'font-option';
                 card.dataset.id = opt.id;
                 card.innerHTML = `
-                    <div class="font-label">${opt.label}</div>
+                    <div class="font-label" style="font-family:${opt.fontFamily}">${opt.label}</div>
                     <div style="color:#6b7280; font-size:13px; margin-top:2px;">${opt.desc}</div>
-                    <div class="font-preview" style="font-family:${opt.fontFamily}">${opt.sample}</div>
                 `;
                 card.onclick = () => selectFont(opt.id);
                 fontGridEl.appendChild(card);
@@ -677,7 +659,6 @@
             frameEl.classList.remove('postcard', 'letter');
             frameEl.classList.add(tpl.type === 1 ? 'letter' : 'postcard');
 
-            summaryTemplateEl.textContent = `${tpl.typeLabel} ${tpl.name}`;
             if (img) {
                 const image = new Image();
                 image.onload = () => {
@@ -704,9 +685,6 @@
             const displayName = senderName || '익명';
             senderLabelEl.textContent = displayName;
 
-            summaryVerseEl.textContent = verse.reference || '-';
-            summaryNameEl.textContent = displayName;
-            summaryMessageEl.textContent = draft.message ? `${draft.message.length}자` : '작성하지 않음';
             setTimeout(updateOverlayInset, 60);
             setTimeout(adjustAllText, 100);
         }
@@ -1000,6 +978,7 @@
                 window.location.href = `/send/${postboxId}/write`;
                 return;
             }
+            renderFontTabs();
             renderFontOptions();
             applyTemplate();
             applyContent();
