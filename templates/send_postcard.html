@@ -345,8 +345,8 @@
         </div>
 
         <div class="section-title">편지 작성</div>
-        <div class="char-counter" id="message-counter">0/150자</div>
-        <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요" maxlength="150"></textarea>
+        <div class="char-counter" id="message-counter">0/100자</div>
+        <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요" maxlength="100"></textarea>
         
         <div class="cta-row">
             <button class="btn-primary" onclick="goPreview()">미리보기 & 글씨체 ✨</button>
@@ -362,7 +362,7 @@
         let totalPages = 0;
         const postboxId = "{{ postbox_id }}";
         const draftKey = `postcardDraft-${postboxId}`;
-        const MAX_MESSAGE_LENGTH = 150;
+        const MAX_MESSAGE_LENGTH = 100;
         const messageInput = document.getElementById('message');
         const messageCounter = document.getElementById('message-counter');
         const preselectedTemplate = {

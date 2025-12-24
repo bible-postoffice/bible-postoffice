@@ -139,23 +139,26 @@
             display: flex;
         }
         
-        /* 엽서 템플릿: 좌우 2단 구조 */
+        /* 엽서 템플릿: 위아래 1단 구조 */
         .template-frame.postcard .overlay { 
-            flex-direction: row; 
-            gap: 1.5%;
-            padding: 6% 4%;
+            display: grid;
+            grid-template-rows: 60% 40%;
+            gap: 0;
+            padding: 12% 6% 6%;
+            justify-content: space-between;
         }
         
         .template-frame.postcard .left,
         .template-frame.postcard .right {
-            flex: 1 1 0;
+            flex: 1 1 auto;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            padding-top: 10%;
+            width: 100%;
+            min-height: 0;
         }
-        .template-frame.postcard .right {
-            padding-top: 8%;
+        .template-frame.postcard .left {
+            padding-top: 0;
         }
         
         .verse-box {
@@ -201,7 +204,7 @@
             white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: break-word;
-            overflow: auto;
+            overflow: hidden;
         }
         .sender-box {
             color: var(--ink);
@@ -217,6 +220,7 @@
             background: none;
             border: none;
             box-shadow: none;
+            min-height: 0;
         }
         
         .template-frame.postcard .msg-box {
@@ -224,14 +228,23 @@
             background: none;
             border: none;
             box-shadow: none;
+            min-height: 0;
         }
         
         .template-frame.postcard .sender-box {
-            margin-top: auto;
+            margin-top: 0;
             background: none;
             border: none;
             box-shadow: none;
             text-align: right;
+            flex: 0 0 12.5%;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            line-height: 1.2;
+            overflow: visible;
+        }
+        .template-frame.postcard .msg-box {
+            flex: 0 0 87.5%;
         }
         
         /* 편지지 템플릿: 세로 배치 */
@@ -403,17 +416,26 @@
             .header { flex-direction: column; gap: 10px; }
             .steps { width: 100%; gap: 6px; }
             .step { flex: 1; text-align: center; padding: 10px 8px; min-width: auto; }
-            .template-frame { min-height: 240px; border-radius: 12px; }
+            .preview-card { width: 100%; }
+            .template-frame { min-height: 240px; border-radius: 12px; width: 100%; max-width: 100%; margin: 0 auto; }
+            .template-frame.postcard {
+                background-size: contain;
+                background-repeat: no-repeat;
+            }
             .template-frame.postcard .overlay { 
-                flex-direction: row; 
-                gap: 1.5%; 
-                padding: 6% 4%; 
+                display: grid;
+                grid-template-rows: 60% 40%;
+                gap: 0; 
+                padding: 14% 7% 10%; 
+                justify-content: space-between;
             }
             .template-frame.postcard .left,
             .template-frame.postcard .right {
-                padding-top: 12%;
-                gap: 6px;
-                flex: 1 1 0;
+                padding-top: 0;
+                gap: 8px;
+                flex: 1 1 auto;
+                width: 100%;
+                min-height: 0;
             }
             .verse-box,
             .msg-box { font-size: 13px; word-break: break-word; }
@@ -576,6 +598,7 @@
         };
 
         const frameEl = document.getElementById('template-frame');
+        const overlayEl = document.querySelector('.template-frame .overlay');
         const verseRefEl = document.getElementById('verse-ref');
         const verseTextEl = document.getElementById('verse-text');
         const messageTextEl = document.getElementById('message-text');
@@ -590,6 +613,7 @@
 
         let draft = null;
         let selectedFont = 'serif';
+        let templateImageSize = null;
 
         function normalizeTemplate(tpl = {}) {
             const rawId = tpl.id;
@@ -654,6 +678,21 @@
             frameEl.classList.add(tpl.type === 1 ? 'letter' : 'postcard');
 
             summaryTemplateEl.textContent = `${tpl.typeLabel} ${tpl.name}`;
+            if (img) {
+                const image = new Image();
+                image.onload = () => {
+                    templateImageSize = { width: image.naturalWidth, height: image.naturalHeight };
+                    updateOverlayInset();
+                };
+                image.onerror = () => {
+                    templateImageSize = null;
+                    updateOverlayInset();
+                };
+                image.src = img;
+            } else {
+                templateImageSize = null;
+                updateOverlayInset();
+            }
         }
 
         function applyContent() {
@@ -668,6 +707,7 @@
             summaryVerseEl.textContent = verse.reference || '-';
             summaryNameEl.textContent = displayName;
             summaryMessageEl.textContent = draft.message ? `${draft.message.length}자` : '작성하지 않음';
+            setTimeout(updateOverlayInset, 60);
             setTimeout(adjustAllText, 100);
         }
 
@@ -760,6 +800,27 @@
             }
         }
 
+        function fitTextToContainerFill(element, minSize, maxSize, containerHeight = null, containerWidth = null) {
+            if (!element || !element.textContent.trim()) return;
+
+            const refHeight = containerHeight !== null ? containerHeight : element.clientHeight;
+            const refWidth = containerWidth !== null ? containerWidth : element.clientWidth;
+            let fontSize = minSize;
+            element.style.fontSize = fontSize + 'px';
+
+            let iterations = 0;
+            const maxIterations = 200;
+            while (fontSize < maxSize && iterations < maxIterations) {
+                element.style.fontSize = (fontSize + 0.3) + 'px';
+                if (element.scrollHeight > refHeight + 1 || element.scrollWidth > refWidth + 1) {
+                    element.style.fontSize = fontSize + 'px';
+                    break;
+                }
+                fontSize += 0.3;
+                iterations++;
+            }
+        }
+
         function fitVerseBox() {
             const verseBox = document.querySelector('.verse-box');
             const verseRef = document.getElementById('verse-ref');
@@ -774,13 +835,13 @@
             
             if (isMobile) {
                 refMin = 8; refMax = 10;
-                textMin = 5; textMax = 12;
+                textMin = 8; textMax = 12;
             } else if (isTablet) {
                 refMin = 8; refMax = 15;
                 textMin = 7; textMax = 16;
             } else {
                 refMin = 12; refMax = 20;
-                textMin = 10; textMax = 24;
+                textMin = 13; textMax = 24;
             }
             
             // 제목(ref)을 먼저 맞춤
@@ -812,11 +873,23 @@
             const msgBox = document.getElementById('message-text');
             const senderBoxContainer = document.querySelector('.sender-box');
             const senderBox = document.getElementById('sender-label');
+            const rightColumn = document.querySelector('.template-frame.postcard .right');
             const verseRef = document.getElementById('verse-ref');
             const verseText = document.getElementById('verse-text');
             
             const isMobile = window.innerWidth <= 480;
             const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
+            let msgMin, msgMax, senderMin, senderMax;
+            if (isMobile) {
+                msgMin = 10; msgMax = 18;
+                senderMin = 10; senderMax = 14;
+            } else if (isTablet) {
+                msgMin = 15; msgMax = 20;
+                senderMin = 10; senderMax = 16;
+            } else {
+                msgMin = 16; msgMax = 28;
+                senderMin = 15; senderMax = 18;
+            }
             
             // 성경 구절 영역 (제목 + 본문)
             fitVerseBox();
@@ -827,23 +900,21 @@
             
             // 메시지 영역
             if (msgBox && msgBoxContainer) {
-                let msgMin, msgMax;
-                if (isMobile) {
-                    msgMin = 4; msgMax = 14;
-                } else if (isTablet) {
-                    msgMin = 6; msgMax = 15;
-                } else {
-                    msgMin = 10; msgMax = 24;
-                }
-                
                 // 컨테이너 크기를 기준으로 조절
                 fitTextToContainer(msgBox, msgMin, msgMax, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
+
+                // 여전히 넘치면 더 축소
+                if (msgBox.scrollHeight > msgBoxContainer.clientHeight + 1) {
+                    const hardMin = msgMin;
+                    const currentSize = parseFloat(getComputedStyle(msgBox).fontSize) || msgMax;
+                    fitTextToContainer(msgBox, hardMin, currentSize, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
+                }
             }
             if (senderBox && msgBox) {
                 // 발신자 크기를 본문보다 조금 작게 맞춤
                 const baseSize = getComputedStyle(msgBox).fontSize;
                 const baseSizeNum = parseFloat(baseSize) || 0;
-                const senderSize = baseSizeNum ? Math.max(baseSizeNum - 3, 6) + 'px' : baseSize;
+                const senderSize = baseSizeNum ? Math.max(baseSizeNum, senderMin) + 'px' : baseSize;
                 senderBox.style.fontSize = senderSize;
                 const wrapper = senderBox.parentElement;
                 if (wrapper) wrapper.style.fontSize = senderSize;
@@ -851,25 +922,76 @@
             
             // 발신자 영역
             if (senderBox && senderBoxContainer) {
-                let senderMin, senderMax;
-                if (isMobile) {
-                    senderMin = 5; senderMax = 13;
-                } else if (isTablet) {
-                    senderMin = 7; senderMax = 17;
-                } else {
-                    senderMin = 11; senderMax = 25;
-                }
-                
                 // 컨테이너 크기를 기준으로 조절
                 fitTextToContainer(senderBox, senderMin, senderMax, senderBoxContainer.clientHeight, senderBoxContainer.clientWidth);
             }
+
+            // 모바일에서 메시지+발신자 합계가 넘치는 경우 함께 축소
+            if (rightColumn && msgBox && senderBox) {
+                let msgSize = parseFloat(getComputedStyle(msgBox).fontSize) || msgMin;
+                let senderSize = parseFloat(getComputedStyle(senderBox).fontSize) || senderMin;
+                let iterations = 0;
+                const maxIterations = 200;
+                while (rightColumn.scrollHeight > rightColumn.clientHeight + 1 &&
+                    iterations < maxIterations) {
+                    if (msgSize > msgMin) {
+                        msgSize -= 0.3;
+                        msgBox.style.fontSize = msgSize + 'px';
+                    } else if (senderSize > senderMin) {
+                        senderSize -= 0.3;
+                        senderBox.style.fontSize = senderSize + 'px';
+                        const wrapper = senderBox.parentElement;
+                        if (wrapper) wrapper.style.fontSize = senderSize + 'px';
+                    } else {
+                        break;
+                    }
+                    iterations++;
+                }
+            }
+        }
+
+        function updateOverlayInset() {
+            if (!frameEl || !overlayEl || !frameEl.classList.contains('postcard')) {
+                return;
+            }
+            const style = getComputedStyle(frameEl);
+            const bgSize = style.backgroundSize;
+            const frameW = frameEl.clientWidth;
+            const frameH = frameEl.clientHeight;
+            let bgW = 0;
+            let bgH = 0;
+
+            if (templateImageSize && templateImageSize.width && templateImageSize.height) {
+                const scale = Math.min(frameW / templateImageSize.width, frameH / templateImageSize.height);
+                bgW = templateImageSize.width * scale;
+                bgH = templateImageSize.height * scale;
+            } else if (bgSize && bgSize !== 'cover' && bgSize !== 'auto' && bgSize !== 'auto auto') {
+                const parts = bgSize.split(' ');
+                if (parts.length >= 2 && parts[0].includes('px') && parts[1].includes('px')) {
+                    bgW = parseFloat(parts[0]) || 0;
+                    bgH = parseFloat(parts[1]) || 0;
+                }
+            }
+
+            if (!bgW || !bgH) {
+                overlayEl.style.inset = '0px';
+                return;
+            }
+
+            const insetX = Math.max((frameW - bgW) / 2, 0);
+            const insetY = Math.max((frameH - bgH) / 2, 0);
+            overlayEl.style.inset = `${insetY}px ${insetX}px`;
         }
 
         // 페이지 로드 및 리사이즈 시 실행
         window.addEventListener('load', () => {
+            updateOverlayInset();
             setTimeout(adjustAllText, 100);
         });
-        window.addEventListener('resize', adjustAllText);
+        window.addEventListener('resize', () => {
+            updateOverlayInset();
+            adjustAllText();
+        });
 
         function init() {
             draft = loadDraft();
