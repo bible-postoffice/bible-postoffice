@@ -21,7 +21,7 @@ from popular_verses import (
     BOOK_NAME_MAP,
 )  # ⭐ 추가
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
 # SUPABASE_* (APP/기본 둘 다 허용)
 def _clean_env(value):
@@ -1105,7 +1105,7 @@ def recommend_verses_supabase(query: str, page: int):
             scored.append((final_score, reference, doc, meta))
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        page_size = 3
+        page_size = 5
         start_idx = page * page_size
         end_idx = start_idx + page_size
         page_slice = scored[start_idx:end_idx]
@@ -1291,7 +1291,7 @@ def recommend_verses():
 
         scored.sort(key=lambda x: x[0], reverse=True)
         all_candidates_full = curated_items + scored
-        page_size = 3
+        page_size = 5
         start_idx = page * page_size
         end_idx = start_idx + page_size
         # 요청한 페이지까지 필요한 만큼만 슬라이스
@@ -1365,37 +1365,48 @@ def open_all_postboxes():
     for postbox_id in postboxes:
         postboxes[postbox_id]['is_opened'] = True
 
+
+
 @app.route('/auth/check-and-save', methods=['POST'])
 def check_and_save():
-    try:
-        data = request.get_json() or {}
+    print("🔍 /auth/check-and-save 호출됨")
+    
+    try:  # ← try 시작
+        data = request.get_json()
+        print(f"📥 받은 데이터: {data}")
+        
         token = data.get('token')
         email = data.get('email')
-
+        
         if not token or not email:
+            print("❌ 토큰 또는 이메일 누락")
             return jsonify({"success": False, "message": "토큰 또는 이메일이 없습니다."}), 400
+        
+        print(f"🔑 토큰 검증: {email}")
+        
         if not supabase:
-            return jsonify({"success": False, "message": "서비스 준비중입니다."}), 503
-
-        # 1. 토큰 검증 (Supabase Auth 연동)
+            print("❌ Supabase 클라이언트 없음")
+            return jsonify({"success": False, "error": "서비스 준비중입니다."}), 503
+        
+        # 기존 로직 그대로
         user_info = supabase_auth.auth.get_user(token)
+        print(f"👤 Supabase 사용자: {user_info.user.email if user_info else '없음'}")
+        
         if not user_info:
             return jsonify({"success": False, "message": "유효하지 않은 토큰"}), 401
 
-        # Supabase 유저 메타데이터에서 display_name 추출
         user_metadata = user_info.user.user_metadata
         nickname = user_metadata.get('display_name') or user_metadata.get('full_name') or email.split('@')[0]
         
-        # 2. bible_users 테이블에 Upsert (없으면 생성, 있으면 업데이트)
-        # email 컬럼이 Primary Key로 설정되어 있어야 합니다.
         user_data = {
             "email": email,
-            "nickname" : nickname,
-            "last_login_at": datetime.now().isoformat() # 파이썬에서 시간 생성
+            "nickname": nickname,
+            "last_login_at": datetime.now().isoformat()
         }
         
         try:
             response = supabase.table('bible_users').upsert(user_data, on_conflict="email").execute()
+            print(f"📝 Upsert 결과: {response.data}")
             if not response.data:
                 return jsonify({"success": False, "message": "유저 정보를 찾을 수 없습니다."}), 404
             user = response.data[0]
@@ -1410,43 +1421,39 @@ def check_and_save():
             else:
                 raise
         user_id = user.get('id')
-        user_flag = user.get('flag', False) # flag 값 확인 (True/False)
+        user_flag = user.get('flag', False)
         
-        # 세션에 이메일 저장 (로그인 유지용)
         session['user_email'] = email
         session['user_nickname'] = nickname
 
-
-        # 2. 로직 분기
         if user_flag:
-            # [Case: flag=true] 우체통 정보 조회
             postbox_res = supabase.table('postboxes').select('url').eq('owner_id', user_id).execute()
             
             if postbox_res.data:
-                # 우체통 URL이 존재하면 해당 주소로 안내
                 postbox_url = postbox_res.data[0].get('url')
                 print(f"Redirecting to: /postbox/{postbox_url}")
                 return jsonify({
                     "success": True,
-                    "redirect_url": f"/postbox/{postbox_url}", # 실제 우체통 주소
+                    "redirect_url": f"/postbox/{postbox_url}",
                     "status": "existing_user",
                     "nickname": nickname
                 })
             else:
-                        # 데이터 정합성 방어: flag는 true인데 postbox가 없는 경우
-                        return jsonify({"success": True, "redirect_url": "/create-postbox", "status": "new_user"})
-            
+                return jsonify({"success": True, "redirect_url": "/create-postbox", "status": "new_user"})
         else:
-                    # [Case: flag=false] 계정은 있으나 우체통은 없음 -> 생성 페이지로
-                    return jsonify({
-                        "success": True, 
-                        "redirect_url": "/create-postbox", 
-                        "status": "new_user",
-                        "nickname": nickname
-                    })
-    except Exception as e:
-        print(f"Error: {e}")
+            return jsonify({
+                "success": True, 
+                "redirect_url": "/create-postbox", 
+                "status": "new_user",
+                "nickname": nickname
+            })
+    
+    except Exception as e:  # ← try와 같은 레벨! (들여쓰기 4칸)
+        print(f"❌ 상세 에러: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
+
 
 
 import uuid
@@ -1494,11 +1501,12 @@ def create_postbox_page():
     
     user_nickname = session.get('user_nickname', '사용자')
 
-    return render_template('create_postbox.html',
-                           user_name=user_nickname,
-                           supabase_url=os.environ.get('SUPABASE_URL'), 
-                           supabase_key=os.environ.get('SUPABASE_KEY')
-                           )
+    return render_template(
+        'create_postbox.html',
+        user_name=user_nickname,
+        supabase_url=SUPABASE_URL,
+        supabase_key=SUPABASE_ANON_KEY,
+    )
 
 # 우체통 확인
 @app.route('/postbox/<url_path>')
@@ -1549,20 +1557,22 @@ def view_postbox(url_path):
         is_expired = datetime.now() >= target_dt
 
         # 4. 템플릿 렌더링 (HTML에서 사용하는 변수명과 일치시킴)
-        return render_template('view_postbox.html', 
-                               postbox_name=postbox['name'],
-                               url_path=url_path,
-                               postbox_id=postbox_id,
-                               color=postbox['color'],
-                               postcard_count=postcard_count,
-                               # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
-                               privacy='public' if postbox['privacy'] == 0 else 'private',
-                               end_date=end_date,
-                               is_owner=is_owner,
-                               is_expired=is_expired,
-                               is_logged_in=bool(session.get('user_email')),
-                               supabase_url=os.environ.get('SUPABASE_URL'),
-                               supabase_key=os.environ.get('SUPABASE_KEY'))
+        return render_template(
+            'view_postbox.html',
+            postbox_name=postbox['name'],
+            url_path=url_path,
+            postbox_id=postbox_id,
+            color=postbox['color'],
+            postcard_count=postcard_count,
+            # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
+            privacy='public' if postbox['privacy'] == 0 else 'private',
+            end_date=end_date,
+            is_owner=is_owner,
+            is_expired=is_expired,
+            is_logged_in=bool(session.get('user_email')),
+            supabase_url=SUPABASE_URL,
+            supabase_key=SUPABASE_ANON_KEY,
+        )
 
     except Exception as e:
         print(f"Error: {e}")
@@ -1584,9 +1594,11 @@ def index():
             
             # flag가 false면 생성 페이지로
             return redirect('/create-postbox')
-    return render_template('index.html',
-                            url=os.environ.get('SUPABASE_URL'), 
-                            key=os.environ.get('SUPABASE_KEY'))
+    return render_template(
+        'index.html',
+        url=SUPABASE_URL,
+        key=SUPABASE_ANON_KEY,
+    )
 
 
 @app.route('/logout')

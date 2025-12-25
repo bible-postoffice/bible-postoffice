@@ -492,6 +492,7 @@
     <script>
         const postboxId = "{{ postbox_id }}";
         const draftKey = `postcardDraft-${postboxId}`;
+        const returnKey = `postboxReturnUrl-${postboxId}`;
         const templateAssets = {
             1: "{{ url_for('static', filename='images/postcards/postcard1.jpg') }}",
             2: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}",
@@ -745,8 +746,10 @@
                 });
                 if (response.ok) {
                     sessionStorage.removeItem(draftKey);
+                    const returnUrl = sessionStorage.getItem(returnKey);
+                    sessionStorage.removeItem(returnKey);
                     alert('엽서가 성공적으로 전송되었습니다! 🎉\\n2026년 1월 1일에 상대방이 확인할 수 있습니다.');
-                    window.location.href = '/';
+                    window.location.href = returnUrl || '/';
                 } else {
                     const err = await response.text();
                     alert('전송 중 오류가 발생했습니다.\\n' + err);

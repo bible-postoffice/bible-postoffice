@@ -134,6 +134,7 @@
 
     const SUPABASE_URL = "{{ supabase_url or '' }}";
     const SUPABASE_KEY = "{{ supabase_key or '' }}";
+    const isOwner = {{ 'true' if is_owner else 'false' }};
     const supabaseClient = (SUPABASE_URL && SUPABASE_KEY)
         ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
         : null;
@@ -226,6 +227,8 @@
     }
     function checkLoginAndWrite() {
         const postboxId = "{{ postbox_id }}";
+        const returnKey = `postboxReturnUrl-${postboxId}`;
+        sessionStorage.setItem(returnKey, window.location.href);
 
         if (!isLoggedIn) {
             openLoginModal();
@@ -265,7 +268,9 @@
                         isLoggedIn = true;
                         closeLoginModal();
                         updateLogoutVisibility();
-                        alert("로그인이 완료되었습니다. 다시 편지 남기기를 눌러주세요.");
+                        if (!isOwner) {
+                            alert("로그인이 완료되었습니다. 다시 편지 남기기를 눌러주세요.");
+                        }
                         return;
                     }
                     sessionStorage.removeItem(guardKey);
