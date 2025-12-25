@@ -130,7 +130,7 @@
             flex: 1 1 auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 0;
             width: 100%;
             min-height: 0;
         }
@@ -150,10 +150,10 @@
             justify-content: flex-start;
         }
         .verse-box .text {
-            flex: 1;
+            flex: 0 0 auto;
             display: flex;
             flex-direction: column;
-            overflow: auto;
+            overflow: hidden;
             white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: break-word;
@@ -162,7 +162,7 @@
             font-weight: 800;
             text-align: right;
             flex-shrink: 0;
-            margin-top: 0.3em;
+            margin-top: 0.15em;
             align-self: flex-end;
             display: block;
             color: var(--ink);
@@ -188,8 +188,8 @@
             font-weight: 700;
             overflow: hidden;
             width: 100%;
-            text-align: right;
-            align-self: flex-end;
+            text-align: center;
+            align-self: center;
         }
         
         .template-frame.postcard .verse-box {
@@ -209,11 +209,10 @@
         }
         
         .template-frame.postcard .sender-box {
-            margin-top: 0;
+            margin-top: auto;
             background: none;
             border: none;
             box-shadow: none;
-            text-align: right;
             flex: 0 0 12.5%;
             padding-top: 2px;
             padding-bottom: 2px;
@@ -222,6 +221,25 @@
         }
         .template-frame.postcard .msg-box {
             flex: 0 0 87.5%;
+        }
+        .template-frame.postcard.no-message .overlay {
+            grid-template-rows: 100%;
+        }
+        .template-frame.postcard.no-message .right {
+            flex: 0 0 0;
+            display: none;
+        }
+        .template-frame.postcard.no-message .left {
+            justify-content: center;
+            padding-top: 6%;
+        }
+        .template-frame.postcard.no-message .verse-box {
+            max-width: 96%;
+            margin: 0 auto;
+        }
+        .template-frame.postcard.no-message .sender-box {
+            display: block;
+            margin: 10px auto 0;
         }
         
         /* 편지지 템플릿: 세로 배치 */
@@ -270,7 +288,7 @@
         .template-frame.letter .msg-box {
             flex: 1 1 0;
             min-height: 0;
-            overflow: auto;
+            overflow: hidden;
             height: 100%;
         }
         .template-frame.letter .msg-box .body {
@@ -283,8 +301,21 @@
             max-width: 760px;
             border-radius: 0;
             align-self: center;
-            text-align: right;
-            margin-top: 0;
+            text-align: center;
+            margin-top: auto;
+        }
+        .template-frame.letter.no-message .right {
+            flex: 0 0 0;
+            display: none;
+        }
+        .template-frame.letter.no-message .left {
+            flex: 1 1 auto;
+            width: 100%;
+            padding-top: 6%;
+        }
+        .template-frame.letter.no-message .verse-box {
+            max-width: 96%;
+            margin: 0 auto;
         }
         
         .side {
@@ -390,7 +421,7 @@
             .header { flex-direction: column; gap: 10px; }
             
             .preview-card { width: 100%; }
-            .template-frame { min-height: 240px; border-radius: 12px; width: 100%; max-width: 100%; margin: 0 auto; }
+            .template-frame { min-height: 320px; border-radius: 12px; width: 100%; max-width: 100%; margin: 0 auto; }
             .template-frame.postcard {
                 background-size: contain;
                 background-repeat: no-repeat;
@@ -399,8 +430,11 @@
                 display: grid;
                 grid-template-rows: 60% 40%;
                 gap: 0; 
-                padding: 14% 7% 10%; 
+                padding: 10% 6% 8%; 
                 justify-content: space-between;
+            }
+            .template-frame.postcard.no-message .overlay {
+                padding: 15% 6% 3%;
             }
             .template-frame.postcard .left,
             .template-frame.postcard .right {
@@ -438,6 +472,9 @@
                 min-height: 0;
             }
         }
+        @media (min-width: 769px) {
+            .verse-box .ref { margin-top: 0; }
+        }
     </style>
 </head>
 <body>
@@ -454,17 +491,17 @@
             <div class="preview-card">
                 <div class="template-frame postcard" id="template-frame">
                     <div class="overlay">
-                        <div class="left">
+                        <div class="left" id="left-column">
                             <div class="verse-box">
                                 <div class="text" id="verse-text"></div>
                                 <span class="ref" id="verse-ref"></span>
                             </div>
                         </div>
-                        <div class="right">
+                        <div class="right" id="right-column">
                             <div class="msg-box">
                                 <div class="body" id="message-text"></div>
                             </div>
-                            <div class="sender-box">
+                            <div class="sender-box" id="sender-box">
                                 From. <span id="sender-label"></span>
                             </div>
                         </div>
@@ -492,15 +529,17 @@
     <script>
         const postboxId = "{{ postbox_id }}";
         const draftKey = `postcardDraft-${postboxId}`;
+        const returnKey = `postboxReturnUrl-${postboxId}`;
         const templateAssets = {
             1: "{{ url_for('static', filename='images/postcards/postcard1.jpg') }}",
             2: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}",
             3: "{{ url_for('static', filename='images/postcards/postcard3.jpg') }}",
             4: "{{ url_for('static', filename='images/postcards/postcard4.jpg') }}",
-            5: "{{ url_for('static', filename='images/letters/letter1.png') }}",
-            6: "{{ url_for('static', filename='images/letters/letter2.png') }}",
-            7: "{{ url_for('static', filename='images/letters/letter3.png') }}",
-            8: "{{ url_for('static', filename='images/letters/letter4.jpg') }}",
+            5: "{{ url_for('static', filename='images/postcards/postcard5.jpg') }}",
+            6: "{{ url_for('static', filename='images/postcards/postcard6.jpg') }}",
+            7: "{{ url_for('static', filename='images/postcards/postcard7.jpg') }}",
+            8: "{{ url_for('static', filename='images/postcards/postcard8.jpg') }}",
+            9: "{{ url_for('static', filename='images/postcards/postcard9.jpg') }}",
         };
         const FONT_OPTIONS = {
             'sans': {
@@ -560,6 +599,12 @@
         const verseTextEl = document.getElementById('verse-text');
         const messageTextEl = document.getElementById('message-text');
         const senderLabelEl = document.getElementById('sender-label');
+<<<<<<< HEAD
+=======
+        const senderBoxEl = document.getElementById('sender-box');
+        const rightColumnEl = document.getElementById('right-column');
+        const leftColumnEl = document.getElementById('left-column');
+>>>>>>> test02
         const fontTabsEl = document.getElementById('font-tabs');
         const fontGridEl = document.getElementById('font-grid');
         const sendBtn = document.getElementById('send-btn');
@@ -676,14 +721,25 @@
             }
         }
 
+        function normalizeSingleLine(value) {
+            return (value || '').replace(/\r?\n+/g, ' ');
+        }
+
         function applyContent() {
             const verse = draft.verse || {};
             verseRefEl.textContent = verse.reference || '선택한 말씀';
-            verseTextEl.textContent = verse.text || '';
-            messageTextEl.textContent = draft.message ? draft.message : '';
+            verseTextEl.textContent = (verse.text || '').replace(/\s+$/g, '');
+            messageTextEl.textContent = normalizeSingleLine(draft.message ? draft.message : '');
             const senderName = (draft.sender_name || '').trim();
             const displayName = senderName || '익명';
             senderLabelEl.textContent = displayName;
+            const messageValue = normalizeSingleLine(draft.message ? draft.message : '');
+            frameEl.classList.toggle('no-message', messageValue.length === 0);
+            if (messageValue.length === 0 && senderBoxEl && leftColumnEl) {
+                leftColumnEl.appendChild(senderBoxEl);
+            } else if (messageValue.length > 0 && senderBoxEl && rightColumnEl && senderBoxEl.parentElement !== rightColumnEl) {
+                rightColumnEl.appendChild(senderBoxEl);
+            }
 
             setTimeout(updateOverlayInset, 60);
             setTimeout(adjustAllText, 100);
@@ -720,6 +776,7 @@
             }
             const tpl = normalizeTemplate(draft.template || {});
             const opt = FONT_OPTIONS[selectedFont] || FONT_OPTIONS.sans;
+            const message = normalizeSingleLine(draft.message || '');
             sendBtn.disabled = true;
             sendBtn.textContent = '전송 중...';
             try {
@@ -735,15 +792,17 @@
                         is_anonymous: !(draft.sender_name || '').trim(),
                         verse_reference: draft.verse.reference,
                         verse_text: draft.verse.text,
-                        message: draft.message || '',
+                        message,
                         font_family: opt.fontFamily,
                         font_style: opt.id
                     })
                 });
                 if (response.ok) {
                     sessionStorage.removeItem(draftKey);
+                    const returnUrl = sessionStorage.getItem(returnKey);
+                    sessionStorage.removeItem(returnKey);
                     alert('엽서가 성공적으로 전송되었습니다! 🎉\\n2026년 1월 1일에 상대방이 확인할 수 있습니다.');
-                    window.location.href = '/';
+                    window.location.href = returnUrl || '/';
                 } else {
                     const err = await response.text();
                     alert('전송 중 오류가 발생했습니다.\\n' + err);
@@ -812,14 +871,14 @@
             let refMin, refMax, textMin, textMax;
             
             if (isMobile) {
-                refMin = 8; refMax = 10;
-                textMin = 8; textMax = 12;
+                refMin = 6; refMax = 10;
+                textMin = 6; textMax = 12;
             } else if (isTablet) {
-                refMin = 8; refMax = 15;
+                refMin = 7; refMax = 15;
                 textMin = 7; textMax = 16;
             } else {
-                refMin = 12; refMax = 20;
-                textMin = 13; textMax = 24;
+                refMin = 10; refMax = 20;
+                textMin = 10; textMax = 24;
             }
             
             // 제목(ref)을 먼저 맞춤
@@ -860,13 +919,13 @@
             let msgMin, msgMax, senderMin, senderMax;
             if (isMobile) {
                 msgMin = 10; msgMax = 18;
-                senderMin = 10; senderMax = 14;
+                senderMin = 10; senderMax = 12;
             } else if (isTablet) {
-                msgMin = 15; msgMax = 20;
-                senderMin = 10; senderMax = 16;
+                msgMin = 12; msgMax = 20;
+                senderMin = 10; senderMax = 12;
             } else {
-                msgMin = 16; msgMax = 28;
-                senderMin = 15; senderMax = 18;
+                msgMin = 12; msgMax = 28;
+                senderMin = 20; senderMax = 20;
             }
             
             // 성경 구절 영역 (제목 + 본문)
@@ -902,30 +961,11 @@
             if (senderBox && senderBoxContainer) {
                 // 컨테이너 크기를 기준으로 조절
                 fitTextToContainer(senderBox, senderMin, senderMax, senderBoxContainer.clientHeight, senderBoxContainer.clientWidth);
+                const senderFontSize = getComputedStyle(senderBox).fontSize;
+                senderBoxContainer.style.fontSize = senderFontSize;
             }
 
-            // 모바일에서 메시지+발신자 합계가 넘치는 경우 함께 축소
-            if (rightColumn && msgBox && senderBox) {
-                let msgSize = parseFloat(getComputedStyle(msgBox).fontSize) || msgMin;
-                let senderSize = parseFloat(getComputedStyle(senderBox).fontSize) || senderMin;
-                let iterations = 0;
-                const maxIterations = 200;
-                while (rightColumn.scrollHeight > rightColumn.clientHeight + 1 &&
-                    iterations < maxIterations) {
-                    if (msgSize > msgMin) {
-                        msgSize -= 0.3;
-                        msgBox.style.fontSize = msgSize + 'px';
-                    } else if (senderSize > senderMin) {
-                        senderSize -= 0.3;
-                        senderBox.style.fontSize = senderSize + 'px';
-                        const wrapper = senderBox.parentElement;
-                        if (wrapper) wrapper.style.fontSize = senderSize + 'px';
-                    } else {
-                        break;
-                    }
-                    iterations++;
-                }
-            }
+            // rightColumn overflow 보정은 gap을 제거했으므로 생략
         }
 
         function updateOverlayInset() {

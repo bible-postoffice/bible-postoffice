@@ -1,0 +1,349 @@
+[33mcommit 8c924e4ae2209e2c5021dd78ff28e079cfcf3094[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtest02[m[33m, [m[1;31morigin/test02[m[33m)[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Wed Dec 24 12:34:58 2025 +0900
+
+    remove 1,2,3 tap & add font tap & change button position
+
+[33mcommit 0ae0890dfcc543e9a4f40ce31005918e2307a080[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Wed Dec 24 12:04:14 2025 +0900
+
+    change position of text on postcard
+
+[33mcommit 8ef7ec97ecb834131a61ea58624f8eb71e5969c4[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Wed Dec 24 10:24:36 2025 +0900
+
+    use chromadb when local
+
+[33mcommit 12bb9d3bb6efd5ac99471140e2749eaad147dc75[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Wed Dec 24 10:03:17 2025 +0900
+
+    add logout btn on postbox pg and fix login session of supabase
+
+[33mcommit b31eddc6bb1b73bcd8a43c2127398e2b20510de3[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 23 17:17:41 2025 +0900
+
+    google cloud version
+
+[33mcommit fad47b66749f5190a1dd36a886e93cb7654bfd49[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 23 14:30:46 2025 +0900
+
+    Add Dockerfile and dockerignore from gcp-version
+
+[33mcommit 42abf6edeb27f17a2d7ac138ceea73188bc2a0c2[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 23 14:22:48 2025 +0900
+
+    share kakao sdk
+
+[33mcommit 7ff1d17992497d1b57a0c3b6c2f8ee00b48583f3[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 23 14:02:02 2025 +0900
+
+    add sharing sns fn in viewpage
+
+[33mcommit 6e03bd6cf06dc2028d3651044607feb16d992f50[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 23 13:35:57 2025 +0900
+
+    change max font size in desktop mode of view page
+
+[33mcommit 1cbb8749f76093e74146dd4a20142a3fab54964c[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 23 13:33:02 2025 +0900
+
+    change anon toggle to input name, change show text logic in viewpage
+
+[33mcommit 7b30fbd45936940a87d5f92d57a7d8a25619827e[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 23 11:54:09 2025 +0900
+
+    change img file of postcard and edit align of letters
+
+[33mcommit 7362b546922756103af3a928fdfc197c39526f9d[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Mon Dec 22 21:44:00 2025 +0900
+
+    add font 'schoolsafety'
+
+[33mcommit 6c1a628d36b695d11570a41c8417f534132fb78f[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Mon Dec 22 21:27:36 2025 +0900
+
+    merge main + test01
+
+[33mcommit 709dd675b15bd7eae11c254eb8bdd71196a8f25b[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Mon Dec 22 20:54:13 2025 +0900
+
+    merge: main 브랜치 필수 파일 병합
+    
+    필수 파일:
+    - postcard_routes.py (엽서 라우트 블루프린트)
+    - popular_verses.py (인기 구절 유틸)
+    
+    템플릿:
+    - choose_template.html
+    - send_postcard.html
+    - preview_postcard.html
+    - postcard_view.html
+    - mailbox_locked.html
+    
+    Static:
+    - images/ (postcards, letters)
+    
+    유틸리티:
+    - check_collection.py
+    - check_popularity_stats.py
+    - update_popularity.py
+    - rebuild_chroma.py
+
+[33mcommit f39264c3085edeb274158c79b78f224ab3200621[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Mon Dec 22 20:49:03 2025 +0900
+
+    merge: main의 템플릿 파일 병합 (choose_template, send_postcard, preview_postcard, postcard_view, mailbox_locked)
+
+[33mcommit 6684d33ddaf2a5d1b73d07147be0d12195ec8bdd[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Mon Dec 22 20:16:25 2025 +0900
+
+    logout and reset login session
+
+[33mcommit 0cc1e68e995afa69faea0fd9a735989a0a54d214[m[33m ([m[1;31morigin/test01[m[33m, [m[1;32mtest01[m[33m)[m
+Author: seirm <worldforest@gmail.com>
+Date:   Mon Dec 22 03:58:36 2025 +0900
+
+    - 타인 접속 시 로그인 체크 및 작성 페이지 리다이렉트 로직 구현
+    - DB 기반 실시간 편지 개수 카운팅 기능 추가
+    - 우체통별 설정된 end_date 기준 동적 카운트다운 적용
+    - 중복 엔드포인트(send_postcard) 에러 해결 및 API 구조 최적화
+
+[33mcommit dbdb2d9f3f9b39629b554c10bcde1a290d688069[m
+Merge: 085e3b6 880178b
+Author: seirm <worldforest@gmail.com>
+Date:   Mon Dec 22 03:05:01 2025 +0900
+
+    Merge remote-tracking branch 'origin/main' into test01
+
+[33mcommit 085e3b649d2dcefb95bc37e9afa6aca276dbe993[m
+Author: seirm <worldforest@gmail.com>
+Date:   Mon Dec 22 02:44:45 2025 +0900
+
+    [ADD] kakao login, make url
+
+[33mcommit 043b39873114c4bf459f0f9a70a5241be6b23863[m
+Merge: fd06ca5 b71e50d
+Author: seirm <worldforest@gmail.com>
+Date:   Sat Dec 20 10:39:46 2025 +0900
+
+    Merge branch 'test01' of https://github.com/bible-postoffice/bible-postoffice into test01
+
+[33mcommit fd06ca5be66232948bf0e6ca0118398b02b8767b[m
+Author: seirm <worldforest@gmail.com>
+Date:   Sat Dec 20 10:38:33 2025 +0900
+
+    setting
+
+[33mcommit b71e50df08da34beb73d3b65c42b9a70351fb7f5[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Fri Dec 19 17:55:17 2025 +0900
+
+    [add] 카카오 로그인, supabase 연결중
+
+[33mcommit 880178b4c16d71e614fec096de7440c7af1687fe[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Fri Dec 19 12:25:19 2025 +0900
+
+    edit app.py for run with gunicorn
+
+[33mcommit 470f3a367b743432fbf98987675ba28bf6785665[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Fri Dec 19 12:02:56 2025 +0900
+
+    add gunicorn in requirements
+
+[33mcommit 65fedd070a04fa72c610c7ea314310bdcabefcbe[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Fri Dec 19 11:15:09 2025 +0900
+
+    fix: add missing flask dependency(chromadb)
+
+[33mcommit ece9c1924420a08f63fba2c137d32f85284fe2b8[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Fri Dec 19 11:04:27 2025 +0900
+
+    add choosing font area
+
+[33mcommit bd46e11a5c5098559ab9d4234675a6b938d9a9e4[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Fri Dec 19 10:43:10 2025 +0900
+
+    fix: add missing flask dependency
+
+[33mcommit 230a9239878822eb576921e255644c16d9654dcc[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Fri Dec 19 10:36:21 2025 +0900
+
+    [FIX] requirements.txt update
+
+[33mcommit 10eafde69f38f63c5e8fb0e8f8d3cc6256eef284[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Fri Dec 19 10:25:25 2025 +0900
+
+    [FIX] requirements.txt update
+
+[33mcommit 4c1a4fc90230a582a47ea41904326d570918caac[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Fri Dec 19 09:41:01 2025 +0900
+
+    [FIX] requirements.txt update
+
+[33mcommit 4bc4d8df4d8ec45c54eca58fffd97f65312b3cde[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Thu Dec 18 17:50:18 2025 +0900
+
+    [ADD] DB 연동하다가 말았네
+
+[33mcommit d115fd4d375e71015ff404fe64545f67838b1714[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Thu Dec 18 17:39:34 2025 +0900
+
+    change api/create-mailbox to create_postbox()
+
+[33mcommit cb6a80c64e62dd3c13eef2e611a6f6df5b91b4ec[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Thu Dec 18 16:30:18 2025 +0900
+
+    add postcard templates and view-postcard page
+
+[33mcommit d9afd5110695ae6b076de12a2206b9215e2ada60[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Thu Dec 18 13:56:36 2025 +0900
+
+    reduce number of search result 5 to 3
+
+[33mcommit 703ca00a542f662cb7eb9297cfa4243ef31e3209[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Thu Dec 18 13:26:09 2025 +0900
+
+    add 'show more' fn
+
+[33mcommit 25da8dda62f613f290146cda807a49cb83936693[m
+Merge: 8d685da ab323a8
+Author: worldforest <worldforest99@gmail.com>
+Date:   Thu Dec 18 11:04:38 2025 +0900
+
+    [MERGE] main, test01
+
+[33mcommit 8d685da9b42754c5a3e87c52bc559702b6a6a317[m
+Author: seirm <worldforest@gmail.com>
+Date:   Thu Dec 18 02:09:12 2025 +0900
+
+    [ADD] 로그인 페이지(로그인 기능 미완성), 수신인 링크 생성, 링크 페이지 분기
+
+[33mcommit ab323a8741affe837652edefa4ff31a3091f79f1[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Wed Dec 17 21:47:34 2025 +0900
+
+    change toggle design
+
+[33mcommit 717080c52b4a41db95ab026f968f463cb1914d89[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Wed Dec 17 21:42:36 2025 +0900
+
+    add choos_template file, add anonymous fn
+
+[33mcommit 933ac1fa5f4e830475da62f68a33a06021aab062[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Wed Dec 17 17:55:00 2025 +0900
+
+    [ADD] 개편
+
+[33mcommit 426826b5d522ece27bf7b67dadb3a38ba723df19[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Wed Dec 17 14:19:17 2025 +0900
+
+    edit error of search function
+
+[33mcommit 681447a3f7e693374bd30b18e9ca0988d89f320c[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 16 23:17:28 2025 +0900
+
+    fix search
+
+[33mcommit f274dbede4f320d221526d4c26d1ce7f202514f6[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 16 23:07:17 2025 +0900
+
+    add database of url and mailbox
+
+[33mcommit 4355f9c2051884bbcc99a95e03528af1cd2ae9be[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 16 17:48:41 2025 +0900
+
+    add search functions-정확한 구절 및 sentence semantic search
+
+[33mcommit 1b344f5a6ccbb872ac0c10eb3ac49d22362b53e6[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 16 16:59:56 2025 +0900
+
+    edit embedding model + rebuild script
+
+[33mcommit 68266501a34cd03a6e1b07122b8e0f29564189c8[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 16 16:35:14 2025 +0900
+
+    edit embedding model large to small
+
+[33mcommit 03441640621fec2fbf2d897a73347711eff03bd7[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Tue Dec 16 12:09:18 2025 +0900
+
+    Remove .env from tracking
+
+[33mcommit 00b19699f1975113ba962a0a619624c33860efa9[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Mon Dec 15 17:35:59 2025 +0900
+
+    [INIT] vectordb2 폴더 Git 추적 중지 (.gitignore 적용)
+
+[33mcommit 55b9135b6649348e9798e5242eb5e0ee752be8c9[m
+Author: worldforest <worldforest99@gmail.com>
+Date:   Mon Dec 15 17:26:08 2025 +0900
+
+    [INIT] .gitignore 설정, requirements 파일 생성
+
+[33mcommit bc746dff1a33212903dd687bd194c479ba22e6dc[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Mon Dec 15 11:57:31 2025 +0900
+
+    first commit
+
+[33mcommit 7fda03864769be3dcc157e27485b16be9f988e07[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Fri Dec 12 15:26:10 2025 +0900
+
+    change
+
+[33mcommit 84c9e4a0f6227dd10100aeb77ce0b79cc51a6419[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Fri Dec 12 15:23:27 2025 +0900
+
+    upload files
+
+[33mcommit cea435be80c520a5864dff354a1c368ecf55ef32[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Fri Dec 12 15:22:40 2025 +0900
+
+    upload files
+
+[33mcommit 40e015eda4a059cf5b9fd476bdcf1bf61880a16a[m[33m ([m[1;31morigin/login[m[33m)[m
+Author: gshayoungkim <gs.hayoungkim@gmail.com>
+Date:   Fri Dec 12 15:22:13 2025 +0900
+
+    first commit

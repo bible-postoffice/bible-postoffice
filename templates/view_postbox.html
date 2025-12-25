@@ -34,7 +34,14 @@
         </span>
     </div>
 
-    <h1 class="text-3xl font-black text-slate-900 dark:text-white mb-8">{{ postbox_name }}</h1>
+    <h1 class="text-3xl font-black text-slate-900 dark:text-white mb-4">{{ postbox_name }}</h1>
+    {% if prayer_topic %}
+    <div class="mb-8 text-sm text-slate-500 dark:text-slate-300">
+        기도제목: <span class="font-semibold text-slate-700 dark:text-slate-100">{{ prayer_topic }}</span>
+    </div>
+    {% else %}
+    <div class="mb-8"></div>
+    {% endif %}
 
     <div class="relative mb-10 animate-float">
         <img src="/static/images/postbox/{{ color }}.png" class="w-64 h-64 object-contain drop-shadow-2xl mx-auto">
@@ -134,6 +141,7 @@
 
     const SUPABASE_URL = "{{ supabase_url or '' }}";
     const SUPABASE_KEY = "{{ supabase_key or '' }}";
+    const isOwner = {{ 'true' if is_owner else 'false' }};
     const supabaseClient = (SUPABASE_URL && SUPABASE_KEY)
         ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
         : null;
@@ -226,6 +234,8 @@
     }
     function checkLoginAndWrite() {
         const postboxId = "{{ postbox_id }}";
+        const returnKey = `postboxReturnUrl-${postboxId}`;
+        sessionStorage.setItem(returnKey, window.location.href);
 
         if (!isLoggedIn) {
             openLoginModal();
@@ -265,7 +275,9 @@
                         isLoggedIn = true;
                         closeLoginModal();
                         updateLogoutVisibility();
-                        alert("로그인이 완료되었습니다. 다시 편지 남기기를 눌러주세요.");
+                        if (!isOwner) {
+                            alert("로그인이 완료되었습니다. 다시 편지 남기기를 눌러주세요.");
+                        }
                         return;
                     }
                     sessionStorage.removeItem(guardKey);

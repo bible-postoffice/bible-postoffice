@@ -280,8 +280,8 @@
         <div class="card">
             <div class="header">
                 <div>
-                    <h1>엽서/편지지 선택</h1>
-                    <div class="subtitle">상단 토글로 종류를 고르고, 좌우 화살표나 스와이프로 템플릿을 살펴보세요.</div>
+                    <h1>엽서 선택</h1>
+                    <div class="subtitle">좌우 화살표나 스와이프로 엽서를 살펴보세요.</div>
                 </div>
                 <div class="step">
                     <span class="current">1 · 선택</span>
@@ -290,19 +290,10 @@
                 </div>
             </div>
 
-            <div class="toggle-bar">
-                <div class="toggle" id="toggle">
-                    <div class="thumb" id="thumb"></div>
-                    <button data-type="엽서">엽서</button>
-                    <button data-type="편지지">편지지</button>
-                </div>
-            </div>
-
             <div class="stage">
                 <button class="arrow left" id="prev-btn">&#x2039;</button>
                 <div class="frame" id="frame">
                     <div class="preview-large" id="preview"></div>
-                    <div class="label" id="type-label"></div>
                     <div class="meta">
                         <div class="name" id="name"></div>
                         <div class="desc" id="desc"></div>
@@ -316,7 +307,7 @@
                 <button class="btn" id="select-btn" disabled>선택</button>
                 <button class="btn secondary" id="back-btn">이전</button>
             </div>
-            <div class="hint">엽서와 편지지는 서로 다른 템플릿만 보여줘요.</div>
+            <div class="hint">엽서를 고른 뒤 선택 버튼을 눌러주세요.</div>
         </div>
     </div>
 
@@ -327,40 +318,33 @@
             { id: 2, name: '화원', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}" },
             { id: 3, name: '하늘', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard3.jpg') }}" },
             { id: 4, name: '크레용', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard4.jpg') }}" },
-            { id: 5, name: '항공 편지', typeLabel: '편지지', type: 1, image: "{{ url_for('static', filename='images/letters/letter1.png') }}" },
-            { id: 6, name: '화원', typeLabel: '편지지', type: 1, image: "{{ url_for('static', filename='images/letters/letter2.png') }}" },
-            { id: 7, name: '하늘', typeLabel: '편지지', type: 1, image: "{{ url_for('static', filename='images/letters/letter3.png') }}" },
-            { id: 8, name: '크레용', typeLabel: '편지지', type: 1, image: "{{ url_for('static', filename='images/letters/letter4.png') }}" },
+            { id: 5, name: '크레용2026', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard5.jpg') }}" },
+            { id: 6, name: '바닷가2026', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard6.jpg') }}" },
+            { id: 7, name: '빈티지', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard7.jpg') }}" },
+            { id: 8, name: '파란리본', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard8.jpg') }}" },
         ];
 
         const previewEl = document.getElementById('preview');
-        const typeLabelEl = document.getElementById('type-label');
         const nameEl = document.getElementById('name');
         const descEl = document.getElementById('desc');
         const counterEl = document.getElementById('counter');
         const selectBtn = document.getElementById('select-btn');
         const backBtn = document.getElementById('back-btn');
-        const thumbEl = document.getElementById('thumb');
-        const toggleEl = document.getElementById('toggle');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
         const frameEl = document.getElementById('frame');
         const stageEl = document.querySelector('.stage');
 
-        let currentType = '엽서';
         let currentIndex = 0;
 
-        const filteredTemplates = () => templates.filter(t => t.typeLabel === currentType);
-
         function render() {
-            const list = filteredTemplates();
+            const list = templates;
             if (!list.length) {
                 selectBtn.disabled = true;
                 previewEl.className = 'preview-large';
                 previewEl.style.backgroundImage = '';
                 nameEl.textContent = '';
                 descEl.textContent = '';
-                typeLabelEl.textContent = '';
                 counterEl.textContent = '';
                 return;
             }
@@ -372,26 +356,11 @@
             previewEl.style.backgroundImage = tpl.image ? `url(${tpl.image})` : '';
             nameEl.textContent = '';
             descEl.textContent = '';
-            typeLabelEl.textContent = '';
             counterEl.textContent = `${currentIndex + 1} / ${list.length}`;
             selectBtn.disabled = false;
             frameEl.classList.remove('landscape', 'portrait');
-            frameEl.classList.add(tpl.typeLabel === '엽서' ? 'landscape' : 'portrait');
+            frameEl.classList.add('landscape');
         }
-
-        function setType(type) {
-            currentType = type;
-            currentIndex = 0;
-            thumbEl.style.transform = type === '엽서' ? 'translateX(0)' : 'translateX(100%)';
-            toggleEl.querySelectorAll('button').forEach(btn => {
-                btn.style.color = btn.dataset.type === type ? '#fff1f2' : '#fecdd3';
-            });
-            render();
-        }
-
-        toggleEl.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('click', () => setType(btn.dataset.type));
-        });
 
         prevBtn.addEventListener('click', () => {
             currentIndex -= 1;
@@ -431,7 +400,7 @@
         enableSwipe(stageEl);
 
         selectBtn.addEventListener('click', () => {
-            const list = filteredTemplates();
+            const list = templates;
             if (!list.length) return;
             const tpl = list[currentIndex];
             const url = new URL(window.location.origin + `/send/${postboxId}/write`);
@@ -446,7 +415,7 @@
             else window.location.href = '/';
         });
 
-        setType(currentType);
+        render();
     </script>
 </body>
 </html>

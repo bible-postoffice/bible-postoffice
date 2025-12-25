@@ -48,11 +48,24 @@ print("🔄 임베딩 모델 로딩 중...")
 embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
 print(f"✅ 임베딩 모델 로드 완료: {embedding_model.get_sentence_embedding_dimension()}차원")
 
-# ChromaDB 초기화 비활성화 (항상 Supabase 벡터DB 사용)
+# ChromaDB 초기화 (Cloud Run에서는 기본 비활성화)
 IS_CLOUD_RUN = bool(os.environ.get("K_SERVICE"))
-USE_CHROMA = False
-bible_collection = None
-print("ℹ️ ChromaDB 초기화 건너뜀 (Supabase 벡터DB 전용 모드)")
+use_chroma_env = os.environ.get("USE_CHROMA")
+if use_chroma_env is None and not IS_CLOUD_RUN:
+    use_chroma_env = "1"
+USE_CHROMA = str(use_chroma_env).lower() not in ("0", "false", "no")
+if not IS_CLOUD_RUN and USE_CHROMA:
+    try:
+        chroma_client = chromadb.PersistentClient(path="./vectordb_e5small")
+        bible_collection = chroma_client.get_collection(name="bible")
+        print(f"✅ 컬렉션 로드 성공: {bible_collection.name}")
+        print(f"   총 구절 수: {bible_collection.count()}")
+    except Exception as e:
+        print(f"❌ ChromaDB 에러: {e}")
+        bible_collection = None
+else:
+    bible_collection = None
+    print("ℹ️ ChromaDB 초기화 건너뜀 (Cloud Run/Supabase 전용 모드)")
 
 # 검색 주제를 문맥/대표 구절과 함께 확장하기 위한 힌트 세트
 DEFAULT_CONTEXT_DESCRIPTION = (
@@ -1051,7 +1064,6 @@ def _supabase_vector_query(query_embedding, match_count=200):
                 return result.data, None
         except Exception as exc:
             last_error = exc
-            print(f"❌ Supabase RPC 실패: {rpc_name} -> {exc}", flush=True)
     return None, last_error or "Supabase RPC 호출에 실패했습니다."
 
 
@@ -1093,7 +1105,7 @@ def recommend_verses_supabase(query: str, page: int):
             scored.append((final_score, reference, doc, meta))
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        page_size = 3
+        page_size = 5
         start_idx = page * page_size
         end_idx = start_idx + page_size
         page_slice = scored[start_idx:end_idx]
@@ -1279,7 +1291,7 @@ def recommend_verses():
 
         scored.sort(key=lambda x: x[0], reverse=True)
         all_candidates_full = curated_items + scored
-        page_size = 3
+        page_size = 5
         start_idx = page * page_size
         end_idx = start_idx + page_size
         # 요청한 페이지까지 필요한 만큼만 슬라이스
@@ -1357,18 +1369,29 @@ def open_all_postboxes():
 
 @app.route('/auth/check-and-save', methods=['POST'])
 def check_and_save():
-    try:
-        data = request.get_json() or {}
+    print("🔍 /auth/check-and-save 호출됨")
+    
+    try:  # ← try 시작
+        data = request.get_json()
+        print(f"📥 받은 데이터: {data}")
+        
         token = data.get('token')
         email = data.get('email')
-
+        
         if not token or not email:
+            print("❌ 토큰 또는 이메일 누락")
             return jsonify({"success": False, "message": "토큰 또는 이메일이 없습니다."}), 400
+        
+        print(f"🔑 토큰 검증: {email}")
+        
         if not supabase:
-            return jsonify({"success": False, "message": "서비스 준비중입니다."}), 503
-
-        # 1. 토큰 검증 (Supabase Auth 연동)
+            print("❌ Supabase 클라이언트 없음")
+            return jsonify({"success": False, "error": "서비스 준비중입니다."}), 503
+        
+        # 기존 로직 그대로
         user_info = supabase_auth.auth.get_user(token)
+        print(f"👤 Supabase 사용자: {user_info.user.email if user_info else '없음'}")
+        
         if not user_info:
             return jsonify({"success": False, "message": "유효하지 않은 토큰"}), 401
 
@@ -1383,6 +1406,7 @@ def check_and_save():
         
         try:
             response = supabase.table('bible_users').upsert(user_data, on_conflict="email").execute()
+            print(f"📝 Upsert 결과: {response.data}")
             if not response.data:
                 return jsonify({"success": False, "message": "유저 정보를 찾을 수 없습니다."}), 404
             user = response.data[0]
@@ -1533,21 +1557,22 @@ def view_postbox(url_path):
         is_expired = datetime.now() >= target_dt
 
         # 4. 템플릿 렌더링 (HTML에서 사용하는 변수명과 일치시킴)
-        return render_template('view_postbox.html', 
-                               postbox_name=postbox['name'],
-                               prayer_topic=postbox.get('prayer_topic', ''),
-                               url_path=url_path,
-                               postbox_id=postbox_id,
-                               color=postbox['color'],
-                               postcard_count=postcard_count,
-                               # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
-                               privacy='public' if postbox['privacy'] == 0 else 'private',
-                               end_date=end_date,
-                               is_owner=is_owner,
-                               is_expired=is_expired,
-                               is_logged_in=bool(session.get('user_email')),
-                               supabase_url=os.environ.get('SUPABASE_URL'),
-                               supabase_key=os.environ.get('SUPABASE_KEY'))
+        return render_template(
+            'view_postbox.html',
+            postbox_name=postbox['name'],
+            url_path=url_path,
+            postbox_id=postbox_id,
+            color=postbox['color'],
+            postcard_count=postcard_count,
+            # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
+            privacy='public' if postbox['privacy'] == 0 else 'private',
+            end_date=end_date,
+            is_owner=is_owner,
+            is_expired=is_expired,
+            is_logged_in=bool(session.get('user_email')),
+            supabase_url=SUPABASE_URL,
+            supabase_key=SUPABASE_ANON_KEY,
+        )
 
     except Exception as e:
         print(f"Error: {e}")
