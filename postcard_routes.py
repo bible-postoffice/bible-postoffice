@@ -102,7 +102,7 @@ def create_postcard_blueprint(
             is_anonymous = False
 
         raw_message = data.get("message", "")
-        message = " ".join(str(raw_message).replace("\r", " ").replace("\n", " ").split())
+        message = str(raw_message).replace("\r", " ").replace("\n", " ")
 
         postcard = {
             "id": str(uuid.uuid4()),

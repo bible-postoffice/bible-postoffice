@@ -150,7 +150,7 @@
             justify-content: flex-start;
         }
         .verse-box .text {
-            flex: 1;
+            flex: 0 0 auto;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -162,7 +162,7 @@
             font-weight: 800;
             text-align: right;
             flex-shrink: 0;
-            margin-top: 0.3em;
+            margin-top: 0.15em;
             align-self: flex-end;
             display: block;
             color: var(--ink);
@@ -221,6 +221,25 @@
         }
         .template-frame.postcard .msg-box {
             flex: 0 0 87.5%;
+        }
+        .template-frame.postcard.no-message .overlay {
+            grid-template-rows: 100%;
+        }
+        .template-frame.postcard.no-message .right {
+            flex: 0 0 0;
+            display: none;
+        }
+        .template-frame.postcard.no-message .left {
+            justify-content: center;
+            padding-top: 6%;
+        }
+        .template-frame.postcard.no-message .verse-box {
+            max-width: 96%;
+            margin: 0 auto;
+        }
+        .template-frame.postcard.no-message .sender-box {
+            display: block;
+            margin: 10px auto 0;
         }
         
         /* 편지지 템플릿: 세로 배치 */
@@ -284,6 +303,19 @@
             align-self: center;
             text-align: center;
             margin-top: auto;
+        }
+        .template-frame.letter.no-message .right {
+            flex: 0 0 0;
+            display: none;
+        }
+        .template-frame.letter.no-message .left {
+            flex: 1 1 auto;
+            width: 100%;
+            padding-top: 6%;
+        }
+        .template-frame.letter.no-message .verse-box {
+            max-width: 96%;
+            margin: 0 auto;
         }
         
         .side {
@@ -389,7 +421,7 @@
             .header { flex-direction: column; gap: 10px; }
             
             .preview-card { width: 100%; }
-            .template-frame { min-height: 240px; border-radius: 12px; width: 100%; max-width: 100%; margin: 0 auto; }
+            .template-frame { min-height: 320px; border-radius: 12px; width: 100%; max-width: 100%; margin: 0 auto; }
             .template-frame.postcard {
                 background-size: contain;
                 background-repeat: no-repeat;
@@ -398,8 +430,11 @@
                 display: grid;
                 grid-template-rows: 60% 40%;
                 gap: 0; 
-                padding: 14% 7% 10%; 
+                padding: 10% 6% 8%; 
                 justify-content: space-between;
+            }
+            .template-frame.postcard.no-message .overlay {
+                padding: 15% 6% 3%;
             }
             .template-frame.postcard .left,
             .template-frame.postcard .right {
@@ -437,6 +472,9 @@
                 min-height: 0;
             }
         }
+        @media (min-width: 769px) {
+            .verse-box .ref { margin-top: 0; }
+        }
     </style>
 </head>
 <body>
@@ -453,17 +491,17 @@
             <div class="preview-card">
                 <div class="template-frame postcard" id="template-frame">
                     <div class="overlay">
-                        <div class="left">
+                        <div class="left" id="left-column">
                             <div class="verse-box">
                                 <div class="text" id="verse-text"></div>
                                 <span class="ref" id="verse-ref"></span>
                             </div>
                         </div>
-                        <div class="right">
+                        <div class="right" id="right-column">
                             <div class="msg-box">
                                 <div class="body" id="message-text"></div>
                             </div>
-                            <div class="sender-box">
+                            <div class="sender-box" id="sender-box">
                                 From. <span id="sender-label"></span>
                             </div>
                         </div>
@@ -561,6 +599,9 @@
         const verseTextEl = document.getElementById('verse-text');
         const messageTextEl = document.getElementById('message-text');
         const senderLabelEl = document.getElementById('sender-label');
+        const senderBoxEl = document.getElementById('sender-box');
+        const rightColumnEl = document.getElementById('right-column');
+        const leftColumnEl = document.getElementById('left-column');
         const fontTabsEl = document.getElementById('font-tabs');
         const fontGridEl = document.getElementById('font-grid');
         const sendBtn = document.getElementById('send-btn');
@@ -678,20 +719,24 @@
         }
 
         function normalizeSingleLine(value) {
-            return (value || '')
-                .replace(/\r?\n+/g, ' ')
-                .replace(/\s{2,}/g, ' ')
-                .trim();
+            return (value || '').replace(/\r?\n+/g, ' ');
         }
 
         function applyContent() {
             const verse = draft.verse || {};
             verseRefEl.textContent = verse.reference || '선택한 말씀';
-            verseTextEl.textContent = verse.text || '';
+            verseTextEl.textContent = (verse.text || '').replace(/\s+$/g, '');
             messageTextEl.textContent = normalizeSingleLine(draft.message ? draft.message : '');
             const senderName = (draft.sender_name || '').trim();
             const displayName = senderName || '익명';
             senderLabelEl.textContent = displayName;
+            const messageValue = normalizeSingleLine(draft.message ? draft.message : '');
+            frameEl.classList.toggle('no-message', messageValue.length === 0);
+            if (messageValue.length === 0 && senderBoxEl && leftColumnEl) {
+                leftColumnEl.appendChild(senderBoxEl);
+            } else if (messageValue.length > 0 && senderBoxEl && rightColumnEl && senderBoxEl.parentElement !== rightColumnEl) {
+                rightColumnEl.appendChild(senderBoxEl);
+            }
 
             setTimeout(updateOverlayInset, 60);
             setTimeout(adjustAllText, 100);
@@ -870,14 +915,14 @@
             const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
             let msgMin, msgMax, senderMin, senderMax;
             if (isMobile) {
-                msgMin = 8; msgMax = 18;
-                senderMin = 8; senderMax = 10;
+                msgMin = 10; msgMax = 18;
+                senderMin = 10; senderMax = 12;
             } else if (isTablet) {
                 msgMin = 12; msgMax = 20;
                 senderMin = 10; senderMax = 12;
             } else {
                 msgMin = 12; msgMax = 28;
-                senderMin = 12; senderMax = 14;
+                senderMin = 20; senderMax = 20;
             }
             
             // 성경 구절 영역 (제목 + 본문)

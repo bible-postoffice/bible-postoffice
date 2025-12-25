@@ -340,7 +340,7 @@
             <input type="text" id="sender-name" class="name-input" placeholder="예: 하영, 온유한친구" maxlength="20">
         </div>
 
-        <div class="section-title">편지 작성</div>
+        <div class="section-title">편지 작성 (선택)</div>
         <div class="char-counter" id="message-counter">0/100자</div>
         <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요" maxlength="100"></textarea>
         
@@ -501,10 +501,7 @@
         }
 
         function normalizeSingleLine(text) {
-            return (text || '')
-                .replace(/\r?\n+/g, ' ')
-                .replace(/\s{2,}/g, ' ')
-                .trim();
+            return (text || '').replace(/\r?\n+/g, ' ');
         }
 
         function adjustMessageHeight() {
