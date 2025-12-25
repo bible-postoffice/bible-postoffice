@@ -526,6 +526,9 @@
                 alert(`편지는 최대 ${MAX_MESSAGE_LENGTH}자까지 작성할 수 있어요.`);
                 return;
             }
+            if (!validateBeforeSend()) {
+                return;
+            }
             const senderNameInput = document.getElementById('sender-name');
             const senderName = senderNameInput ? senderNameInput.value.trim() : '';
             const draft = {
@@ -592,6 +595,215 @@
             }
         })();
         updateMessageCounter();
+
+        
+               // ============================================
+        // 1. jsDelivr CDN을 통한 금칙어 리스트 로드
+        // ============================================
+        let profanityList = [];
+        
+        // 1,143개의 한국어 욕설 데이터 로드
+        fetch('https://cdn.jsdelivr.net/gh/hlog2e/bad_word_list@master/word_list.json')
+            .then(response => response.json())
+            .then(data => {
+                profanityList = normalizeProfanityList(data);
+                if (profanityList.length === 0) {
+                    profanityList = getBasicProfanityList();
+                }
+                console.log(`✅ 금칙어 ${profanityList.length}개 로드 완료`);
+            })
+            .catch(error => {
+                console.error('⚠️ 금칙어 리스트 로드 실패:', error);
+                // 로드 실패 시 기본 금칙어 사용
+                profanityList = getBasicProfanityList();
+            });
+
+        // ============================================
+        // 2. 기본 금칙어 리스트 (백업용)
+        // ============================================
+        function getBasicProfanityList() {
+            return [
+                "시발", "시벌", "씨발", "씨벌", "시바", "씨바", "시팔", "씨팔",
+                "개새", "개색", "새끼", "쌔끼", "썌끼", "색히", "색기",
+                "병신", "븅신", "뷰신", "빙신", "멍청", "또라이", "미친",
+                "ㅅㅂ", "ㅆㅂ", "ㅄ", "ㅂㅅ", "ㅁㅊ", "ㄱㅅㄲ",
+                "좆", "좃", "졷", "존나", "존만", "졸라", "지랄", "염병",
+                "개자식", "개놈", "개년", "걸레", "창녀", "썅", "엠창",
+                "애미", "애비", "에미", "에비", "엄창", "육시랄",
+                "닥쳐", "꺼져", "죽어", "뒤져", "디져", "뒤지", "디지",
+                "엿먹", "젠장", "씹", "씹새", "씹세", "씹쌔",
+                "호로", "퍅", "퍽", "후레", "쌍놈", "쌍년"
+            ];
+        }
+
+        function normalizeProfanityList(data) {
+            if (Array.isArray(data)) return data;
+            if (data && Array.isArray(data.words)) return data.words;
+            if (data && Array.isArray(data.bad_words)) return data.bad_words;
+            if (data && Array.isArray(data.badwords)) return data.badwords;
+            return [];
+        }
+
+        // ============================================
+        // 3. 정규식 기반 변형 욕설 패턴
+        // ============================================
+        const profanityPatterns = [
+            /[시씨쉬싯].{0,2}[발벌빨뻘]/g,
+            /[개]{1}[새색섹쌔].{0,1}[끼키]/g,
+            /[병븅빙].{0,1}[신씬]/g,
+            /ㅅ.{0,1}ㅂ/g,
+            /ㅂ.{0,1}ㅅ/g,
+            /[존좆].{0,1}[나만]/g,
+            /[지쥐].{0,1}[랄럴]/g,
+            /[닥됙].{0,1}[쳐처]/g,
+            /[꺼껴].{0,1}[져저]/g,
+            /[죽쥭].{0,1}[어여]/g,
+            /[뒤되].{0,1}[져저지]/g,
+            /[미믜].{0,1}[친]/g,
+            /[애앤에엔].{0,1}[미비]/g,
+            /[씹쓉].{0,2}[새색]/g
+        ];
+
+        // ============================================
+        // 4. 욕설 감지 함수 (고급)
+        // ============================================
+        function findProfanity(text) {
+            if (!text || text.trim() === '') return [];
+            
+            // 텍스트 정규화 (공백, 특수문자 제거)
+            const normalizedText = text.toLowerCase()
+                .replace(/\s/g, '')
+                .replace(/[^\w가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
+            const matches = new Set();
+            
+            // 1) 정규식 패턴 매칭 (변형 욕설 감지)
+            for (let pattern of profanityPatterns) {
+                const safePattern = new RegExp(pattern.source, pattern.flags.replace('g', ''));
+                const match = safePattern.exec(normalizedText);
+                if (match) {
+                    matches.add(match[0]);
+                }
+            }
+            
+            // 2) 금칙어 리스트 매칭
+            for (let word of (profanityList || [])) {
+                const normalizedWord = word.toLowerCase().replace(/\s/g, '');
+                if (normalizedText.includes(normalizedWord)) {
+                    matches.add(word);
+                }
+            }
+            
+            // 3) 자음/모음 분리 욕설 감지 (예: ㅅㅂ, ㄱㅅㄲ)
+            const consonantText = extractConsonants(text);
+            const forbiddenConsonants = ['ㅅㅂ', 'ㅆㅂ', 'ㅄ', 'ㅂㅅ', 'ㄱㅅㄲ', 'ㅁㅊ'];
+            for (let consonant of forbiddenConsonants) {
+                if (consonantText.includes(consonant)) {
+                    matches.add(consonant);
+                }
+            }
+            
+            return Array.from(matches);
+        }
+
+        function containsProfanity(text) {
+            return findProfanity(text).length > 0;
+        }
+
+        // ============================================
+        // 5. 한글 자음 추출 함수
+        // ============================================
+        function extractConsonants(text) {
+            const CHOSUNG_LIST = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+            let result = '';
+            
+            for (let char of text) {
+                const code = char.charCodeAt(0) - 44032;
+                if (code >= 0 && code <= 11171) {
+                    result += CHOSUNG_LIST[Math.floor(code / 588)];
+                } else if (CHOSUNG_LIST.includes(char)) {
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        // ============================================
+        // 6. 실시간 입력 검증
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const senderNameInput = document.getElementById('sender-name');
+            const letterContentInput = document.getElementById('message');
+            
+            // 보여줄 이름 검증
+            if (senderNameInput) {
+                senderNameInput.addEventListener('input', function(e) {
+                    const matches = findProfanity(e.target.value);
+                    if (matches.length > 0) {
+                        alert(`⚠️ 부적절한 표현이 포함되어 있습니다.\n금칙어: ${matches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
+                        e.target.value = e.target.value.slice(0, -1);
+                        e.target.style.borderColor = '#e74c3c';
+                    } else {
+                        e.target.style.borderColor = '';
+                    }
+                });
+            }
+            
+            // 편지 내용 검증
+            if (letterContentInput) {
+                letterContentInput.addEventListener('input', function(e) {
+                    const matches = findProfanity(e.target.value);
+                    if (matches.length > 0) {
+                        alert(`⚠️ 부적절한 표현이 포함되어 있습니다.\n금칙어: ${matches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
+                        e.target.value = e.target.value.slice(0, -1);
+                        e.target.style.borderColor = '#e74c3c';
+                    } else {
+                        e.target.style.borderColor = '';
+                    }
+                });
+            }
+        });
+
+        // ============================================
+        // 7. 전송 전 최종 검증
+        // ============================================
+        function validateBeforeSend() {
+            const senderName = document.getElementById('sender-name')?.value || '';
+            const letterContent = document.getElementById('message')?.value || '';
+            
+            const senderMatches = findProfanity(senderName);
+            if (senderMatches.length > 0) {
+                alert(`⚠️ 보내는 사람 이름에 부적절한 표현이 포함되어 있습니다.\n금칙어: ${senderMatches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
+                return false;
+            }
+            
+            const letterMatches = findProfanity(letterContent);
+            if (letterMatches.length > 0) {
+                alert(`⚠️ 편지 내용에 부적절한 표현이 포함되어 있습니다.\n금칙어: ${letterMatches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
+                return false;
+            }
+            
+            return true;
+        }
+
+        // ============================================
+        // 8. 기존 전송 버튼에 검증 추가
+        // ============================================
+        // 전송 버튼을 찾아서 클릭 이벤트에 검증 함수 연결
+        document.addEventListener('DOMContentLoaded', function() {
+            const sendButton = document.querySelector('button[type="submit"]') || 
+                             document.querySelector('.send-button') ||
+                             document.querySelector('#sendButton');
+            
+            if (sendButton) {
+                sendButton.addEventListener('click', function(e) {
+                    if (!validateBeforeSend()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
