@@ -114,71 +114,68 @@
             flex-direction: column;
         }
 
-        /* ============ 편지지 템플릿: 50/50 상하 분할 ============ */
+        /* ============ 편지지 템플릿: 세로 배치 ============ */
         .card.letter .overlay {
             flex-direction: column;
-            gap: 0;
-            padding: 5% 8%;
-            height: 90%;
-            width: 90%;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6%;
+            padding: 10% 8%;
+            height: 80%;
             margin: auto;
-            justify-content: flex-start;
         }
         
-        /* 위쪽 50%: verse 영역 */
-        .card.letter .left {
-            position: relative;
-            flex: 0 0 50%; /* 정확히 50% */
-            padding: 3% 4%;
+        .card.letter .left,
+        .card.letter .right {
+            width: 80%;
+            max-width: 760px;
             display: flex;
+            flex-direction: column;
             align-items: center;
+        }
+        .card.letter .left {
+            flex: 0 0 40%;
             justify-content: center;
         }
-        
-        /* 아래쪽 50%: msg + sender 영역 */
         .card.letter .right {
-            flex: 0 0 50%; /* 정확히 50% */
-            padding: 3% 4%;
-            display: flex;
-            flex-direction: column;
+            flex: 0 0 40%;
+            justify-content: flex-start;
             gap: 8px;
-            align-items: stretch;
         }
         
-        .card.letter .verse-box {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            color: var(--ink);
-            line-height: 1.5;
-            font-weight: 600;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            font-family: var(--user-font);
-        }
-        
-        .card.letter .msg-box {
-            position: relative;
-            flex: 1 1 0; /* 남은 공간 채움 */
-            color: var(--ink);
-            line-height: 1.5;
-            font-weight: 600;
-            overflow: hidden;
-            font-family: var(--user-font);
-        }
-        
+        .card.letter .verse-box,
+        .card.letter .msg-box,
         .card.letter .sender-box {
-            position: relative;
-            flex-shrink: 0;
-            margin-top: 4px;
-            text-align: right;
-            color: var(--ink);
-            font-weight: 700;
-            overflow: hidden;
-            font-family: var(--user-font);
-            align-self: flex-end;
-            max-width: 70%;
+            background: none;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+        }
+        .card.letter .verse-box,
+        .card.letter .msg-box {
+            width: 100%;
+            max-width: 760px;
+        }
+        .card.letter .msg-box {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: auto;
+            height: 100%;
+        }
+        .card.letter .msg-box .body {
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+        .card.letter .sender-box {
+            width: 100%;
+            max-width: 760px;
+            border-radius: 0;
+            align-self: center;
+            text-align: center;
+            margin-top: auto;
         }
 
         /* ============ 엽서 템플릿: 상하 2단 ============ */
@@ -209,6 +206,7 @@
             overflow: hidden;
             font-family: var(--user-font);
             flex: 1 1 auto;
+            min-height: 0;
         }
         
         .card.postcard .msg-box {
@@ -217,17 +215,22 @@
             font-weight: 600;
             overflow: hidden;
             font-family: var(--user-font);
-            flex: 1 1 auto;
+            flex: 0 0 87.5%;
+            min-height: 0;
         }
         
         .card.postcard .sender-box {
-            text-align: right;
+            text-align: center;
             color: var(--ink);
             font-weight: 700;
             overflow: hidden;
             font-family: var(--user-font);
-            flex: 0 0 auto;
-            align-self: flex-end;
+            flex: 0 0 12.5%;
+            align-self: center;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            line-height: 1.2;
+            overflow: visible;
         }
 
         /* ============ 공통 스타일 ============ */
@@ -235,7 +238,10 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         .verse-box .text .body {
             flex: 1;
@@ -256,13 +262,22 @@
             font-weight: 600;
             overflow: hidden;
             font-family: var(--user-font);
+            display: flex;
+            flex-direction: column;
+        }
+        .msg-box .body {
+            flex: 1;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            overflow: hidden;
         }
         
         .sender-box {
             color: var(--ink);
             font-weight: 700;
             overflow: hidden;
-            text-align: right;
+            text-align: center;
             font-family: var(--user-font);
         }
         
@@ -273,9 +288,9 @@
             }
             
             .card.letter .overlay {
-                height: 90%;
+                height: 80%;
                 width: 90%;
-                padding: 5% 8%;
+                padding: 10% 8%;
             }
         }
         
@@ -287,10 +302,27 @@
             }
             
             .card.letter .overlay {
-                height: 90%;
-                width: 90%;
-                padding: 5% 7%;
+                padding: 8% 6%;
+                gap: 6%;
+                justify-content: space-between;
             }
+            .card.letter .verse-box {
+                min-height: 40%;
+                display: flex;
+                align-items: center;
+            }
+            .card.letter .msg-box,
+            .card.letter .sender-box {
+                max-width: none;
+            }
+            .card.letter .msg-box {
+                min-height: 0;
+            }
+        }
+        @media (max-width: 540px) {
+            .verse-box,
+            .msg-box { font-size: 13px; word-break: break-word; }
+            .verse-box .ref { font-size: 11px; }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -322,7 +354,7 @@
                 </div>
                 <div class="right">
                     <div class="msg-box">
-                        {{ message if message else '' }}
+                        <div class="body">{{ message if message else '' }}</div>
                     </div>
                     <div class="sender-box">
                         From. {{ sender or '익명' }}
@@ -345,19 +377,21 @@
     </div>
 
     <script>
-        function fitTextToContainer(element, minSize, maxSize, containerEl) {
+        function fitTextToContainer(element, minSize, maxSize, containerHeight = null, containerWidth = null) {
             if (!element || !element.textContent.trim()) return;
             
-            const target = containerEl || element;
             let fontSize = maxSize;
             element.style.fontSize = fontSize + 'px';
             
             let iterations = 0;
             const maxIterations = 200;
             
-            while ((element.scrollHeight > target.clientHeight + 1 || 
-                    element.scrollWidth > target.clientWidth + 1) && 
-                   fontSize > minSize && iterations < maxIterations) {
+            const refHeight = containerHeight !== null ? containerHeight : element.clientHeight;
+            const refWidth = containerWidth !== null ? containerWidth : element.clientWidth;
+            
+            while ((element.scrollHeight > refHeight + 1 || 
+                    element.scrollWidth > refWidth + 1) && 
+                fontSize > minSize && iterations < maxIterations) {
                 fontSize -= 0.3;
                 element.style.fontSize = fontSize + 'px';
                 iterations++;
@@ -377,19 +411,17 @@
             let refMin, refMax, textMin, textMax;
             
             if (isMobile) {
-                refMin = 10; refMax = 14;
-                textMin = 8; textMax = 14;
+                refMin = 8; refMax = 10;
+                textMin = 8; textMax = 12;
             } else if (isTablet) {
-                refMin = 14; refMax = 20;
-                textMin = 12; textMax = 24;
+                refMin = 8; refMax = 15;
+                textMin = 7; textMax = 16;
             } else {
-                // 데스크톱: 크게 증가
-                refMin = 18; refMax = 32;
-                textMin = 16; textMax = 42;
+                refMin = 12; refMax = 20;
+                textMin = 13; textMax = 24;
             }
             
-            // ref 먼저 조정
-            fitTextToContainer(verseRef, refMin, refMax, verseBox);
+            fitTextToContainer(verseRef, refMin, refMax);
             
             // ref 높이 제외한 영역에 본문 맞춤
             const verseBoxHeight = verseBox.clientHeight;
@@ -413,41 +445,77 @@
         }
 
         function adjustAllText() {
-        const msgBox = document.querySelector('.msg-box');
-        const senderBox = document.querySelector('.sender-box');
-        const verseRef = document.querySelector('.verse-box .ref');
-        const verseText = document.querySelector('.verse-box .text');
-        
-        const isMobile = window.innerWidth <= 480;
-        const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
-        
-        fitVerseBox();
-        if (verseRef && verseText) {
-            verseRef.style.fontSize = getComputedStyle(verseText).fontSize;
-        }
-        
-        // 메시지 영역 - 모바일 크기 축소
-        if (msgBox) {
+            const msgBoxContainer = document.querySelector('.msg-box');
+            const msgBox = document.querySelector('.msg-box .body');
+            const senderBoxContainer = document.querySelector('.sender-box');
+            const senderBox = document.querySelector('.sender-box');
+            const rightColumn = document.querySelector('.card.postcard .right');
+            const verseRef = document.querySelector('.verse-box .ref');
+            const verseText = document.querySelector('.verse-box .text');
+            
+            const isMobile = window.innerWidth <= 480;
+            const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
+            let msgMin, msgMax, senderMin, senderMax;
             if (isMobile) {
-                fitTextToContainer(msgBox, 6, 12);  // 이전: 10~18
+                msgMin = 10; msgMax = 18;
+                senderMin = 10; senderMax = 14;
             } else if (isTablet) {
-                fitTextToContainer(msgBox, 12, 15);  // 이전: 16~28
+                msgMin = 15; msgMax = 20;
+                senderMin = 10; senderMax = 16;
             } else {
-                fitTextToContainer(msgBox, 20, 40);
+                msgMin = 16; msgMax = 28;
+                senderMin = 15; senderMax = 18;
+            }
+            
+            fitVerseBox();
+            if (verseRef && verseText) {
+                verseRef.style.fontSize = getComputedStyle(verseText).fontSize;
+            }
+            
+            if (msgBox && msgBoxContainer) {
+                fitTextToContainer(msgBox, msgMin, msgMax, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
+
+                if (msgBox.scrollHeight > msgBoxContainer.clientHeight + 1) {
+                    const hardMin = msgMin;
+                    const currentSize = parseFloat(getComputedStyle(msgBox).fontSize) || msgMax;
+                    fitTextToContainer(msgBox, hardMin, currentSize, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
+                }
+            }
+            if (senderBox && msgBox) {
+                const baseSize = getComputedStyle(msgBox).fontSize;
+                const baseSizeNum = parseFloat(baseSize) || 0;
+                const senderSize = baseSizeNum ? Math.max(baseSizeNum, senderMin) + 'px' : baseSize;
+                senderBox.style.fontSize = senderSize;
+                const wrapper = senderBox.parentElement;
+                if (wrapper) wrapper.style.fontSize = senderSize;
+            }
+            
+            if (senderBox && senderBoxContainer) {
+                fitTextToContainer(senderBox, senderMin, senderMax, senderBoxContainer.clientHeight, senderBoxContainer.clientWidth);
+            }
+
+            if (rightColumn && msgBox && senderBox) {
+                let msgSize = parseFloat(getComputedStyle(msgBox).fontSize) || msgMin;
+                let senderSize = parseFloat(getComputedStyle(senderBox).fontSize) || senderMin;
+                let iterations = 0;
+                const maxIterations = 200;
+                while (rightColumn.scrollHeight > rightColumn.clientHeight + 1 &&
+                    iterations < maxIterations) {
+                    if (msgSize > msgMin) {
+                        msgSize -= 0.3;
+                        msgBox.style.fontSize = msgSize + 'px';
+                    } else if (senderSize > senderMin) {
+                        senderSize -= 0.3;
+                        senderBox.style.fontSize = senderSize + 'px';
+                        const wrapper = senderBox.parentElement;
+                        if (wrapper) wrapper.style.fontSize = senderSize + 'px';
+                    } else {
+                        break;
+                    }
+                    iterations++;
+                }
             }
         }
-        
-        // 발신자 영역 - 모바일 크기 축소
-        if (senderBox) {
-            if (isMobile) {
-                fitTextToContainer(senderBox, 5, 10);  // 이전: 8~14
-            } else if (isTablet) {
-                fitTextToContainer(senderBox, 10, 16);  // 이전: 12~20
-            } else {
-                fitTextToContainer(senderBox, 16, 36);
-            }
-        }
-    }
 
 
 

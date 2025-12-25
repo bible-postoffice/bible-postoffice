@@ -188,8 +188,8 @@
             font-weight: 700;
             overflow: hidden;
             width: 100%;
-            text-align: right;
-            align-self: flex-end;
+            text-align: center;
+            align-self: center;
         }
         
         .template-frame.postcard .verse-box {
@@ -209,11 +209,10 @@
         }
         
         .template-frame.postcard .sender-box {
-            margin-top: 0;
+            margin-top: auto;
             background: none;
             border: none;
             box-shadow: none;
-            text-align: right;
             flex: 0 0 12.5%;
             padding-top: 2px;
             padding-bottom: 2px;
@@ -283,8 +282,8 @@
             max-width: 760px;
             border-radius: 0;
             align-self: center;
-            text-align: right;
-            margin-top: 0;
+            text-align: center;
+            margin-top: auto;
         }
         
         .side {
@@ -866,7 +865,7 @@
             const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
             let msgMin, msgMax, senderMin, senderMax;
             if (isMobile) {
-                msgMin = 10; msgMax = 18;
+                msgMin = 12; msgMax = 18;
                 senderMin = 10; senderMax = 14;
             } else if (isTablet) {
                 msgMin = 15; msgMax = 20;
