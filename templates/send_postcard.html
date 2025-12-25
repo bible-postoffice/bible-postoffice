@@ -284,6 +284,8 @@
             font-size: 16px;
             font-family: 'Noto Sans KR', sans-serif;
             box-sizing: border-box;
+            overflow: hidden;
+            resize: none;
         }
         .char-counter {
             text-align: right;
@@ -498,15 +500,32 @@
             selectedVerse = verse;
         }
 
+        function normalizeSingleLine(text) {
+            return (text || '')
+                .replace(/\r?\n+/g, ' ')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+        }
+
+        function adjustMessageHeight() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = `${messageInput.scrollHeight}px`;
+        }
+
         function updateMessageCounter() {
             const length = messageInput.value.length;
             messageCounter.textContent = `${length}/${MAX_MESSAGE_LENGTH}자`;
         }
 
         messageInput.addEventListener('input', () => {
+            const normalized = normalizeSingleLine(messageInput.value);
+            if (normalized !== messageInput.value) {
+                messageInput.value = normalized;
+            }
             if (messageInput.value.length > MAX_MESSAGE_LENGTH) {
                 messageInput.value = messageInput.value.slice(0, MAX_MESSAGE_LENGTH);
             }
+            adjustMessageHeight();
             updateMessageCounter();
         });
         
@@ -516,7 +535,7 @@
                 return;
             }
             
-            const message = messageInput.value;
+            const message = normalizeSingleLine(messageInput.value);
             if (message.length > MAX_MESSAGE_LENGTH) {
                 alert(`편지는 최대 ${MAX_MESSAGE_LENGTH}자까지 작성할 수 있어요.`);
                 return;
@@ -560,7 +579,8 @@
                 if (!raw) return;
                 const saved = JSON.parse(raw);
                 if (saved.message) {
-                    messageInput.value = saved.message.slice(0, MAX_MESSAGE_LENGTH);
+                    const normalized = normalizeSingleLine(saved.message);
+                    messageInput.value = normalized.slice(0, MAX_MESSAGE_LENGTH);
                 }
                 if (saved.sender_name) {
                     const senderNameInput = document.getElementById('sender-name');
@@ -584,11 +604,13 @@
                 // 구절은 미리보기에서 돌아왔을 때도 새로 선택하도록 초기화
                 selectedVerse = null;
                 updateMessageCounter();
+                adjustMessageHeight();
             } catch (e) {
                 console.warn('draft restore failed', e);
             }
         })();
         updateMessageCounter();
+        adjustMessageHeight();
 
         
                // ============================================

@@ -101,6 +101,9 @@ def create_postcard_blueprint(
         if sender_name:
             is_anonymous = False
 
+        raw_message = data.get("message", "")
+        message = " ".join(str(raw_message).replace("\r", " ").replace("\n", " ").split())
+
         postcard = {
             "id": str(uuid.uuid4()),
             "template_id": data.get("template_id") or 1,
@@ -110,7 +113,7 @@ def create_postcard_blueprint(
             "is_anonymous": is_anonymous,
             "verse_reference": data.get("verse_reference"),
             "verse_text": data.get("verse_text"),
-            "message": data.get("message", ""),
+            "message": message,
             "font_family": data.get("font_family") or "",
             "font_style": data.get("font_style") or "",
             "created_at": datetime.now().isoformat(),

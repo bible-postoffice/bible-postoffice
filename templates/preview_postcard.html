@@ -130,7 +130,7 @@
             flex: 1 1 auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 0;
             width: 100%;
             min-height: 0;
         }
@@ -153,7 +153,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: auto;
+            overflow: hidden;
             white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: break-word;
@@ -269,7 +269,7 @@
         .template-frame.letter .msg-box {
             flex: 1 1 0;
             min-height: 0;
-            overflow: auto;
+            overflow: hidden;
             height: 100%;
         }
         .template-frame.letter .msg-box .body {
@@ -677,14 +677,18 @@
             }
         }
 
+        function normalizeSingleLine(value) {
+            return (value || '')
+                .replace(/\r?\n+/g, ' ')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+        }
+
         function applyContent() {
             const verse = draft.verse || {};
-            const normalizeLineBreaks = (value) => (value || '')
-                .replace(/\r\n/g, '\n')
-                .replace(/\n\s*\n+/g, '\n');
             verseRefEl.textContent = verse.reference || '선택한 말씀';
-            verseTextEl.textContent = normalizeLineBreaks(verse.text || '');
-            messageTextEl.textContent = normalizeLineBreaks(draft.message ? draft.message : '');
+            verseTextEl.textContent = verse.text || '';
+            messageTextEl.textContent = normalizeSingleLine(draft.message ? draft.message : '');
             const senderName = (draft.sender_name || '').trim();
             const displayName = senderName || '익명';
             senderLabelEl.textContent = displayName;
@@ -724,6 +728,7 @@
             }
             const tpl = normalizeTemplate(draft.template || {});
             const opt = FONT_OPTIONS[selectedFont] || FONT_OPTIONS.sans;
+            const message = normalizeSingleLine(draft.message || '');
             sendBtn.disabled = true;
             sendBtn.textContent = '전송 중...';
             try {
@@ -739,7 +744,7 @@
                         is_anonymous: !(draft.sender_name || '').trim(),
                         verse_reference: draft.verse.reference,
                         verse_text: draft.verse.text,
-                        message: draft.message || '',
+                        message,
                         font_family: opt.fontFamily,
                         font_style: opt.id
                     })
@@ -818,14 +823,14 @@
             let refMin, refMax, textMin, textMax;
             
             if (isMobile) {
-                refMin = 8; refMax = 10;
-                textMin = 8; textMax = 12;
+                refMin = 6; refMax = 10;
+                textMin = 6; textMax = 12;
             } else if (isTablet) {
-                refMin = 8; refMax = 15;
+                refMin = 7; refMax = 15;
                 textMin = 7; textMax = 16;
             } else {
-                refMin = 12; refMax = 20;
-                textMin = 13; textMax = 24;
+                refMin = 10; refMax = 20;
+                textMin = 10; textMax = 24;
             }
             
             // 제목(ref)을 먼저 맞춤
@@ -865,14 +870,14 @@
             const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
             let msgMin, msgMax, senderMin, senderMax;
             if (isMobile) {
-                msgMin = 12; msgMax = 18;
-                senderMin = 10; senderMax = 14;
+                msgMin = 8; msgMax = 18;
+                senderMin = 8; senderMax = 10;
             } else if (isTablet) {
-                msgMin = 15; msgMax = 20;
-                senderMin = 10; senderMax = 16;
+                msgMin = 12; msgMax = 20;
+                senderMin = 10; senderMax = 12;
             } else {
-                msgMin = 16; msgMax = 28;
-                senderMin = 15; senderMax = 18;
+                msgMin = 12; msgMax = 28;
+                senderMin = 12; senderMax = 14;
             }
             
             // 성경 구절 영역 (제목 + 본문)
@@ -908,30 +913,11 @@
             if (senderBox && senderBoxContainer) {
                 // 컨테이너 크기를 기준으로 조절
                 fitTextToContainer(senderBox, senderMin, senderMax, senderBoxContainer.clientHeight, senderBoxContainer.clientWidth);
+                const senderFontSize = getComputedStyle(senderBox).fontSize;
+                senderBoxContainer.style.fontSize = senderFontSize;
             }
 
-            // 모바일에서 메시지+발신자 합계가 넘치는 경우 함께 축소
-            if (rightColumn && msgBox && senderBox) {
-                let msgSize = parseFloat(getComputedStyle(msgBox).fontSize) || msgMin;
-                let senderSize = parseFloat(getComputedStyle(senderBox).fontSize) || senderMin;
-                let iterations = 0;
-                const maxIterations = 200;
-                while (rightColumn.scrollHeight > rightColumn.clientHeight + 1 &&
-                    iterations < maxIterations) {
-                    if (msgSize > msgMin) {
-                        msgSize -= 0.3;
-                        msgBox.style.fontSize = msgSize + 'px';
-                    } else if (senderSize > senderMin) {
-                        senderSize -= 0.3;
-                        senderBox.style.fontSize = senderSize + 'px';
-                        const wrapper = senderBox.parentElement;
-                        if (wrapper) wrapper.style.fontSize = senderSize + 'px';
-                    } else {
-                        break;
-                    }
-                    iterations++;
-                }
-            }
+            // rightColumn overflow 보정은 gap을 제거했으므로 생략
         }
 
         function updateOverlayInset() {
