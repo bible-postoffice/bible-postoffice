@@ -1096,7 +1096,7 @@ def recommend_verses_supabase(query: str, page: int):
             scored.append((final_score, reference, doc, meta))
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        page_size = 5
+        page_size = 3
         start_idx = page * page_size
         end_idx = start_idx + page_size
         page_slice = scored[start_idx:end_idx]
@@ -1282,7 +1282,7 @@ def recommend_verses():
 
         scored.sort(key=lambda x: x[0], reverse=True)
         all_candidates_full = curated_items + scored
-        page_size = 5
+        page_size = 3
         start_idx = page * page_size
         end_idx = start_idx + page_size
         # 요청한 페이지까지 필요한 만큼만 슬라이스

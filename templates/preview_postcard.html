@@ -678,9 +678,12 @@
 
         function applyContent() {
             const verse = draft.verse || {};
+            const normalizeLineBreaks = (value) => (value || '')
+                .replace(/\r\n/g, '\n')
+                .replace(/\n\s*\n+/g, '\n');
             verseRefEl.textContent = verse.reference || '선택한 말씀';
-            verseTextEl.textContent = verse.text || '';
-            messageTextEl.textContent = draft.message ? draft.message : '';
+            verseTextEl.textContent = normalizeLineBreaks(verse.text || '');
+            messageTextEl.textContent = normalizeLineBreaks(draft.message ? draft.message : '');
             const senderName = (draft.sender_name || '').trim();
             const displayName = senderName || '익명';
             senderLabelEl.textContent = displayName;

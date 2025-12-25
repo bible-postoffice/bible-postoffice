@@ -302,12 +302,6 @@
     <div class="container">
         <h2>💌 성경 구절 엽서 보내기</h2>
 
-        <div class="steps">
-            <div class="step completed">1. 템플릿<span>엽서/편지지 선택</span></div>
-            <div class="step active">2. 내용 작성<span>말씀과 편지 입력</span></div>
-            <div class="step">3. 미리보기<span>글씨체 고르고 전송</span></div>
-        </div>
-
         <div class="search-box">
             <div class="section-title" style="margin-top:28px;">성경 구절 검색 및 선택
                 <span class="tooltip">?
@@ -586,9 +580,8 @@
                 } else if (savedTemplate) {
                     selectedTemplate = savedTemplate;
                 }
-                if (saved.verse) {
-                    selectedVerse = saved.verse;
-                }
+                // 구절은 미리보기에서 돌아왔을 때도 새로 선택하도록 초기화
+                selectedVerse = null;
                 updateMessageCounter();
             } catch (e) {
                 console.warn('draft restore failed', e);
