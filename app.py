@@ -1551,6 +1551,7 @@ def view_postbox(url_path):
         # 4. 템플릿 렌더링 (HTML에서 사용하는 변수명과 일치시킴)
         return render_template('view_postbox.html', 
                                postbox_name=postbox['name'],
+                               prayer_topic=postbox.get('prayer_topic', ''),
                                url_path=url_path,
                                postbox_id=postbox_id,
                                color=postbox['color'],

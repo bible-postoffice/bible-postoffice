@@ -34,7 +34,14 @@
         </span>
     </div>
 
-    <h1 class="text-3xl font-black text-slate-900 dark:text-white mb-8">{{ postbox_name }}</h1>
+    <h1 class="text-3xl font-black text-slate-900 dark:text-white mb-4">{{ postbox_name }}</h1>
+    {% if prayer_topic %}
+    <div class="mb-8 text-sm text-slate-500 dark:text-slate-300">
+        기도제목: <span class="font-semibold text-slate-700 dark:text-slate-100">{{ prayer_topic }}</span>
+    </div>
+    {% else %}
+    <div class="mb-8"></div>
+    {% endif %}
 
     <div class="relative mb-10 animate-float">
         <img src="/static/images/postbox/{{ color }}.png" class="w-64 h-64 object-contain drop-shadow-2xl mx-auto">
