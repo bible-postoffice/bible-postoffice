@@ -43,6 +43,12 @@ supabase_auth: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY or SUPABAS
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e48ca7312db5b8f76c0c095e845c9eaf')
 
+@app.before_request
+def log_request_summary():
+    path = request.path or ''
+    if path.startswith('/postbox/') or path.startswith('/auth/check-and-save'):
+        print(f"[request] method={request.method} path={path} host={request.host}")
+
 # 1024차원 임베딩 모델 로드
 print("🔄 임베딩 모델 로딩 중...")
 embedding_model = SentenceTransformer('intfloat/multilingual-e5-small')
@@ -1488,6 +1494,8 @@ def create_postbox_page():
 @app.route('/postbox/<url_path>')
 def view_postbox(url_path):
     try:
+        print(f"[view_postbox] url_path={url_path}")
+        print(f"[view_postbox] session user_email={session.get('user_email')}, nickname={session.get('user_nickname')}")
         # 1. DB의 'postboxes' 테이블에서 url 컬럼이 url_path와 일치하는 데이터 조회
         result = supabase.table('postboxes').select("*").eq("url", url_path).execute()
 
@@ -1497,6 +1505,7 @@ def view_postbox(url_path):
             return "우체통을 찾을 수 없습니다.", 404
 
         postbox = result.data[0] # 첫 번째 검색 결과 가져오기
+        print(f"[view_postbox] postbox.id={postbox.get('id')}, owner_id={postbox.get('owner_id')}")
         postbox_id = postbox['id']
 
         # 2. 해당 우체통에 담긴 편지 개수 세기 (count)
@@ -1519,8 +1528,10 @@ def view_postbox(url_path):
         # 주인을 확인하기 위해 현재 로그인된 유저의 UUID를 가져와야 함
         if user_email:
             user_res = supabase.table('bible_users').select("id").eq("email", user_email).execute()
+            print(f"[view_postbox] user_res={user_res.data}")
             if user_res.data and user_res.data[0]['id'] == postbox['owner_id']:
                 is_owner = True
+        print(f"[view_postbox] is_owner={is_owner}, is_logged_in={bool(session.get('user_email'))}")
 
         # 3. 개봉일 설정 (예: 2026년 1월 1일)
         from datetime import datetime
@@ -1538,6 +1549,7 @@ def view_postbox(url_path):
                                prayer_topic=postbox.get('prayer_topic', ''),
                                url_path=url_path,
                                postbox_id=postbox_id,
+                               owner_id=postbox.get('owner_id'),
                                color=postbox['color'],
                                postcard_count=postcard_count,
                                # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
@@ -1547,7 +1559,7 @@ def view_postbox(url_path):
                                is_expired=is_expired,
                                is_logged_in=bool(session.get('user_email')),
                                supabase_url=os.environ.get('SUPABASE_URL'),
-                               supabase_key=os.environ.get('SUPABASE_KEY'))
+                               supabase_key=SUPABASE_ANON_KEY)
 
     except Exception as e:
         print(f"Error: {e}")

@@ -142,6 +142,7 @@
     const SUPABASE_URL = "{{ supabase_url or '' }}";
     const SUPABASE_KEY = "{{ supabase_key or '' }}";
     const isOwner = {{ 'true' if is_owner else 'false' }};
+    const ownerId = "{{ owner_id or '' }}";
     const supabaseClient = (SUPABASE_URL && SUPABASE_KEY)
         ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
         : null;
@@ -275,6 +276,10 @@
                         isLoggedIn = true;
                         closeLoginModal();
                         updateLogoutVisibility();
+                        if (ownerId && session.user && session.user.id === ownerId) {
+                            window.location.reload();
+                            return;
+                        }
                         if (!isOwner) {
                             alert("로그인이 완료되었습니다. 다시 편지 남기기를 눌러주세요.");
                         }
