@@ -1453,7 +1453,7 @@ def create_postbox_action():
         return jsonify({"success": False, "message": "로그인이 필요합니다."}), 401
 
     data = request.get_json()
-    
+    print(f"create_postbox_action에서 나온 data\n:{data}")
     try:
         # 고유 URL 생성 (예: nickname-4자리숫자)
         unique_path = f"{str(uuid.uuid4())[:8]}" 
@@ -1466,7 +1466,8 @@ def create_postbox_action():
             "privacy": data.get('privacy'), # True/False
             "url": unique_path,
             "is_opened": False,
-            "created_at" : datetime.now().isoformat()
+            "created_at" : datetime.now().isoformat(),
+            "end_date" : data.get('end_date')
         }
 
         # DB에 저장 (이때 SQL에서 만든 트리거가 bible_users의 flag를 true로 바꿈)
@@ -1500,16 +1501,15 @@ def create_postbox_page():
 # 우체통 확인
 @app.route('/postbox/<url_path>')
 def view_postbox(url_path):
+    is_expired = False 
+    postcards = []
     try:
-        # 1. DB의 'postboxes' 테이블에서 url 컬럼이 url_path와 일치하는 데이터 조회
+        # 1. 우체통 정보 조회
         result = supabase.table('postboxes').select("*").eq("url", url_path).execute()
-
-        # 2. 데이터가 없는 경우 (잘못된 주소)
         if not result.data:
-            print(f"No postbox found in DB for URL: {url_path}")
             return "우체통을 찾을 수 없습니다.", 404
 
-        postbox = result.data[0] # 첫 번째 검색 결과 가져오기
+        postbox = result.data[0]
         postbox_id = postbox['id']
 
         # 2. 해당 우체통에 담긴 편지 개수 세기 (count)
@@ -1521,33 +1521,52 @@ def view_postbox(url_path):
         
         postcard_count = postcard_count_res.count if postcard_count_res.count is not None else 0
 
-       # 2. 현재 접속자가 주인인지 확인 (세션 기반)
-        # 세션의 이메일과 DB의 owner_id(또는 연동된 이메일)를 비교
-        # 여기서는 단순화를 위해 세션 이메일이 있고, 해당 유저의 id와 pb['owner_id']가 같은지 확인이 필요합니다.
-        # 일단은 로그인 기능을 고려해 아래와 같이 구성합니다.
-        user_email = session.get('user_email')
-        end_date = session.get('end_date') or '2026-01-01'
-        is_owner = False
+        # postcard 내용 조회
+        if is_expired:
+            # 개봉일이 지났을 때만 실제 편지 데이터를 조회
+            cards_res = supabase.table('postcards').select("*").eq("postbox_id", postbox_id).execute()
+            postcards = cards_res.data
+
+        # 2. 개봉일 계산 (이 로직을 위로 올립니다)
+        from datetime import datetime
+        raw_end_date = postbox.get('end_date')
+        try:
+            if isinstance(raw_end_date, str):
+                target_dt = datetime.fromisoformat(raw_end_date.replace('Z', '+00:00'))
+            elif isinstance(raw_end_date, datetime):
+                target_dt = raw_end_date
+            else:
+                target_dt = datetime(2026, 1, 1)
+        except:
+            target_dt = datetime(2026, 1, 1)
+
+
+        target_timestamp=int(target_dt.timestamp() * 1000)
+
+        # 이제 is_expired가 확실히 정의됩니다.
+        is_expired = datetime.now().astimezone() >= target_dt.astimezone()
         
-        # 주인을 확인하기 위해 현재 로그인된 유저의 UUID를 가져와야 함
+        # 3. 편지 개수 조회
+        count_res = supabase.table('postcards').select("*", count="exact").eq("postbox_id", postbox_id).execute()
+        postcard_count = count_res.count if count_res.count is not None else 0
+
+        # 4. 편지 목록 조회 (is_expired 활용)
+        if is_expired:
+            cards_res = supabase.table('postcards').select("*").eq("postbox_id", postbox_id).execute()
+            postcards = cards_res.data
+
+        # 5. 주인 확인 로직 (기존 코드 유지)
+        user_email = session.get('user_email')
+        is_owner = False
         if user_email:
             user_res = supabase.table('bible_users').select("id").eq("email", user_email).execute()
             if user_res.data and user_res.data[0]['id'] == postbox['owner_id']:
                 is_owner = True
 
-        # 3. 개봉일 설정 (예: 2026년 1월 1일)
-        from datetime import datetime
-        try:
-            target_dt = datetime.strptime(end_date, '%Y-%m-%d')
-        except:
-            # 날짜 형식이 잘못되었을 경우를 대비한 방어 코드
-            target_dt = datetime(2026, 1, 1)
-
-        is_expired = datetime.now() >= target_dt
-
         # 4. 템플릿 렌더링 (HTML에서 사용하는 변수명과 일치시킴)
         return render_template(
             'view_postbox.html',
+            postbox=postbox,
             postbox_name=postbox['name'],
             url_path=url_path,
             postbox_id=postbox_id,
@@ -1555,16 +1574,18 @@ def view_postbox(url_path):
             postcard_count=postcard_count,
             # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
             privacy='public' if postbox['privacy'] == 0 else 'private',
-            end_date=end_date,
+            end_date=target_dt,
+            target_timestamp=target_timestamp,
             is_owner=is_owner,
             is_expired=is_expired,
+            postcards=postcards,
             is_logged_in=bool(session.get('user_email')),
             supabase_url=SUPABASE_URL,
             supabase_key=SUPABASE_ANON_KEY,
         )
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error in view_postbox: {e}")
         return "오류가 발생했습니다.", 500
 
 
