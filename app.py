@@ -6,13 +6,15 @@ import re
 import requests
 import chromadb
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
 
 from postcard_routes import create_postcard_blueprint
 from supabase import create_client, Client
+
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from popular_verses import (
     get_popularity_score,
@@ -41,7 +43,21 @@ supabase_vec: Client = create_client(SUPABASE_VEC_URL, SUPABASE_VEC_KEY) if SUPA
 supabase_auth: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY or SUPABASE_KEY)
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e48ca7312db5b8f76c0c095e845c9eaf')
+
+
+app.config.update(
+    # HTTPS에서만 쿠키를 전송하도록 설정
+    SESSION_COOKIE_SECURE=True, 
+    # 자바스크립트에서 쿠키 접근을 막아 보안 강화
+    SESSION_COOKIE_HTTPONLY=True,
+    # 외부 사이트(소셜 로그인)에서 리디렉션 시 쿠키 전송 허용
+    SESSION_COOKIE_SAMESITE='Lax', 
+    # 도메인 설정 (필요 시 '.yourdomain.com' 형태로 설정)
+    # SESSION_COOKIE_DOMAIN="yourdomain.com", 
+    PERMANENT_SESSION_LIFETIME=timedelta(days=7)
+)
 
 @app.before_request
 def log_request_summary():
