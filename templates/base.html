@@ -1,9 +1,22 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>말씀우체통</title>
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ og_title | default('말씀우체통') }}">
+    <meta property="og:description" content="{{ og_description | default('소중한 마음을 편지에 담아 전달해주세요.') }}">
+    <meta property="og:image" content="{{ og_image | default('/static/images/default_og.png') }}">
+    <meta property="og:url" content="{{ request.url }}">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ og_title | default('말씀우체통') }}">
+    <meta name="twitter:image" content="{{ og_image | default('/static/images/default_og.png') }}">
+
+    <title>{{ og_title | default('말씀우체통') }}</title>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -23,13 +36,58 @@
                         float: {
                             '0%, 100%': { transform: 'translateY(0)' },
                             '50%': { transform: 'translateY(-15px)' },
+                        },
+                        'fade-in-up': {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
                         }
                     },
                     animation: {
                         twinkle: 'twinkle 3s ease-in-out infinite',
                         float: 'float 5s ease-in-out infinite',
+                        'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
                     }
                 }
+            }
+        }
+    </script>
+    <script>
+        // Supabase Client Initialization
+        const supabaseUrl = "{{ supabase_url }}";
+        const supabaseKey = "{{ supabase_key }}";
+        window.supabaseApp = null;
+
+        if (supabaseUrl && supabaseKey && window.supabase) {
+            window.supabaseApp = window.supabase.createClient(supabaseUrl, supabaseKey);
+            console.log("Supabase Initialized:", !!window.supabaseApp);
+        }
+
+        // Global Helper: Get Redirect Base URL
+        function getRedirectBase() {
+            const origin = window.location.origin;
+            const host = window.location.hostname;
+            const allowedHosts = new Set([
+                '127.0.0.1',
+                'localhost',
+                'bible-agent-497880616364.asia-northeast3.run.app',
+                'bible-postoffice-2025.web.app',
+            ]);
+            if (allowedHosts.has(host) || host.includes('run.app')) {
+                return origin;
+            }
+            return "https://bible-postoffice-2025.web.app";
+        }
+
+        // Global Logout Handler (Syncs Supabase & Flask)
+        async function handleGlobalLogout() {
+            try {
+                if (window.supabaseApp) {
+                    await window.supabaseApp.auth.signOut();
+                }
+            } catch (err) {
+                console.warn("Supabase SignOut Error:", err);
+            } finally {
+                window.location.href = '/logout';
             }
         }
     </script>
@@ -45,27 +103,40 @@
         }
     </style>
 </head>
+
 <body class="font-serif">
 
     <nav class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 py-4 bg-transparent border-none">
         <a href="/" class="flex items-center gap-2 group">
-            <div class="w-10 h-10  rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+            <div
+                class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
                 <span class="text-white text-xl">✉️</span>
             </div>
         </a>
 
-        <button id="theme-toggle" class="p-2.5 rounded-xl transition-all hover:bg-slate-200/50 dark:hover:bg-slate-800/50 active:scale-95">
-            <span id="theme-toggle-light-icon" class="hidden dark:block text-xl">☀️</span>
-            <span id="theme-toggle-dark-icon" class="block dark:hidden text-xl text-slate-700">🌙</span>
-        </button>
+        <div class="flex items-center gap-2">
+            {% if is_logged_in %}
+            <button onclick="handleGlobalLogout()"
+                class="px-4 py-2 bg-slate-100/80 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all text-sm font-bold active:scale-95">
+                로그아웃
+            </button>
+            {% endif %}
+
+            <button id="theme-toggle"
+                class="p-2.5 rounded-xl transition-all hover:bg-slate-200/50 dark:hover:bg-slate-800/50 active:scale-95">
+                <span id="theme-toggle-light-icon" class="hidden dark:block text-xl">☀️</span>
+                <span id="theme-toggle-dark-icon" class="block dark:hidden text-xl text-slate-700">🌙</span>
+            </button>
+        </div>
     </nav>
 
     <main class="flex-1 flex flex-col pt-24 px-4">
         {% block content %}
-        <div class="max-w-2xl mx-auto w-full p-8 rounded-3xl bg-white dark:bg-slate-900 shadow-xl border border-slate-100 dark:border-slate-800">
+        <div
+            class="max-w-2xl mx-auto w-full p-8 rounded-3xl bg-white dark:bg-slate-900 shadow-xl border border-slate-100 dark:border-slate-800">
             <h1 class="text-3xl font-bold mb-4">반갑습니다!</h1>
             <p class="leading-relaxed opacity-90">
-                라이트모드에서는 어두운 글씨로, 다크모드에서는 밝은 글씨로 자동 전환됩니다. 
+                라이트모드에서는 어두운 글씨로, 다크모드에서는 밝은 글씨로 자동 전환됩니다.
                 배경색과 글자색의 대비를 높여 시인성을 확보했습니다.
             </p>
         </div>
@@ -74,7 +145,7 @@
 
     <script>
         const themeToggleBtn = document.getElementById('theme-toggle');
-        
+
         // 초기 테마 설정 확인 함수
         function initTheme() {
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -84,7 +155,7 @@
             }
         }
 
-        themeToggleBtn.addEventListener('click', function() {
+        themeToggleBtn.addEventListener('click', function () {
             if (document.documentElement.classList.contains('dark')) {
                 document.documentElement.classList.remove('dark');
                 localStorage.theme = 'light';
@@ -97,4 +168,5 @@
         initTheme();
     </script>
 </body>
+
 </html>

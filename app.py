@@ -1,12 +1,12 @@
 # app.py
-from flask import Flask, render_template, request, jsonify, url_for, session, redirect
+from flask import Flask, render_template, request, jsonify, url_for, session, redirect, flash
 import json
 import os
 import re
 import requests
 import chromadb
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
@@ -38,10 +38,21 @@ SUPABASE_VEC_URL = _clean_env(os.environ.get("SUPABASE_VEC_URL")) or SUPABASE_UR
 SUPABASE_VEC_KEY = _clean_env(os.environ.get("SUPABASE_VEC_KEY")) or SUPABASE_KEY
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 supabase_vec: Client = create_client(SUPABASE_VEC_URL, SUPABASE_VEC_KEY) if SUPABASE_VEC_URL and SUPABASE_VEC_KEY else None
-supabase_auth: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY or SUPABASE_KEY)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e48ca7312db5b8f76c0c095e845c9eaf')
+app.config['SESSION_COOKIE_SECURE'] = bool(os.environ.get('RENDER')) # 배포 환경(Render / HTTPS)에서는 True, 로컬에서는 False
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=31)
+
+@app.context_processor
+def inject_supabase_config():
+    return dict(
+        supabase_url=os.environ.get("SUPABASE_URL"),
+        # supabase_key=os.environ.get("SUPABASE_ANON_KEY"),
+        supabase_key=os.environ.get("SUPABASE_KEY"),
+        is_logged_in='user_email' in session
+    )
 
 # 1024차원 임베딩 모델 로드
 print("🔄 임베딩 모델 로딩 중...")
@@ -785,6 +796,11 @@ postcard_bp = create_postcard_blueprint(
 app.register_blueprint(postcard_bp)
 
 
+
+def fetch_template_meta(template_id: int):
+    # TODO: Implement actual Supabase fetch if needed
+    return None
+
 @app.route('/view-postcard/<postcard_id>')
 def view_postcard(postcard_id):
     card = fetch_postcard_by_id(postcard_id)
@@ -1365,88 +1381,73 @@ def open_all_postboxes():
     for postbox_id in postboxes:
         postboxes[postbox_id]['is_opened'] = True
 
+
+# 추가 1: Supabase 인증 후 돌아올 콜백 경로
+@app.route('/auth/callback')
+def auth_callback():
+    # 이 페이지는 단순히 index로 리다이렉트만 해주면 됩니다.
+    # 그러면 index.html(hero.html)에 있는 JS가 토큰을 감지해 처리합니다.
+    return redirect(url_for('index'))
+
+
 @app.route('/auth/check-and-save', methods=['POST'])
 def check_and_save():
     try:
-        data = request.get_json() or {}
-        token = data.get('token')
+        data = request.json
         email = data.get('email')
+        token = data.get('token')
+        nickname = data.get('nickname','사용자')
 
-        if not token or not email:
-            return jsonify({"success": False, "message": "토큰 또는 이메일이 없습니다."}), 400
-        if not supabase:
-            return jsonify({"success": False, "message": "서비스 준비중입니다."}), 503
+        if not email:
+            return jsonify({"success": False, "message": "이메일 정보가 필요합니다."}), 400
 
-        # 1. 토큰 검증 (Supabase Auth 연동)
-        user_info = supabase_auth.auth.get_user(token)
-        if not user_info:
-            return jsonify({"success": False, "message": "유효하지 않은 토큰"}), 401
-
-        # Supabase 유저 메타데이터에서 display_name 추출
-        user_metadata = user_info.user.user_metadata
-        nickname = user_metadata.get('display_name') or user_metadata.get('full_name') or email.split('@')[0]
+        # 1. 사용자(bible_users) 테이블 조회 및 생성
+        user_res = supabase.table('bible_users').select('*').eq('email', email).execute()
         
-        # 2. bible_users 테이블에 Upsert (없으면 생성, 있으면 업데이트)
-        # email 컬럼이 Primary Key로 설정되어 있어야 합니다.
-        user_data = {
-            "email": email,
-            "nickname" : nickname,
-            "last_login_at": datetime.now().isoformat() # 파이썬에서 시간 생성
-        }
-        
-        try:
-            response = supabase.table('bible_users').upsert(user_data, on_conflict="email").execute()
-            if not response.data:
-                return jsonify({"success": False, "message": "유저 정보를 찾을 수 없습니다."}), 404
-            user = response.data[0]
-        except Exception as exc:
-            err_text = str(exc)
-            if "duplicate key value violates unique constraint" in err_text or "code': '23505" in err_text:
-                existing = supabase.table('bible_users').select("*").eq("email", email).limit(1).execute()
-                if existing.data:
-                    user = existing.data[0]
-                else:
-                    return jsonify({"success": False, "message": "기존 유저 정보를 찾을 수 없습니다."}), 404
-            else:
-                raise
-        user_id = user.get('id')
-        user_flag = user.get('flag', False) # flag 값 확인 (True/False)
-        
-        # 세션에 이메일 저장 (로그인 유지용)
-        session['user_email'] = email
-        session['user_nickname'] = nickname
-
-
-        # 2. 로직 분기
-        if user_flag:
-            # [Case: flag=true] 우체통 정보 조회
-            postbox_res = supabase.table('postboxes').select('url').eq('owner_id', user_id).execute()
-            
-            if postbox_res.data:
-                # 우체통 URL이 존재하면 해당 주소로 안내
-                postbox_url = postbox_res.data[0].get('url')
-                print(f"Redirecting to: /postbox/{postbox_url}")
-                return jsonify({
-                    "success": True,
-                    "redirect_url": f"/postbox/{postbox_url}", # 실제 우체통 주소
-                    "status": "existing_user",
-                    "nickname": nickname
-                })
-            else:
-                        # 데이터 정합성 방어: flag는 true인데 postbox가 없는 경우
-                        return jsonify({"success": True, "redirect_url": "/create-postbox", "status": "new_user"})
-            
+        if not user_res.data:
+            # 신규 사용자라면 프로필 생성
+            new_user = supabase.table('bible_users').insert({
+                "email": email,
+                "last_login_at": datetime.now().isoformat(),
+                "nickname" : nickname,
+                "token" : token
+            }).execute()
+            user_id = new_user.data[0]['id']
         else:
-                    # [Case: flag=false] 계정은 있으나 우체통은 없음 -> 생성 페이지로
-                    return jsonify({
-                        "success": True, 
-                        "redirect_url": "/create-postbox", 
-                        "status": "new_user",
-                        "nickname": nickname
-                    })
+            user_id = user_res.data[0]['id']
+            # 로그인 시간 업데이트
+            supabase.table('bible_users').update({"last_login_at": datetime.now().isoformat()}).eq('id', user_id).execute()
+
+        # 2. 서버 세션 보안 관리 (UUID와 이메일 저장)
+        session['user_email'] = email
+        session['user_id'] = user_id
+        session['user_nickname'] = nickname
+        session['token'] = token
+
+
+        return jsonify({"success": True, "redirect_url": url_for('index')})
+        # 3. 우체통 보유 여부를 미리 확인하여 세션에 저장
+        pb_res = supabase.table('postboxes').select('url').eq('owner_id', user_id).limit(1).execute()
+        print(f"DEBUG: pb_res.data -> {pb_res.data}") # 서버 터미널에서 값이 찍히는지 확인
+        
+        if pb_res.data:
+            session['has_postbox'] = True
+            session['postbox_url'] = pb_res.data[0]['url']
+        else:
+            session['has_postbox'] = False
+            session['postbox_url'] = None
+
+        session.modified = True
+
+        return jsonify({
+            "success": True, 
+            "redirect_url": url_for('index')
+        })
+
     except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        # 에러 발생 시 로그를 남기고 클라이언트에게 안전한 메시지 반환
+        print(f"Auth Sync Error: {str(e)}")
+        return jsonify({"success": False, "message": "로그인 처리 중 서버 오류가 발생했습니다."}), 500
 
 
 import uuid
@@ -1457,23 +1458,44 @@ def create_postbox_action():
         return jsonify({"success": False, "message": "로그인이 필요합니다."}), 401
 
     data = request.get_json()
+    owner_id = data.get('owner_id')
+    user_email = session.get('user_email')
     
     try:
-        # 고유 URL 생성 (예: nickname-4자리숫자)
+        # [핵심 추가] 2. bible_users 테이블에 해당 유저가 있는지 확인 (에러 방지)
+        user_check = supabase.table('bible_users').select("id").eq("id", owner_id).execute()
+        
+        if not user_check.data:
+            # 유저 정보가 없다면 자동으로 먼저 생성 (회원가입 정보 동기화)
+            display_name = user_email.split('@')[0] if user_email else "사용자"
+            supabase.table('bible_users').insert({
+                "id": owner_id,
+                "email": user_email,
+                "display_name": display_name
+            }).execute()
+            print(f"새로운 유저 등록 완료: {user_email}")
+        else:
+            print("hahahahaha")
+            session['has_postbox'] = True
+            session['postbox_url'] = unique_path
+            session.modified = True
+
+        # 3. 고유 URL 생성
         unique_path = f"{str(uuid.uuid4())[:8]}" 
         
+        # 4. 우체통 데이터 구성
         postbox_data = {
-            "owner_id": data.get('owner_id'),
+            "owner_id": owner_id,
             "name": data.get('name'),
             "prayer_topic": data.get('prayer_topic'),
             "color": data.get('color'),
-            "privacy": data.get('privacy'), # True/False
+            "privacy": data.get('privacy'),  # 0: public, 1: private (DB 설계에 맞춤)
             "url": unique_path,
             "is_opened": False,
-            "created_at" : datetime.now().isoformat()
+            "created_at": datetime.now().isoformat()
         }
 
-        # DB에 저장 (이때 SQL에서 만든 트리거가 bible_users의 flag를 true로 바꿈)
+        # 5. DB에 저장
         result = supabase.table('postboxes').insert(postbox_data).execute()
 
         if result.data:
@@ -1483,6 +1505,7 @@ def create_postbox_action():
             })
         else:
             return jsonify({"success": False, "message": "DB 저장 실패"}), 500
+
     except Exception as e:
         print(f"Create Error: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1524,31 +1547,34 @@ def view_postbox(url_path):
         
         postcard_count = postcard_count_res.count if postcard_count_res.count is not None else 0
 
-       # 2. 현재 접속자가 주인인지 확인 (세션 기반)
-        # 세션의 이메일과 DB의 owner_id(또는 연동된 이메일)를 비교
-        # 여기서는 단순화를 위해 세션 이메일이 있고, 해당 유저의 id와 pb['owner_id']가 같은지 확인이 필요합니다.
-        # 일단은 로그인 기능을 고려해 아래와 같이 구성합니다.
+       # 3. 보안 및 권한 관리 (세션 기반 소유권 확인)
         user_email = session.get('user_email')
-        end_date = session.get('end_date') or '2026-01-01'
         is_owner = False
         
-        # 주인을 확인하기 위해 현재 로그인된 유저의 UUID를 가져와야 함
         if user_email:
             user_res = supabase.table('bible_users').select("id").eq("email", user_email).execute()
+            # DB의 owner_id와 현재 로그인 유저의 ID 비교
             if user_res.data and user_res.data[0]['id'] == postbox['owner_id']:
                 is_owner = True
 
-        # 3. 개봉일 설정 (예: 2026년 1월 1일)
-        from datetime import datetime
+        # 4. 개봉일 및 시간 로직 (KST 설정 및 서비스 플로우 관리)
+        KST = timezone(timedelta(hours=9))
+        end_date = postbox.get('end_date') or '2026-01-01'
+        
         try:
-            target_dt = datetime.strptime(end_date, '%Y-%m-%d')
-        except:
-            # 날짜 형식이 잘못되었을 경우를 대비한 방어 코드
-            target_dt = datetime(2026, 1, 1)
+            dt_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            target_dt = datetime.combine(dt_date, datetime.min.time(), tzinfo=KST)
+        except Exception:
+            target_dt = datetime(2026, 1, 1, 0, 0, 0, tzinfo=KST)
+            end_date = '2026-01-01'
 
-        is_expired = datetime.now() >= target_dt
+        now_kst = datetime.now(KST)
+        is_opened = now_kst >= target_dt # 현재 시간이 개봉일 이후인지 여부
 
-        # 4. 템플릿 렌더링 (HTML에서 사용하는 변수명과 일치시킴)
+        # 5. 공유 및 바이럴을 위한 동적 데이터 구성 (OG 메타 태그 대응)
+        # 상대 경로보다 절대 경로(request.host_url) 사용이 공유 시 이미지 인식에 유리합니다.
+        og_image_url = f"{request.host_url.rstrip('/')}/static/images/postbox/{postbox['color']}.png"
+
         return render_template('view_postbox.html', 
                                postbox_name=postbox['name'],
                                prayer_topic=postbox.get('prayer_topic', ''),
@@ -1556,38 +1582,40 @@ def view_postbox(url_path):
                                postbox_id=postbox_id,
                                color=postbox['color'],
                                postcard_count=postcard_count,
-                               # DB가 0이면 'public', 1이면 'private'으로 변환해서 전달
+                              
+                               # 보안 및 권한 변수
                                privacy='public' if postbox['privacy'] == 0 else 'private',
-                               end_date=end_date,
                                is_owner=is_owner,
-                               is_expired=is_expired,
+                               is_opened=is_opened,
+                               end_date=end_date,
                                is_logged_in=bool(session.get('user_email')),
+
+                               # 공유 및 OG 태그용 변수 (base.html 연동)
+                               og_title=f"📮 {postbox['name']}님의 우체통",
+                               og_description=postbox.get('prayer_topic') or "따뜻한 마음을 편지에 담아 전달해주세요.",
+                               og_image=og_image_url,
+
+                               # API 키 설정 (클라이언트 사이드 통신용)
                                supabase_url=os.environ.get('SUPABASE_URL'),
-                               supabase_key=os.environ.get('SUPABASE_KEY'))
+                               supabase_key=os.environ.get('SUPABASE_KEY'),
+                               kakao_js_key=os.environ.get('KAKAO_JS_KEY'))
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error in view_postbox: {e}")
         return "오류가 발생했습니다.", 500
 
 
 @app.route('/')
 def index():
-    if 'user_email' in session:
-            # 로그인 세션이 있다면 DB에서 flag를 다시 확인
-            email = session['user_email']
-            user_res = supabase.table('bible_users').select("id, flag").eq("email", email).execute()
-            
-            if user_res.data and user_res.data[0]['flag'] is True:
-                # 우체통이 이미 있다면 내 우체통으로 리다이렉트
-                pb_res = supabase.table('postboxes').select("url").eq("owner_id", user_res.data[0]['id']).execute()
-                if pb_res.data:
-                    return redirect(f"/postbox/{pb_res.data[0]['url']}")
-            
-            # flag가 false면 생성 페이지로
-            return redirect('/create-postbox')
+    has_postbox = session.get('has_postbox', True)
+    postbox_url = session.get('postbox_url')
+    user_email = session.get('user_email')
+    print(f"index > has_postbox: {has_postbox}, postbox_url: {postbox_url}, user_email: {user_email}")
+
     return render_template('index.html',
-                            url=os.environ.get('SUPABASE_URL'), 
-                            key=os.environ.get('SUPABASE_KEY'))
+                            has_postbox=has_postbox,
+                            postbox_url=postbox_url,
+                            is_logged_in=bool(user_email))
 
 
 @app.route('/logout')

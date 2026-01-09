@@ -3,12 +3,7 @@
 {% block content %}
 <div class="flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-2xl mx-auto w-full text-center relative">
 
-    <button type="button"
-       id="logoutButton"
-       onclick="handleLogout()"
-       class="fixed top-16 right-4 z-50 text-sm font-bold px-3 py-1.5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 shadow pointer-events-auto {{ '' if is_logged_in else 'hidden' }}">
-        로그아웃
-    </button>
+    {# global nav logout used instead #}
 
     <div class="mb-4">
         {# 우체통 색상별 파스텔 배지 테마 정의 #}
@@ -45,33 +40,71 @@
 
     <div class="relative mb-10 animate-float">
         <img src="/static/images/postbox/{{ color }}.png" class="w-64 h-64 object-contain drop-shadow-2xl mx-auto">
+
+        {% if is_owner and postcard_count == 0 %}
+        <div class="mt-6">
+            <p class="text-xl font-bold text-slate-800 dark:text-white mb-1">🎉 우체통이 완성되었어요!</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                아직 도착한 편지가 없네요.<br>
+                친구들에게 링크를 공유해보세요!
+            </p>
+        </div>
+        {% else %}
         <div class="mt-6 text-slate-600 dark:text-slate-300">
             현재 <span class="text-primary font-bold text-2xl">{{ postcard_count }}</span>개의 편지가 담겨있어요!
         </div>
+        {% endif %}
     </div>
 
-    <div class="w-full max-w-sm">
+    <div class="w-full max-w-sm space-y-4">
         {% if is_owner %}
-        {% if is_expired %}
-        <button onclick="location.href='/inbox/{{ postbox_name }}'"
+        <!-- 공유하기 카드 -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">💌 내 우체통 공유하기</h3>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="shareKakao()"
+                    class="flex items-center justify-center gap-2 py-3 bg-[#FEE500] hover:bg-[#FDD835] text-[#191919] font-bold rounded-xl transition-all active:scale-95">
+                    <svg class="w-5 h-5 pointer-events-none" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.922-.123.477.175.47.37.34.152-.102 2.41-1.637 3.393-2.302.544.073 1.103.111 1.677.111 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
+                    </svg>
+                    <span class="text-sm">카카오톡</span>
+                </button>
+
+                <button onclick="copyLink()"
+                    class="flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-all active:scale-95">
+                    <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    <span class="text-sm">링크 복사</span>
+                </button>
+            </div>
+        </div>
+
+        {% if postcard_count > 0 %}
+        {% if is_opened %}
+        <button onclick="location.href='{{ url_path }}'"
             class="w-full py-5 bg-accent text-slate-900 rounded-2xl font-bold text-xl shadow-xl hover:scale-[1.02] transition-all">
-            📩 도착한 메시지 읽기
+            📩 우체통 열기 ({{ postcard_count }}개의 편지)
         </button>
         {% else %}
         <div class="bg-slate-100 dark:bg-slate-800 p-6 rounded-3xl border-2 border-dashed border-slate-300">
             <p class="text-sm text-slate-500 mb-3">메시지 공개까지 남은 시간</p>
             <div id="countdown" class="text-3xl font-black tracking-widest text-primary">00:00:00:00</div>
             <p class="mt-4 text-xs text-slate-400 font-medium">
-                {# '2026-01-01'을 '-' 기준으로 나눠서 월/일을 보여줍니다 #}
                 {% set date_parts = end_date.split('-') %}
                 편지는 {{ date_parts[1]|int }}월 {{ date_parts[2]|int }}일에 열어볼 수 있어요!
             </p>
         </div>
         {% endif %}
+        {% endif %}
 
         {% else %}
+        <!-- 방문자 뷰 -->
         <button onclick="checkLoginAndWrite()"
-            class="w-full py-5 bg-primary text-white rounded-2xl font-bold text-xl shadow-xl hover:scale-[1.02] transition-all">
+            class="w-full py-5 bg-primary text-white rounded-2xl font-bold text-xl shadow-xl hover:scale-[1.02] transition-all animate-pulse">
             ✍️ 편지 남기기
         </button>
         <p class="mt-4 text-slate-400 text-sm">소중한 사람에게 따뜻한 마음을 전달하세요.</p>
@@ -80,49 +113,107 @@
 </div>
 
 <div id="loginModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+    <!-- (모달 내용은 기존과 동일하므로 유지 - 생략 없이 전체 포함) -->
     <div id="loginModalOverlay" class="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity"></div>
-    <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl text-center max-h-[85vh] overflow-y-auto px-5 py-5 sm:p-6 w-[min(92vw,22rem)]">
+    <div
+        class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl text-center max-h-[85vh] overflow-y-auto px-5 py-5 sm:p-6 w-[min(92vw,22rem)]">
         <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">로그인이 필요해요</h3>
         <p class="text-slate-600 dark:text-slate-300 text-sm mb-6">
             편지를 남기려면 간편 로그인이 필요합니다.
         </p>
 
         <div class="flex flex-col gap-3">
-            <button onclick="signInWithGoogle()" class="flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md">
+            <button onclick="signInWithGoogle()"
+                class="flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md">
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    <path
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        fill="#4285F4" />
+                    <path
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        fill="#34A853" />
+                    <path
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                        fill="#FBBC05" />
+                    <path
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        fill="#EA4335" />
                 </svg>
                 <span class="text-sm font-medium">Google로 계속하기</span>
             </button>
 
-            <button onclick="signInWithKakao()" class="flex items-center justify-center gap-3 px-4 py-3 bg-[#FEE500] hover:bg-[#FDE100] text-[#191919] rounded-xl transition-all duration-300 shadow-sm hover:shadow-md">
+            <button onclick="signInWithKakao()"
+                class="flex items-center justify-center gap-3 px-4 py-3 bg-[#FEE500] hover:bg-[#FDE100] text-[#191919] rounded-xl transition-all duration-300 shadow-sm hover:shadow-md">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.922-.123.477.175.47.37.34.152-.102 2.41-1.637 3.393-2.302.544.073 1.103.111 1.677.111 4.97 0 9-3.185 9-7.115S16.97 3 12 3z"/>
+                    <path
+                        d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.922-.123.477.175.47.37.34.152-.102 2.41-1.637 3.393-2.302.544.073 1.103.111 1.677.111 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
                 </svg>
                 <span class="text-sm font-medium">카카오로 계속하기</span>
             </button>
         </div>
 
-        <button onclick="closeLoginModal()" class="mt-5 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+        <button onclick="closeLoginModal()"
+            class="mt-5 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
             지금은 닫기
         </button>
     </div>
 </div>
 
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+    integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2txfZW45nlz2zq9IVkDnTS"
+    crossorigin="anonymous"></script>
 <script>
+    // 카카오 SDK 초기화
+    try {
+        Kakao.init('{{ kakao_js_key }}');
+    } catch (e) {
+        console.warn('Kakao Init Fail:', e);
+    }
+
+    function shareKakao() {
+        Kakao.Share.sendDefault({
+            objectType: 'feed',
+            content: {
+                title: '{{ postbox_name }}',
+                description: '{{ prayer_topic or "말씀우체통이 도착했어요!" }}',
+                imageUrl: '{{ request.url_root }}static/images/postbox/{{ color }}.png',
+                link: {
+                    mobileWebUrl: window.location.href,
+                    webUrl: window.location.href,
+                },
+            },
+            buttons: [
+                {
+                    title: '우체통 구경가기',
+                    link: {
+                        mobileWebUrl: window.location.href,
+                        webUrl: window.location.href,
+                    },
+                },
+            ],
+        });
+    }
+
+    async function copyLink() {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            alert("링크가 복사되었습니다!");
+        } catch (err) {
+            console.error('Copy failed', err);
+            alert("링크 복사에 실패했습니다. URL창을 직접 복사해주세요.");
+        }
+    }
+
     // 링크 소유자이고 아직 시간이 안 지났을 때만 실행
     {% if is_owner and not is_expired %}
     function updateCountdown() {
         const now = new Date();
-        const endDateStr = "{{ end_date }}"; // '2026-01-01'이 들어옴
+        const endDateStr = end_date;
         const target = new Date(endDateStr + "T00:00:00");
         const diff = target - now;
 
         if (diff <= 0) {
-            location.reload(); // 시간이 다 되면 페이지를 새로고침해서 '메시지 읽기' 버튼으로 전환
+            location.reload();
             return;
         }
 
@@ -131,20 +222,18 @@
         const mins = Math.floor((diff / (1000 * 60)) % 60);
         const secs = Math.floor((diff / 1000) % 60);
 
-        document.getElementById('countdown').innerText =
-            `${days}d ${String(hours).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
+        const countdownEl = document.getElementById('countdown');
+        if (countdownEl) {
+            countdownEl.innerText =
+                `${days}d ${String(hours).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
+        }
     }
     setInterval(updateCountdown, 1000);
     updateCountdown();
     {% endif %}
 
 
-    const SUPABASE_URL = "{{ supabase_url or '' }}";
-    const SUPABASE_KEY = "{{ supabase_key or '' }}";
     const isOwner = {{ 'true' if is_owner else 'false' }};
-    const supabaseClient = (SUPABASE_URL && SUPABASE_KEY)
-        ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-        : null;
 
     function openLoginModal() {
         const modal = document.getElementById('loginModal');
@@ -158,29 +247,17 @@
 
     document.getElementById('loginModalOverlay')?.addEventListener('click', closeLoginModal);
 
-    async function handleLogout() {
-        try {
-            if (supabaseClient) {
-                await supabaseClient.auth.signOut();
-            }
-        } catch (err) {
-            console.warn("Supabase 로그아웃 실패:", err);
-        } finally {
-            window.location.href = '/logout';
-        }
-    }
-
     async function signInWithGoogle() {
-        if (!supabaseClient) {
+        if (!window.supabaseApp) {
             alert("로그인 설정이 준비되지 않았습니다.");
             return;
         }
         sessionStorage.setItem('postboxReturnTo', window.location.pathname);
         sessionStorage.removeItem(`postboxAuthChecked-{{ postbox_id }}`);
-        await supabaseClient.auth.signInWithOAuth({
+        await window.supabaseApp.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin + window.location.pathname,
+                redirectTo: getRedirectBase(),
                 queryParams: {
                     prompt: 'login'
                 }
@@ -189,16 +266,16 @@
     }
 
     async function signInWithKakao() {
-        if (!supabaseClient) {
+        if (!window.supabaseApp) {
             alert("로그인 설정이 준비되지 않았습니다.");
             return;
         }
         sessionStorage.setItem('postboxReturnTo', window.location.pathname);
         sessionStorage.removeItem(`postboxAuthChecked-{{ postbox_id }}`);
-        await supabaseClient.auth.signInWithOAuth({
+        await window.supabaseApp.auth.signInWithOAuth({
             provider: 'kakao',
             options: {
-                redirectTo: window.location.origin + window.location.pathname,
+                redirectTo: getRedirectBase(),
                 queryParams: {
                     prompt: 'login'
                 }
@@ -208,9 +285,7 @@
 
     let isLoggedIn = {{ 'true' if is_logged_in else 'false' }};
     function updateLogoutVisibility() {
-        const btn = document.getElementById('logoutButton');
-        if (!btn) return;
-        btn.classList.toggle('hidden', !isLoggedIn);
+        // base.html의 네비게이션 로그아웃 버튼이 존재하므로 여기서는 처리 불필요
     }
     function detectSupabaseSessionFromStorage() {
         try {
@@ -245,16 +320,16 @@
     }
 
     async function syncLoginStateFromSupabase() {
-        if (!supabaseClient) return;
-        const { data } = await supabaseClient.auth.getSession();
+        if (!window.supabaseApp) return;
+        const { data } = await window.supabaseApp.auth.getSession();
         if (data && data.session) {
             isLoggedIn = true;
             updateLogoutVisibility();
         }
     }
 
-    if (supabaseClient) {
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (window.supabaseApp) {
+        window.supabaseApp.auth.onAuthStateChange(async (event, session) => {
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
                 const postboxId = "{{ postbox_id }}";
                 const guardKey = `postboxAuthChecked-${postboxId}`;

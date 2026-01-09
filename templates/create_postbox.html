@@ -10,13 +10,16 @@
         </div>
     </div>
 
-    <div id="progress-container" class="hidden w-full max-w-md bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full mb-16 overflow-hidden shadow-sm">
-        <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-400 h-full transition-all duration-700 ease-out"
+    <div id="progress-container"
+        class="hidden w-full max-w-md bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full mb-16 overflow-hidden shadow-sm">
+        <div id="progress-bar"
+            class="bg-gradient-to-r from-blue-500 to-indigo-400 h-full transition-all duration-700 ease-out"
             style="width: 25%"></div>
     </div>
 
     <section id="step-1" class="w-full animate-fade-in text-center max-w-md mx-auto">
-        <h2 class="text-2xl md:text-3xl font-bold mb-3 text-slate-800 dark:text-white tracking-tight">우체통의 이름을 정해주세요</h2>
+        <h2 class="text-2xl md:text-3xl font-bold mb-3 text-slate-800 dark:text-white tracking-tight">우체통의 이름을 정해주세요
+        </h2>
         <p class="text-slate-500 dark:text-slate-400 mb-12 text-sm md:text-base">친구들이 이 이름을 보고 편지를 보낼 거예요.</p>
 
         <div class="space-y-8">
@@ -27,14 +30,16 @@
             </div>
 
             <div class="text-left">
-                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 ml-1 uppercase tracking-wider">나에게 하고 싶은 한 마디</label>
+                <label
+                    class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 ml-1 uppercase tracking-wider">나에게
+                    하고 싶은 한 마디</label>
                 <textarea id="prayer-topic" rows="4"
                     class="w-full px-5 py-4 bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-slate-800 dark:text-white resize-none shadow-sm"
                     placeholder="올해 나에게 주는 응원의 메시지나 기도제목을 적어주세요."></textarea>
             </div>
         </div>
 
-        <button onclick="nextStep(2)" 
+        <button onclick="nextStep(2)"
             class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl mt-16 font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98]">
             다음 단계로
         </button>
@@ -45,14 +50,16 @@
         <p class="text-slate-500 dark:text-slate-400 mb-10 text-center">도착한 메시지를 다른 사람에게 공개할까요?</p>
 
         <div class="space-y-4">
-            <label class="flex items-center p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-blue-500 cursor-pointer shadow-sm transition-all">
+            <label
+                class="flex items-center p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-blue-500 cursor-pointer shadow-sm transition-all">
                 <input type="radio" name="privacy" value="public" checked class="w-6 h-6 text-blue-500">
                 <div class="ml-4 text-left">
                     <p class="font-bold text-slate-800 dark:text-white">모두에게 공개</p>
                     <p class="text-sm text-slate-500 dark:text-slate-400">방문자 누구나 메시지를 읽을 수 있습니다.</p>
                 </div>
             </label>
-            <label class="flex items-center p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-transparent hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer shadow-sm transition-all">
+            <label
+                class="flex items-center p-6 bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-100 dark:border-transparent hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer shadow-sm transition-all">
                 <input type="radio" name="privacy" value="private" class="w-6 h-6 text-blue-500">
                 <div class="ml-4 text-left">
                     <p class="font-bold text-slate-800 dark:text-white">나만 보기</p>
@@ -62,8 +69,10 @@
         </div>
 
         <div class="flex gap-3 mt-12">
-            <button onclick="nextStep(1)" class="flex-1 py-4 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white rounded-2xl font-bold transition-colors">이전으로</button>
-            <button onclick="nextStep(3)" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">설정 완료</button>
+            <button onclick="nextStep(1)"
+                class="flex-1 py-4 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white rounded-2xl font-bold transition-colors">이전으로</button>
+            <button onclick="nextStep(3)"
+                class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">설정 완료</button>
         </div>
     </section>
 
@@ -158,22 +167,22 @@
         }
 
         // 1. Flask가 넘겨준 user_name으로 즉시 placeholder 설정
-        const userName = "{{ user_name }}"; 
+        const userName = "{{ user_name }}";
         const nameInput = document.getElementById('postbox-name');
         if (nameInput) {
             nameInput.placeholder = `꿈꾸는 ${userName}님의 말씀지기 우체통`;
         }
     }
 
-        // 유저 정보 UI 업데이트 함수 분리
-        function updateUserInfo(user) {
-            const nameInput = document.getElementById('postbox-name');
-            if (user && nameInput) {
-                const userName = user.user_metadata?.full_name || user.email.split('@')[0];
-                nameInput.placeholder = `꿈꾸는 ${userName}의 말씀지기 우체통`;
-                console.log("Placeholder 설정 완료:", userName);
-            }
+    // 유저 정보 UI 업데이트 함수 분리
+    function updateUserInfo(user) {
+        const nameInput = document.getElementById('postbox-name');
+        if (user && nameInput) {
+            const userName = user.user_metadata?.full_name || user.email.split('@')[0];
+            nameInput.placeholder = `꿈꾸는 ${userName}의 말씀지기 우체통`;
+            console.log("Placeholder 설정 완료:", userName);
         }
+    }
 
     async function checkUserSession() {
         try {
@@ -203,7 +212,7 @@
                 // placeholder가 잘 안 보일 수 있으니 로그로 확인
                 console.log("Placeholder 설정 완료:", userName);
             }
-            
+
             return true;
         } catch (e) {
             console.error("세션 체크 에러:", e);
@@ -214,7 +223,7 @@
     function startIntroAnimation() {
         const introLayer = document.getElementById('intro-layer');
         const introPostbox = document.getElementById('intro-postbox');
-        
+
         setTimeout(() => {
             if (introPostbox) {
                 introPostbox.classList.add('animate-postbox-zoom');
@@ -237,7 +246,7 @@
     function nextStep(step) {
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById(`step-${step}`).classList.remove('hidden');
-        
+
         const progressBar = document.getElementById('progress-bar');
         progressBar.style.width = `${(step / 4) * 100}%`;
 
@@ -247,7 +256,7 @@
     function changeColor(color) {
         selectedColor = color;
         document.getElementById('postbox-img').src = `/static/images/postbox/${color}.png`;
-        
+
         document.querySelectorAll('.color-btn').forEach(btn => {
             btn.classList.remove('border-white');
             btn.classList.add('border-transparent');
@@ -312,10 +321,10 @@
     function updateSummary() {
         const name = document.getElementById('postbox-name').value || document.getElementById('postbox-name').placeholder;
         const privacy = document.querySelector('input[name="privacy"]:checked').value;
-        
+
         document.getElementById('summary-name').innerText = name;
         document.getElementById('final-postbox-img').src = `/static/images/postbox/${selectedColor}.png`;
-        
+
         const badge = document.getElementById('summary-badge');
         badge.innerText = privacy === 'public' ? '🔓 모두 공개' : '🔒 나만 보기';
         badge.className = `absolute -top-2 -right-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg transform rotate-12 ${privacy === 'public' ? 'bg-green-500' : 'bg-slate-500'} text-white border-2 border-white`;
@@ -345,11 +354,25 @@
 
 <style>
     /* 애니메이션 효과 동일 */
-    .animate-postbox-zoom { animation: postbox-zoom-in 1.0s cubic-bezier(0.5, 0, 0.75, 0) forwards; }
-    @keyframes postbox-zoom-in {
-        0% { transform: scale(1); opacity: 1; }
-        100% { transform: scale(15); filter: brightness(8); opacity: 0; }
+    .animate-postbox-zoom {
+        animation: postbox-zoom-in 1.0s cubic-bezier(0.5, 0, 0.75, 0) forwards;
     }
-    .white-out { background-color: white !important; }
+
+    @keyframes postbox-zoom-in {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(15);
+            filter: brightness(8);
+            opacity: 0;
+        }
+    }
+
+    .white-out {
+        background-color: white !important;
+    }
 </style>
 {% endblock %}
