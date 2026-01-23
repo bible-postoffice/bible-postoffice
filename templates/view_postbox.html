@@ -163,11 +163,18 @@
     integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2txfZW45nlz2zq9IVkDnTS"
     crossorigin="anonymous"></script>
 <script>
-    // 카카오 SDK 초기화
+    // 카카오 SDK 초기화 및 디버깅
     try {
-        Kakao.init('{{ kakao_js_key }}');
+        if (!window.Kakao) {
+            console.error('Kakao SDK not loaded');
+            alert('카카오 SDK가 로드되지 않았습니다. 브라우저 차단 설정을 확인해주세요.');
+        } else if (!Kakao.isInitialized()) {
+            Kakao.init('{{ kakao_js_key }}');
+            console.log('Kakao Init Success');
+        }
     } catch (e) {
-        console.warn('Kakao Init Fail:', e);
+        console.error('Kakao Init Fail:', e);
+        alert('카카오 초기화 실패: 키 설정을 확인해주세요.');
     }
 
     function shareKakao() {

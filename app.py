@@ -1474,11 +1474,6 @@ def create_postbox_action():
                 "display_name": display_name
             }).execute()
             print(f"새로운 유저 등록 완료: {user_email}")
-        else:
-            print("hahahahaha")
-            session['has_postbox'] = True
-            session['postbox_url'] = unique_path
-            session.modified = True
 
         # 3. 고유 URL 생성
         unique_path = f"{str(uuid.uuid4())[:8]}" 
@@ -1607,15 +1602,33 @@ def view_postbox(url_path):
 
 @app.route('/')
 def index():
-    has_postbox = session.get('has_postbox', True)
-    postbox_url = session.get('postbox_url')
-    user_email = session.get('user_email')
-    print(f"index > has_postbox: {has_postbox}, postbox_url: {postbox_url}, user_email: {user_email}")
+    has_postbox = False
+    postbox_url = None
+    
+    if 'user_email' in session:
+        try:
+            email = session['user_email']
+            # DB에서 최신 정보 조회
+            user_res = supabase.table('bible_users').select("id, flag").eq("email", email).execute()
+            
+            if user_res.data:
+                user = user_res.data[0]
+                # flag가 true이면 우체통 조회
+                if user.get('flag'):
+                    pb_res = supabase.table('postboxes').select("url").eq("owner_id", user['id']).limit(1).execute()
+                    if pb_res.data:
+                        has_postbox = True
+                        postbox_url = f"{pb_res.data[0]['url']}"
+                        # 세션 동기화
+                        session['has_postbox'] = True
+                        session['postbox_url'] = postbox_url
+        except Exception as e:
+            print(f"Index DB Error: {e}")
 
     return render_template('index.html',
                             has_postbox=has_postbox,
                             postbox_url=postbox_url,
-                            is_logged_in=bool(user_email))
+                            is_logged_in=bool(session.get('user_email')))
 
 
 @app.route('/logout')
