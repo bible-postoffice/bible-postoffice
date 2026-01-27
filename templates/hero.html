@@ -144,7 +144,7 @@
                 const nickname = metadata.full_name || metadata.nickname || session.user.email.split('@')[0];
 
                 try {
-                    const response = await fetch('/auth/check-and-save', {
+                    const response = await fetch('/check-and-save', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

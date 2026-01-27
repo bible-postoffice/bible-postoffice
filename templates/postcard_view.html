@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,42 +12,52 @@
             font-weight: 400;
             font-display: swap;
         }
+
         @font-face {
             font-family: 'Pretendard';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Thin.woff2') format('woff2');
             font-weight: 100;
             font-display: swap;
         }
+
         @font-face {
             font-family: 'KimJeongcheolMyoungjo';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/KimjungchulMyungjo-Light.woff2') format('woff2');
             font-weight: 300;
             font-display: swap;
         }
+
         @font-face {
             font-family: 'YesMyungjo';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Regular.woff') format('woff');
             font-weight: normal;
             font-display: swap;
         }
+
         @font-face {
             font-family: 'YesMyungjo';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Bold.woff') format('woff');
             font-weight: 700;
             font-display: swap;
         }
+
         @font-face {
             font-family: 'SchoolSafetyWing';
             src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2511-1@1.0/HakgyoansimNalgaeR.woff2') format('woff2');
             font-weight: normal;
             font-display: swap;
         }
+
         :root {
             --ink: #0f172a;
             --muted: #475569;
             --user-font: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
         }
-        * { box-sizing: border-box; }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             background: #f5f7fb;
@@ -54,6 +65,7 @@
             font-family: var(--user-font);
             padding: 28px 16px 34px;
         }
+
         .wrap {
             max-width: 1180px;
             margin: 0 auto;
@@ -62,20 +74,24 @@
             gap: 18px;
             align-items: start;
         }
+
         .card-container {
             width: 100%;
         }
+
         .actions-container {
             display: flex;
             flex-direction: column;
             gap: 14px;
         }
+
         .actions {
             margin-top: 0;
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
+
         .btn {
             padding: 10px 16px;
             border-radius: 10px;
@@ -84,20 +100,44 @@
             cursor: pointer;
             font-size: 14px;
         }
-        .btn-primary { background: #2563eb; color: #fff; }
-        .btn-light { background: #fff; color: #111827; border: 1px solid #e5e7eb; }
-        .btn-x { background: #0f172a; color: #fff; }
-        .btn-kakao { background: #FEE500; color: #191919; }
-        .btn-instagram { background: linear-gradient(135deg, #F58529 0%, #DD2A7B 45%, #8134AF 75%, #515BD4 100%); color: #fff; }
+
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .btn-light {
+            background: #fff;
+            color: #111827;
+            border: 1px solid #e5e7eb;
+        }
+
+        .btn-x {
+            background: #0f172a;
+            color: #fff;
+        }
+
+        .btn-kakao {
+            background: #FEE500;
+            color: #191919;
+        }
+
+        .btn-instagram {
+            background: linear-gradient(135deg, #F58529 0%, #DD2A7B 45%, #8134AF 75%, #515BD4 100%);
+            color: #fff;
+        }
+
         .share-section {
             margin-top: 0;
             text-align: left;
         }
+
         .share-title {
             font-weight: 800;
             margin-bottom: 10px;
             color: #1f2937;
         }
+
         .card {
             position: relative;
             background: url("{{ url_for('static', filename=template_image) }}") center/cover no-repeat;
@@ -106,12 +146,14 @@
             aspect-ratio: 16 / 10;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
             overflow: hidden;
         }
+
         .card.letter {
             aspect-ratio: 2 / 3;
         }
+
         .overlay {
             position: absolute;
             inset: 0;
@@ -119,7 +161,9 @@
             display: flex;
             gap: 1.5%;
         }
-        .left, .right {
+
+        .left,
+        .right {
             position: relative;
             flex: 1;
             display: flex;
@@ -136,7 +180,7 @@
             height: 80%;
             margin: auto;
         }
-        
+
         .card.letter .left,
         .card.letter .right {
             width: 80%;
@@ -145,16 +189,18 @@
             flex-direction: column;
             align-items: center;
         }
+
         .card.letter .left {
             flex: 0 0 40%;
             justify-content: center;
         }
+
         .card.letter .right {
             flex: 0 0 40%;
             justify-content: flex-start;
             gap: 8px;
         }
-        
+
         .card.letter .verse-box,
         .card.letter .msg-box,
         .card.letter .sender-box {
@@ -163,24 +209,28 @@
             border-radius: 0;
             padding: 0;
             box-shadow: none;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
         }
+
         .card.letter .verse-box,
         .card.letter .msg-box {
             width: 100%;
             max-width: 760px;
         }
+
         .card.letter .msg-box {
             flex: 1 1 0;
             min-height: 0;
             overflow: auto;
             height: 100%;
         }
+
         .card.letter .msg-box .body {
             height: 100%;
             display: flex;
             align-items: center;
         }
+
         .card.letter .sender-box {
             width: 100%;
             max-width: 760px;
@@ -198,7 +248,7 @@
             padding: 12% 6% 6%;
             justify-content: space-between;
         }
-        
+
         .card.postcard .left,
         .card.postcard .right {
             position: relative;
@@ -208,7 +258,7 @@
             min-height: 0;
             align-self: stretch;
         }
-        
+
         .card.postcard .verse-box {
             color: var(--ink);
             line-height: 1.5;
@@ -220,7 +270,7 @@
             flex: 1 1 auto;
             min-height: 0;
         }
-        
+
         .card.postcard .msg-box {
             color: var(--ink);
             line-height: 1.5;
@@ -230,82 +280,85 @@
             flex: 0 0 87.5%;
             min-height: 0;
         }
+
         /* 엽서 템플릿: 위아래 1단 구조 */
-.template-frame.postcard .overlay { 
-    display: grid;
-    grid-template-rows: 60% 40%;
-    gap: 0;
-    padding: 12% 6% 6%;
-    justify-content: space-between;
-}
+        .template-frame.postcard .overlay {
+            display: grid;
+            grid-template-rows: 60% 40%;
+            gap: 0;
+            padding: 12% 6% 6%;
+            justify-content: space-between;
+        }
 
-.template-frame.postcard .left,
-.template-frame.postcard .right {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    width: 100%;
-    min-height: 0;
-}
+        .template-frame.postcard .left,
+        .template-frame.postcard .right {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            width: 100%;
+            min-height: 0;
+        }
 
-.template-frame.postcard .left {
-    padding-top: 0;
-}
+        .template-frame.postcard .left {
+            padding-top: 0;
+        }
 
-.template-frame.postcard .verse-box {
-    flex: 1;
-    background: none;
-    border: none;
-    box-shadow: none;
-    min-height: 0;
-}
+        .template-frame.postcard .verse-box {
+            flex: 1;
+            background: none;
+            border: none;
+            box-shadow: none;
+            min-height: 0;
+        }
 
-.template-frame.postcard .msg-box {
-    flex: 0 0 87.5%;
-    background: none;
-    border: none;
-    box-shadow: none;
-    min-height: 0;
-}
+        .template-frame.postcard .msg-box {
+            flex: 0 0 87.5%;
+            background: none;
+            border: none;
+            box-shadow: none;
+            min-height: 0;
+        }
 
-.template-frame.postcard .sender-box {
-    margin-top: auto;
-    background: none;
-    border: none;
-    box-shadow: none;
-    flex: 0 0 12.5%;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    line-height: 1.2;
-    overflow: visible;
-}
+        .template-frame.postcard .sender-box {
+            margin-top: auto;
+            background: none;
+            border: none;
+            box-shadow: none;
+            flex: 0 0 12.5%;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            line-height: 1.2;
+            overflow: visible;
+        }
 
-/* 메시지가 없을 때 */
-.template-frame.postcard.no-message .overlay {
-    grid-template-rows: 100%;
-    padding: 6% 6% 6%;
-}.template-frame.postcard.no-message .right {
-    flex: 0 0 0;
-    display: none;
-}
+        /* 메시지가 없을 때 */
+        .template-frame.postcard.no-message .overlay {
+            grid-template-rows: 100%;
+            padding: 6% 6% 6%;
+        }
 
-.template-frame.postcard.no-message .left {
-    justify-content: center;
-    padding-top: 6%;
-    align-items: center;
-}
+        .template-frame.postcard.no-message .right {
+            flex: 0 0 0;
+            display: none;
+        }
 
-.template-frame.postcard.no-message .verse-box {
-    max-width: 96%;
-    margin: 0 auto;
-}
+        .template-frame.postcard.no-message .left {
+            justify-content: center;
+            padding-top: 6%;
+            align-items: center;
+        }
 
-.template-frame.postcard.no-message .sender-box {
-    display: block;
-    margin: 10px auto 0;
-    width: 100%;
-}
+        .template-frame.postcard.no-message .verse-box {
+            max-width: 96%;
+            margin: 0 auto;
+        }
+
+        .template-frame.postcard.no-message .sender-box {
+            display: block;
+            margin: 10px auto 0;
+            width: 100%;
+        }
 
         .card.postcard .sender-box {
             text-align: center;
@@ -320,35 +373,45 @@
             line-height: 1.2;
             overflow: visible;
         }
+
         .card.postcard.no-message .overlay {
             grid-template-rows: 100%;
         }
+
         .card.postcard.no-message .right {
             flex: 0 0 0;
             display: none;
         }
+
         .card.postcard.no-message .left {
             justify-content: center;
             padding-top: 6%;
-            align-items: center;  /* 이 줄을 추가하세요 */
+            align-items: center;
+            /* 이 줄을 추가하세요 */
         }
+
         .card.postcard.no-message .verse-box {
             max-width: 96%;
             margin: 0 auto;
         }
+
         .card.postcard.no-message .sender-box {
             margin-top: 10px;
-            text-align: center;  /* 이 줄을 추가하세요 */
+            text-align: center;
+            /* 이 줄을 추가하세요 */
         }
+
         .card.letter.no-message .right {
             flex: 0 0 0;
             display: none;
         }
+
         .card.letter.no-message .left {
             flex: 1 1 auto;
             width: 100%;
             padding-top: 6%;
         }
+
         .card.letter.no-message .verse-box {
             max-width: 96%;
             margin: 0 auto;
@@ -364,10 +427,12 @@
             word-break: break-word;
             overflow-wrap: break-word;
         }
+
         .verse-box .text .body {
             flex: 1;
             overflow: hidden;
         }
+
         .verse-box .ref {
             font-weight: 800;
             text-align: right;
@@ -376,7 +441,7 @@
             align-self: flex-end;
             display: block;
         }
-        
+
         .msg-box {
             color: var(--ink);
             line-height: 1.5;
@@ -386,6 +451,7 @@
             display: flex;
             flex-direction: column;
         }
+
         .msg-box .body {
             flex: 1;
             white-space: pre-wrap;
@@ -393,7 +459,7 @@
             overflow-wrap: break-word;
             overflow: hidden;
         }
-        
+
         .sender-box {
             color: var(--ink);
             font-weight: 700;
@@ -401,86 +467,115 @@
             text-align: center;
             font-family: var(--user-font);
         }
-        
+
         /* ============ 반응형 조정 ============ */
         @media (max-width: 768px) {
             .card.postcard .overlay {
                 padding: 12% 5% 6%;
             }
-            
+
             .card.letter .overlay {
                 height: 80%;
                 width: 90%;
                 padding: 10% 8%;
             }
         }
-        
+
         @media (max-width: 480px) {
-            body { padding: 10px; }
-            .card { border-radius: 8px; }
+            body {
+                padding: 10px;
+            }
+
+            .card {
+                border-radius: 8px;
+            }
+
             .card.postcard .overlay {
                 padding: 10% 6% 8%;
             }
+
             .card.postcard.no-message .overlay {
                 padding: 15% 6% 3%;
             }
-            
+
             .card.letter .overlay {
                 padding: 8% 6%;
                 gap: 6%;
                 justify-content: space-between;
             }
+
             .card.letter .verse-box {
                 min-height: 40%;
                 display: flex;
                 align-items: center;
             }
+
             .card.letter .msg-box,
             .card.letter .sender-box {
                 max-width: none;
             }
+
             .card.letter .msg-box {
                 min-height: 0;
             }
         }
+
         @media (max-width: 900px) {
             .wrap {
                 grid-template-columns: 1fr;
             }
+
             .card {
                 max-width: 100%;
             }
+
             .actions {
                 flex-direction: row;
                 flex-wrap: wrap;
                 justify-content: center;
             }
+
             .share-section {
                 text-align: center;
             }
         }
+
         @media (max-width: 540px) {
+
             .verse-box,
-            .msg-box { font-size: 13px; word-break: break-word; }
-            .verse-box .ref { font-size: 11px; }
+            .msg-box {
+                font-size: 13px;
+                word-break: break-word;
+            }
+
+            .verse-box .ref {
+                font-size: 11px;
+            }
         }
+
         @media (min-width: 769px) {
-            .verse-box .ref { margin-top: 0; }
+            .verse-box .ref {
+                margin-top: 0;
+            }
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+        integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
 </head>
+
 <body>
     <script>
-        (function() {
-            const fontFamily = {{ font_family|tojson }};
-            if (fontFamily) {
-                document.documentElement.style.setProperty('--user-font', fontFamily);
-            }
-        })();
-        (function() {
-            const kakaoKey = {{ kakao_js_key|tojson }};
+        (function () {
+            const fontFamily = {{ font_family| tojson
+        }};
+        if (fontFamily) {
+            document.documentElement.style.setProperty('--user-font', fontFamily);
+        }
+        }) ();
+        (function () {
+            const kakaoKey = "{{ kakao_js_key|tojson }}";
             if (kakaoKey && window.Kakao && !Kakao.isInitialized()) {
                 Kakao.init(kakaoKey);
             }
@@ -488,7 +583,8 @@
     </script>
     <div class="wrap">
         <div class="card-container">
-            <div class="card {{ 'letter' if template_is_letter else 'postcard' }}{% if not (message or '').strip() %} no-message{% endif %}" id="postcard">
+            <div class="card {{ 'letter' if template_is_letter else 'postcard' }}{% if not (message or '').strip() %} no-message{% endif %}"
+                id="postcard">
                 <div class="overlay">
                     <div class="left">
                         <div class="verse-box">
@@ -533,18 +629,18 @@
     <script>
         function fitTextToContainer(element, minSize, maxSize, containerHeight = null, containerWidth = null) {
             if (!element || !element.textContent.trim()) return;
-            
+
             let fontSize = maxSize;
             element.style.fontSize = fontSize + 'px';
-            
+
             let iterations = 0;
             const maxIterations = 200;
-            
+
             const refHeight = containerHeight !== null ? containerHeight : element.clientHeight;
             const refWidth = containerWidth !== null ? containerWidth : element.clientWidth;
-            
-            while ((element.scrollHeight > refHeight + 1 || 
-                    element.scrollWidth > refWidth + 1) && 
+
+            while ((element.scrollHeight > refHeight + 1 ||
+                element.scrollWidth > refWidth + 1) &&
                 fontSize > minSize && iterations < maxIterations) {
                 fontSize -= 0.3;
                 element.style.fontSize = fontSize + 'px';
@@ -556,14 +652,14 @@
             const verseBox = document.querySelector('.verse-box');
             const verseRef = document.querySelector('.verse-box .ref');
             const verseText = document.querySelector('.verse-box .text');
-            
+
             if (!verseBox || !verseRef || !verseText) return;
-            
+
             const isMobile = window.innerWidth <= 480;
             const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
-            
+
             let refMin, refMax, textMin, textMax;
-            
+
             if (isMobile) {
                 refMin = 8; refMax = 10;
                 textMin = 8; textMax = 12;
@@ -574,24 +670,24 @@
                 refMin = 12; refMax = 20;
                 textMin = 13; textMax = 24;
             }
-            
+
             fitTextToContainer(verseRef, refMin, refMax);
-            
+
             // ref 높이 제외한 영역에 본문 맞춤
             const verseBoxHeight = verseBox.clientHeight;
             const refHeight = verseRef.offsetHeight;
             const refMargin = parseInt(getComputedStyle(verseRef).marginTop || 0, 10);
             const availableHeight = verseBoxHeight - refHeight - refMargin;
-            
+
             let textFontSize = textMax;
             verseText.style.fontSize = textFontSize + 'px';
-            
+
             let iterations = 0;
             const maxIterations = 200;
-            
-            while ((verseText.scrollHeight > availableHeight + 1 || 
-                    verseText.scrollWidth > verseText.clientWidth + 1) && 
-                   textFontSize > textMin && iterations < maxIterations) {
+
+            while ((verseText.scrollHeight > availableHeight + 1 ||
+                verseText.scrollWidth > verseText.clientWidth + 1) &&
+                textFontSize > textMin && iterations < maxIterations) {
                 textFontSize -= 0.3;
                 verseText.style.fontSize = textFontSize + 'px';
                 iterations++;
@@ -606,7 +702,7 @@
             const rightColumn = document.querySelector('.card.postcard .right');
             const verseRef = document.querySelector('.verse-box .ref');
             const verseText = document.querySelector('.verse-box .text');
-            
+
             const isMobile = window.innerWidth <= 480;
             const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
             let msgMin, msgMax, senderMin, senderMax;
@@ -620,13 +716,13 @@
                 msgMin = 12; msgMax = 28;
                 senderMin = 20; senderMax = 20;
             }
-            
-            
+
+
             fitVerseBox();
             if (verseRef && verseText) {
                 verseRef.style.fontSize = getComputedStyle(verseText).fontSize;
             }
-            
+
             if (msgBox && msgBoxContainer) {
                 fitTextToContainer(msgBox, msgMin, msgMax, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
 
@@ -644,7 +740,7 @@
                 const wrapper = senderBox.parentElement;
                 if (wrapper) wrapper.style.fontSize = senderSize;
             }
-            
+
             if (senderBox && senderBoxContainer) {
                 fitTextToContainer(senderBox, senderMin, senderMax, senderBoxContainer.clientHeight, senderBoxContainer.clientWidth);
                 const senderFontSize = getComputedStyle(senderBox).fontSize;
@@ -680,14 +776,15 @@
         }
 
         function getShareMeta() {
-            const senderName = {{ sender|tojson }};
-            const safeSender = senderName && senderName.trim() ? senderName : '익명';
-            const url = window.location.href;
-            return {
-                url,
-                title: '말씀 우체통',
-                text: `${safeSender}이 보낸 성경 말씀 편지입니다. ${url}`,
-            };
+            const senderName = {{ sender| tojson
+        }};
+        const safeSender = senderName && senderName.trim() ? senderName : '익명';
+        const url = window.location.href;
+        return {
+            url,
+            title: '말씀 우체통',
+            text: `${safeSender}이 보낸 성경 말씀 편지입니다. ${url}`,
+        };
         }
 
         async function createShareImageFile() {
@@ -738,36 +835,37 @@
         }
 
         async function shareKakao() {
-            const kakaoKey = {{ kakao_js_key|tojson }};
-            if (!kakaoKey || !window.Kakao || !Kakao.isInitialized()) {
-                const ok = await shareWithSystem(true);
-                if (!ok) {
-                    alert('모바일 공유 기능이 필요합니다. URL을 복사했습니다.');
-                }
-                return;
+            const kakaoKey = {{ kakao_js_key| tojson
+        }};
+        if (!kakaoKey || !window.Kakao || !Kakao.isInitialized()) {
+            const ok = await shareWithSystem(true);
+            if (!ok) {
+                alert('모바일 공유 기능이 필요합니다. URL을 복사했습니다.');
             }
-            const meta = getShareMeta();
-            Kakao.Share.sendDefault({
-                objectType: 'feed',
-                content: {
-                    title: '말씀 우체통',
-                    description: meta.text,
-                    imageUrl: "https://bible-postoffice-2025.web.app/view-postcard/adae057c-0902-4d77-b46b-541e60241532",
+            return;
+        }
+        const meta = getShareMeta();
+        Kakao.Share.sendDefault({
+            objectType: 'feed',
+            content: {
+                title: '말씀 우체통',
+                description: meta.text,
+                imageUrl: "https://bible-postoffice-2025.web.app/view-postcard/adae057c-0902-4d77-b46b-541e60241532",
+                link: {
+                    mobileWebUrl: meta.url,
+                    webUrl: meta.url,
+                },
+            },
+            buttons: [
+                {
+                    title: '엽서 보러가기',
                     link: {
                         mobileWebUrl: meta.url,
                         webUrl: meta.url,
                     },
                 },
-                buttons: [
-                    {
-                        title: '엽서 보러가기',
-                        link: {
-                            mobileWebUrl: meta.url,
-                            webUrl: meta.url,
-                        },
-                    },
-                ],
-            });
+            ],
+        });
         }
 
         function copyShareUrl(silent = false) {
@@ -800,4 +898,5 @@
         }
     </script>
 </body>
+
 </html>

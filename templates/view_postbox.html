@@ -159,24 +159,24 @@
     </div>
 </div>
 
-<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
-    integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2txfZW45nlz2zq9IVkDnTS"
-    crossorigin="anonymous"></script>
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
 <script>
-    // 카카오 SDK 초기화 및 디버깅
-    try {
-        if (!window.Kakao) {
-            console.error('Kakao SDK not loaded');
-            alert('카카오 SDK가 로드되지 않았습니다. 브라우저 차단 설정을 확인해주세요.');
-        } else if (!Kakao.isInitialized()) {
-            Kakao.init('{{ kakao_js_key }}');
-            console.log('Kakao Init Success');
+    // 페이지의 모든 리소스(SDK 포함)가 로드된 후 실행
+    window.onload = function () {
+        try {
+            if (typeof Kakao !== 'undefined') {
+                if (!Kakao.isInitialized()) {
+                    Kakao.init('{{ kakao_js_key }}');
+                    console.log('카카오 SDK 초기화 성공:', Kakao.isInitialized());
+                }
+            } else {
+                console.error('Kakao 객체를 찾을 수 없습니다.');
+                alert('카카오 SDK 로드 실패! 광고 차단 프로그램이나 네트워크를 확인하세요.');
+            }
+        } catch (e) {
+            console.error('초기화 중 에러 발생:', e);
         }
-    } catch (e) {
-        console.error('Kakao Init Fail:', e);
-        alert('카카오 초기화 실패: 키 설정을 확인해주세요.');
-    }
-
+    };
     function shareKakao() {
         Kakao.Share.sendDefault({
             objectType: 'feed',
@@ -215,12 +215,18 @@
     {% if is_owner and not is_expired %}
     function updateCountdown() {
         const now = new Date();
-        const endDateStr = end_date;
+        const endDateStr = "{{ end_date }}";
         const target = new Date(endDateStr + "T00:00:00");
         const diff = target - now;
 
         if (diff <= 0) {
-            location.reload();
+            // 이미 시간이 지났다면 새로고침하지 않고 카운트다운 텍스트만 변경
+            const countdownEl = document.getElementById('countdown');
+            if (countdownEl && countdownEl.innerText !== "열어볼 수 있어요!") {
+                countdownEl.innerText = "열어볼 수 있어요!";
+                // 한 번만 새로고침하고 싶다면 세션 스토리지 등을 활용해야 하지만, 
+                // 보통은 그냥 UI만 바꿔주는 것이 안전합니다.
+            }
             return;
         }
 
@@ -344,7 +350,7 @@
                 sessionStorage.setItem(guardKey, 'true');
 
                 try {
-                    const response = await fetch('/auth/check-and-save', {
+                    const response = await fetch('/check-and-save', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
