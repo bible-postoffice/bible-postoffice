@@ -12,8 +12,8 @@ import os
 from postcard_routes import create_postcard_blueprint
 
 import config
-from config import SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_KEY
-from services.database import supabase, embedding_model, bible_collection
+from config import SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_KEY, THEME_CONTEXT_RULES, DEFAULT_CONTEXT_DESCRIPTION
+from services.database import supabase, embedding_model, bible_collection, supabase_vec
 from routes.postbox import postbox_bp
 
 
@@ -65,11 +65,26 @@ TEMPLATE_TYPE_MAP = {
 }
 
 
+def supabase_headers():
+    """Supabase REST API 요청에 필요한 헤더 반환"""
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+
+
 def fetch_postbox_supabase(postbox_id: str):
     if not SUPABASE_URL or not SUPABASE_KEY:
         return None
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postboxes"
-    params = {"id": f"eq.{postbox_id}", "limit": 1}
+    
+    # UUID 형식(36자)이 아니면 url 컬럼으로 조회 (슬러그 지원)
+    if len(postbox_id) != 36:
+        params = {"url": f"eq.{postbox_id}", "limit": 1}
+    else:
+        params = {"id": f"eq.{postbox_id}", "limit": 1}
+        
     try:
         resp = requests.get(endpoint, headers=supabase_headers(), params=params, timeout=8)
         if resp.status_code != 200:
@@ -249,6 +264,18 @@ def store_postcard_supabase(postbox_id: str, postcard: dict):
         return None
 
 
+def fetch_user_id_by_email(email: str):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+    try:
+        res = supabase.table('bible_users').select("id").eq("email", email).execute()
+        if res.data:
+            return res.data[0]['id']
+    except Exception:
+        pass
+    return None
+
+
 # 카드 작성/미리보기/전송 관련 라우트는 별도 블루프린트로 분리
 postcard_bp = create_postcard_blueprint(
     postboxes=postboxes,
@@ -257,6 +284,7 @@ postcard_bp = create_postcard_blueprint(
     fetch_postcards_supabase=fetch_postcards_supabase,
     store_postbox_supabase=store_postbox_supabase,
     store_postcard_supabase=store_postcard_supabase,
+    fetch_user_id_by_email=fetch_user_id_by_email,
 )
 app.register_blueprint(postcard_bp)
 
@@ -576,7 +604,7 @@ def recommend_verses_supabase(query: str, page: int):
 
 
 
-@app.route('/create-postbox', methods=['POST'])
+@app.route('/api/legacy/create-postbox', methods=['POST'])
 def create_postbox():
     data = request.get_json(silent=True) or {}
     name = data.get('name')
@@ -812,61 +840,26 @@ def auth_callback():
     # 그러면 index.html(hero.html)에 있는 JS가 토큰을 감지해 처리합니다.
     return redirect(url_for('index'))
 
-import uuid
 
-@app.route('/create-postbox-action', methods=['POST'])
-def create_postbox_action():
-    if 'user_email' not in session:
-        return jsonify({"success": False, "message": "로그인이 필요합니다."}), 401
 
-    data = request.get_json()
-    owner_id = data.get('owner_id')
-    user_email = session.get('user_email')
-    
+
+@app.route('/api/debug/postbox/<id_or_slug>')
+def debug_postbox(id_or_slug):
+    if len(id_or_slug) != 36:
+        params = {"url": f"eq.{id_or_slug}", "limit": 1}
+    else:
+        params = {"id": f"eq.{id_or_slug}", "limit": 1}
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/postboxes"
     try:
-        # [핵심 추가] 2. bible_users 테이블에 해당 유저가 있는지 확인 (에러 방지)
-        user_check = supabase.table('bible_users').select("id").eq("id", owner_id).execute()
-        
-        if not user_check.data:
-            # 유저 정보가 없다면 자동으로 먼저 생성 (회원가입 정보 동기화)
-            display_name = user_email.split('@')[0] if user_email else "사용자"
-            supabase.table('bible_users').insert({
-                "id": owner_id,
-                "email": user_email,
-                "nickname": display_name
-            }).execute()
-            print(f"새로운 유저 등록 완료: {user_email}")
-
-        # 3. 고유 URL 생성
-        unique_path = f"{str(uuid.uuid4())[:8]}" 
-        
-        # 4. 우체통 데이터 구성
-        postbox_data = {
-            "owner_id": owner_id,
-            "name": data.get('name'),
-            "prayer_topic": data.get('prayer_topic'),
-            "color": data.get('color'),
-            "privacy": data.get('privacy'),  # 0: public, 1: private (DB 설계에 맞춤)
-            "url": unique_path,
-            "is_opened": False,
-            "created_at": datetime.now().isoformat()
-        }
-
-        # 5. DB에 저장
-        result = supabase.table('postboxes').insert(postbox_data).execute()
-
-        if result.data:
-            return jsonify({
-                "success": True, 
-                "url": unique_path
-            })
-        else:
-            return jsonify({"success": False, "message": "DB 저장 실패"}), 500
-
+        resp = requests.get(endpoint, headers=supabase_headers(), params=params)
+        return jsonify({
+            "status": resp.status_code,
+            "data": resp.json(),
+            "params": params,
+            "endpoint": endpoint
+        })
     except Exception as e:
-        print(f"Create Error: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
-
+        return jsonify({"error": str(e)})
 
 @app.route('/')
 def index():

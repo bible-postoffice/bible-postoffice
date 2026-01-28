@@ -611,6 +611,30 @@
             </div>
         </div>
         <div class="actions-container">
+            {% if current_index is defined and total_letters is defined and total_letters > 1 %}
+            <div class="share-section">
+                <div class="share-title">편지 탐색 ({{ current_index + 1 }} / {{ total_letters }})</div>
+                <div class="actions">
+                    {% if current_index > 0 %}
+                    <button class="btn btn-light"
+                        onclick="location.href='/postbox/{{ postbox_url }}/letters/{{ current_index - 1 }}'">← 이전
+                        편지</button>
+                    {% else %}
+                    <button class="btn btn-light" disabled style="opacity: 0.5; cursor: not-allowed;">← 이전 편지</button>
+                    {% endif %}
+
+                    <button class="btn btn-light" onclick="location.href='/postbox/{{ postbox_url }}'">우체통으로</button>
+
+                    {% if current_index < total_letters - 1 %} <button class="btn btn-light"
+                        onclick="location.href='/postbox/{{ postbox_url }}/letters/{{ current_index + 1 }}'">다음 편지
+                        →</button>
+                        {% else %}
+                        <button class="btn btn-light" disabled style="opacity: 0.5; cursor: not-allowed;">다음 편지
+                            →</button>
+                        {% endif %}
+                </div>
+            </div>
+            {% endif %}
             <div class="actions">
                 <button class="btn btn-primary" onclick="saveImage()">이미지 저장</button>
             </div>

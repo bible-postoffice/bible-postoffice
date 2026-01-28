@@ -77,7 +77,7 @@ def create_postcard_blueprint(
                 base_url = request.url_root.rstrip("/")
                 postbox_path = f"/postboxes/{postbox_id}"
                 fallback = {
-                    "id": postbox_id,
+                    "id": postbox_id, # Fallback ID (might be slug if strictly new/failed fetch)
                     "name": "우체통",
                     "nickname": "우체통",
                     "prayer_topic": "",
@@ -91,6 +91,14 @@ def create_postcard_blueprint(
             else:
                 postboxes[postbox_id] = loaded
                 postcards[postbox_id] = fetch_postcards_supabase(postbox_id)
+
+        # [핵심] 슬러그(url)로 들어온 경우 실제 UUID(id)를 찾아야 DB 저장이 가능함
+        target_postbox = postboxes[postbox_id]
+        real_postbox_id = target_postbox.get("id")
+        
+        # 만약 id가 없다면(매우 예외적), 그냥 입력값 사용
+        if not real_postbox_id:
+            real_postbox_id = postbox_id
 
         sender_name = (data.get("sender_name") or "").strip()
         is_anonymous = data.get("is_anonymous")
@@ -120,7 +128,8 @@ def create_postcard_blueprint(
         }
 
         postcards[postbox_id].append(postcard)
-        store_postcard_supabase(postbox_id, postcard)
+        # DB 저장 시에는 반드시 실제 UUID를 사용해야 함 (Foreign Key 제약)
+        store_postcard_supabase(real_postbox_id, postcard)
 
         return jsonify({"success": True, "postcard_id": postcard["id"]})
 

@@ -9,6 +9,12 @@ from dateutil.relativedelta import relativedelta
 # 우체통 생성 및 조회
 postbox_bp = Blueprint('postbox', __name__)
 
+@postbox_bp.route('/create-postbox', methods=['GET'])
+def create_postbox_page():
+    return render_template('create_postbox.html',
+                           supabase_url=os.environ.get('SUPABASE_URL'),
+                           supabase_key=os.environ.get('SUPABASE_KEY'))
+
 @postbox_bp.route('/postbox/<url_path>')
 def view_postbox(url_path):
     try:
@@ -99,20 +105,40 @@ def create_postbox_action():
     user_email = session.get('user_email')
     
     try:
-        # [핵심 추가] 2. bible_users 테이블에 해당 유저가 있는지 확인 (에러 방지)
-        user_check = supabase.table('bible_users').select("id").eq("id", owner_id).execute()
+        # [수정] 2. bible_users 테이블에서 이메일로 유저 확인 (ID 불일치 방지)
+        # 클라이언트에서 보낸 owner_id(Auth ID)와 DB의 ID가 다를 수 있으므로 이메일 기준 조회 우선
+        user_res = supabase.table('bible_users').select("id").eq("email", user_email).execute()
         
-        if not user_check.data:
-            # 유저 정보가 없다면 자동으로 먼저 생성 (회원가입 정보 동기화)
+        if user_res.data:
+            # 이미 존재하는 유저라면 그 ID를 사용
+            owner_id = user_res.data[0]['id']
+        else:
+            # 유저 정보가 없다면 새로 생성 (이때만 client가 보낸 owner_id 사용)
+            # 만약 client owner_id도 없다면? (방어 로직)
+            if not owner_id:
+                 # 사실상 발생하기 힘든 케이스이나 안전장치
+                 owner_id = str(uuid.uuid4())
+            
             display_name = user_email.split('@')[0] if user_email else "사용자"
-            supabase.table('bible_users').insert({
+            
+            # 혹시라도 insert 시점에 email 충돌이 나면(동시성 등) upsert로 처리
+            supabase.table('bible_users').upsert({
                 "id": owner_id,
                 "email": user_email,
                 "nickname": display_name
-            }).execute()
-            print(f"새로운 유저 등록 완료: {user_email}")
+            }, on_conflict='email').execute()
+            print(f"새로운 유저 등록(Upsert) 완료: {user_email}")
 
-        # 3. 고유 URL 생성
+        # [추가] 3. 이미 우체통이 있는지 확인 (중복 생성 방지)
+        existing_pb = supabase.table('postboxes').select("url").eq("owner_id", owner_id).execute()
+        if existing_pb.data:
+            print(f"이미 존재하는 우체통 반환: {user_email}")
+            return jsonify({
+                "success": True, 
+                "url": existing_pb.data[0]['url']
+            })
+
+        # 4. 고유 URL 생성
         unique_path = f"{str(uuid.uuid4())[:8]}" 
         
         # 4. 우체통 데이터 구성
@@ -140,7 +166,74 @@ def create_postbox_action():
 
     except Exception as e:
         print(f"Create Error: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({" success": False, "message": str(e)}), 500
+
+
+@postbox_bp.route('/postbox/<url_path>/letters')
+@postbox_bp.route('/postbox/<url_path>/letters/<int:letter_index>')
+def view_letters(url_path, letter_index=0):
+    """우체통의 편지들을 보여주는 페이지"""
+    try:
+        # 1. 우체통 정보 조회
+        postbox_res = supabase.table('postboxes').select('*').eq('url', url_path).execute()
+        if not postbox_res.data:
+            return "우체통을 찾을 수 없습니다", 404
+        
+        postbox = postbox_res.data[0]
+        postbox_id = postbox['id']
+        
+        # 2. 권한 확인 (주인만 볼 수 있음)
+        user_email = session.get('user_email')
+        if not user_email:
+            return redirect(url_for('postbox.view_postbox', url_path=url_path))
+        
+        user_res = supabase.table('bible_users').select('id').eq('email', user_email).execute()
+        if not user_res.data or str(user_res.data[0]['id']) != str(postbox['owner_id']):
+            return "권한이 없습니다", 403
+        
+        # 3. 편지 목록 조회
+        postcards_res = supabase.table('postcards').select('*').eq('postbox_id', postbox_id).order('created_at', desc=False).execute()
+        
+        if not postcards_res.data:
+            return "받은 편지가 없습니다", 404
+        
+        postcards = postcards_res.data
+        total_letters = len(postcards)
+        
+        # 4. 인덱스 유효성 검사
+        if letter_index < 0 or letter_index >= total_letters:
+            letter_index = 0
+        
+        letter = postcards[letter_index]
+        
+        # 5. 템플릿 이미지 경로 결정
+        template_id = letter.get('template_id', 1)
+        template_type = letter.get('template_type', 0)
+        template_is_letter = template_type == 1
+        
+        if template_is_letter:
+            template_image = f'images/letters/letter{template_id}.jpg'
+        else:
+            template_image = f'images/postcards/postcard{template_id}.jpg'
+        
+        # 6. 렌더링
+        return render_template('postcard_view.html',
+                             sender=letter.get('sender_name') or '익명',
+                             verse_reference=letter.get('verse_reference', ''),
+                             verse_text=letter.get('verse_text', ''),
+                             message=letter.get('message', ''),
+                             font_family=letter.get('font_family', 'Pretendard'),
+                             template_image=template_image,
+                             template_is_letter=template_is_letter,
+                             kakao_js_key=os.environ.get('KAKAO_JS_KEY'),
+                             current_index=letter_index,
+                             total_letters=total_letters,
+                             postbox_url=url_path)
+    
+    except Exception as e:
+        print(f"Error in view_letters: {e}")
+        return "오류가 발생했습니다", 500
+
 
 @postbox_bp.route('/check-and-save', methods=['POST'])
 def check_and_save():
@@ -149,6 +242,7 @@ def check_and_save():
         email = data.get('email')
         token = data.get('token')
         nickname = data.get('nickname', '사용자')
+        next_url = data.get('next_url')
 
         if not email:
             return jsonify({"success": False, "message": "이메일 정보가 필요합니다."}), 400
@@ -191,10 +285,12 @@ def check_and_save():
         session['postbox_url'] = postbox_url
 
         # 4. 리다이렉트 URL 결정
-        if has_postbox and postbox_url:
+        if next_url:
+            target_url = next_url
+        elif has_postbox and postbox_url:
             target_url = url_for('postbox.view_postbox', url_path=postbox_url)
         else:
-            target_url = url_for('create_postbox_action')
+            target_url = url_for('postbox.create_postbox_page')
 
         return jsonify({
             "success": True, 

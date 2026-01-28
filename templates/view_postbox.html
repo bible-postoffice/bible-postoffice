@@ -85,7 +85,7 @@
 
         {% if postcard_count > 0 %}
         {% if is_opened %}
-        <button onclick="location.href='{{ url_path }}'"
+        <button onclick="location.href='/postbox/{{ url_path }}/letters'"
             class="w-full py-5 bg-accent text-slate-900 rounded-2xl font-bold text-xl shadow-xl hover:scale-[1.02] transition-all">
             📩 우체통 열기 ({{ postcard_count }}개의 편지)
         </button>
@@ -322,6 +322,8 @@
     }
     function checkLoginAndWrite() {
         const postboxId = "{{ postbox_id }}";
+        // [수정] UUID 대신 닉네임/슬러그 주소 사용
+        const urlPath = "{{ url_path }}";
         const returnKey = `postboxReturnUrl-${postboxId}`;
         sessionStorage.setItem(returnKey, window.location.href);
 
@@ -329,7 +331,7 @@
             openLoginModal();
             return;
         }
-        window.location.href = `/send/${postboxId}`;
+        window.location.href = `/send/${urlPath}`;
     }
 
     async function syncLoginStateFromSupabase() {
@@ -355,7 +357,8 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             token: session.access_token,
-                            email: session.user.email
+                            email: session.user.email,
+                            next_url: sessionStorage.getItem(`postboxReturnUrl-${postboxId}`) || sessionStorage.getItem('postboxReturnTo')
                         })
                     });
                     const result = await response.json();
