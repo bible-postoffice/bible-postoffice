@@ -1,574 +1,116 @@
-<!DOCTYPE html>
-<html lang="ko">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>엽서 보기</title>
-    <style>
-        @font-face {
-            font-family: 'PyeojinGothic';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2504-1@1.0/PyeojinGothic-Regular.woff2') format('woff2');
-            font-weight: 400;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Pretendard';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Thin.woff2') format('woff2');
-            font-weight: 100;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'KimJeongcheolMyoungjo';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/KimjungchulMyungjo-Light.woff2') format('woff2');
-            font-weight: 300;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'YesMyungjo';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Regular.woff') format('woff');
-            font-weight: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'YesMyungjo';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Bold.woff') format('woff');
-            font-weight: 700;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'SchoolSafetyWing';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2511-1@1.0/HakgyoansimNalgaeR.woff2') format('woff2');
-            font-weight: normal;
-            font-display: swap;
-        }
-
-        :root {
-            --ink: #0f172a;
-            --muted: #475569;
-            --user-font: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background: #f5f7fb;
-            color: var(--ink);
-            font-family: var(--user-font);
-            padding: 28px 16px 34px;
-        }
-
-        .wrap {
-            max-width: 1180px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 18px;
-            align-items: start;
-        }
-
-        .card-container {
-            width: 100%;
-        }
-
-        .actions-container {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .actions {
-            margin-top: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .btn {
-            padding: 10px 16px;
-            border-radius: 10px;
-            border: none;
-            font-weight: 800;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: #2563eb;
-            color: #fff;
-        }
-
-        .btn-light {
-            background: #fff;
-            color: #111827;
-            border: 1px solid #e5e7eb;
-        }
-
-        .btn-x {
-            background: #0f172a;
-            color: #fff;
-        }
-
-        .btn-kakao {
-            background: #FEE500;
-            color: #191919;
-        }
-
-        .btn-instagram {
-            background: linear-gradient(135deg, #F58529 0%, #DD2A7B 45%, #8134AF 75%, #515BD4 100%);
-            color: #fff;
-        }
-
-        .share-section {
-            margin-top: 0;
-            text-align: left;
-        }
-
-        .share-title {
-            font-weight: 800;
-            margin-bottom: 10px;
-            color: #1f2937;
-        }
-
-        .card {
-            position: relative;
-            background: url("{{ url_for('static', filename=template_image) }}") center/cover no-repeat;
-            width: 100%;
-            max-width: 700px;
-            aspect-ratio: 16 / 10;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
-            overflow: hidden;
-        }
-
-        .card.letter {
-            aspect-ratio: 2 / 3;
-        }
-
-        .overlay {
-            position: absolute;
-            inset: 0;
-            padding: 3% 2.5%;
-            display: flex;
-            gap: 1.5%;
-        }
-
-        .left,
-        .right {
-            position: relative;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ============ 편지지 템플릿: 세로 배치 ============ */
-        .card.letter .overlay {
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            gap: 6%;
-            padding: 10% 8%;
-            height: 80%;
-            margin: auto;
-        }
-
-        .card.letter .left,
-        .card.letter .right {
-            width: 80%;
-            max-width: 760px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .card.letter .left {
-            flex: 0 0 40%;
-            justify-content: center;
-        }
-
-        .card.letter .right {
-            flex: 0 0 40%;
-            justify-content: flex-start;
-            gap: 8px;
-        }
-
-        .card.letter .verse-box,
-        .card.letter .msg-box,
-        .card.letter .sender-box {
-            background: none;
-            border: none;
-            border-radius: 0;
-            padding: 0;
-            box-shadow: none;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-        }
-
-        .card.letter .verse-box,
-        .card.letter .msg-box {
-            width: 100%;
-            max-width: 760px;
-        }
-
-        .card.letter .msg-box {
-            flex: 1 1 0;
-            min-height: 0;
-            overflow: auto;
-            height: 100%;
-        }
-
-        .card.letter .msg-box .body {
-            height: 100%;
-            display: flex;
-            align-items: center;
-        }
-
-        .card.letter .sender-box {
-            width: 100%;
-            max-width: 760px;
-            border-radius: 0;
-            align-self: center;
-            text-align: center;
-            margin-top: auto;
-        }
-
-        /* ============ 엽서 템플릿: 상하 2단 ============ */
-        .card.postcard .overlay {
-            display: grid;
-            grid-template-rows: 60% 40%;
-            gap: 0;
-            padding: 12% 6% 6%;
-            justify-content: space-between;
-        }
-
-        .card.postcard .left,
-        .card.postcard .right {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            min-height: 0;
-            align-self: stretch;
-        }
-
-        .card.postcard .verse-box {
-            color: var(--ink);
-            line-height: 1.5;
-            font-weight: 600;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            font-family: var(--user-font);
-            flex: 1 1 auto;
-            min-height: 0;
-        }
-
-        .card.postcard .msg-box {
-            color: var(--ink);
-            line-height: 1.5;
-            font-weight: 600;
-            overflow: hidden;
-            font-family: var(--user-font);
-            flex: 0 0 87.5%;
-            min-height: 0;
-        }
-
-        /* 엽서 템플릿: 위아래 1단 구조 */
-        .template-frame.postcard .overlay {
-            display: grid;
-            grid-template-rows: 60% 40%;
-            gap: 0;
-            padding: 12% 6% 6%;
-            justify-content: space-between;
-        }
-
-        .template-frame.postcard .left,
-        .template-frame.postcard .right {
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            width: 100%;
-            min-height: 0;
-        }
-
-        .template-frame.postcard .left {
-            padding-top: 0;
-        }
-
-        .template-frame.postcard .verse-box {
-            flex: 1;
-            background: none;
-            border: none;
-            box-shadow: none;
-            min-height: 0;
-        }
-
-        .template-frame.postcard .msg-box {
-            flex: 0 0 87.5%;
-            background: none;
-            border: none;
-            box-shadow: none;
-            min-height: 0;
-        }
-
-        .template-frame.postcard .sender-box {
-            margin-top: auto;
-            background: none;
-            border: none;
-            box-shadow: none;
-            flex: 0 0 12.5%;
-            padding-top: 2px;
-            padding-bottom: 2px;
-            line-height: 1.2;
-            overflow: visible;
-        }
-
-        /* 메시지가 없을 때 */
-        .template-frame.postcard.no-message .overlay {
-            grid-template-rows: 100%;
-            padding: 6% 6% 6%;
-        }
-
-        .template-frame.postcard.no-message .right {
-            flex: 0 0 0;
-            display: none;
-        }
-
-        .template-frame.postcard.no-message .left {
-            justify-content: center;
-            padding-top: 6%;
-            align-items: center;
-        }
-
-        .template-frame.postcard.no-message .verse-box {
-            max-width: 96%;
-            margin: 0 auto;
-        }
-
-        .template-frame.postcard.no-message .sender-box {
-            display: block;
-            margin: 10px auto 0;
-            width: 100%;
-        }
-
-        .card.postcard .sender-box {
-            text-align: center;
-            color: var(--ink);
-            font-weight: 700;
-            overflow: hidden;
-            font-family: var(--user-font);
-            flex: 0 0 12.5%;
-            align-self: center;
-            padding-top: 2px;
-            padding-bottom: 2px;
-            line-height: 1.2;
-            overflow: visible;
-        }
-
-        .card.postcard.no-message .overlay {
-            grid-template-rows: 100%;
-        }
-
-        .card.postcard.no-message .right {
-            flex: 0 0 0;
-            display: none;
-        }
-
-        .card.postcard.no-message .left {
-            justify-content: center;
-            padding-top: 6%;
-            align-items: center;
-            /* 이 줄을 추가하세요 */
-        }
-
-        .card.postcard.no-message .verse-box {
-            max-width: 96%;
-            margin: 0 auto;
-        }
-
-        .card.postcard.no-message .sender-box {
-            margin-top: 10px;
-            text-align: center;
-            /* 이 줄을 추가하세요 */
-        }
-
-        .card.letter.no-message .right {
-            flex: 0 0 0;
-            display: none;
-        }
-
-        .card.letter.no-message .left {
-            flex: 1 1 auto;
-            width: 100%;
-            padding-top: 6%;
-        }
-
-        .card.letter.no-message .verse-box {
-            max-width: 96%;
-            margin: 0 auto;
-        }
-
-        /* ============ 공통 스타일 ============ */
-        .verse-box .text {
-            flex: 0 0 auto;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow-wrap: break-word;
-        }
-
-        .verse-box .text .body {
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .verse-box .ref {
-            font-weight: 800;
-            text-align: right;
-            flex-shrink: 0;
-            margin-top: 0.15em;
-            align-self: flex-end;
-            display: block;
-        }
-
-        .msg-box {
-            color: var(--ink);
-            line-height: 1.5;
-            font-weight: 600;
-            overflow: hidden;
-            font-family: var(--user-font);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .msg-box .body {
-            flex: 1;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            overflow: hidden;
-        }
-
-        .sender-box {
-            color: var(--ink);
-            font-weight: 700;
-            overflow: hidden;
-            text-align: center;
-            font-family: var(--user-font);
-        }
-
-        /* ============ 반응형 조정 ============ */
-        @media (max-width: 768px) {
-            .card.postcard .overlay {
-                padding: 12% 5% 6%;
-            }
-
-            .card.letter .overlay {
-                height: 80%;
-                width: 90%;
-                padding: 10% 8%;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            .card {
-                border-radius: 8px;
-            }
-
-            .card.postcard .overlay {
-                padding: 10% 6% 8%;
-            }
-
-            .card.postcard.no-message .overlay {
-                padding: 15% 6% 3%;
-            }
-
-            .card.letter .overlay {
-                padding: 8% 6%;
-                gap: 6%;
-                justify-content: space-between;
-            }
-
-            .card.letter .verse-box {
-                min-height: 40%;
-                display: flex;
-                align-items: center;
-            }
-
-            .card.letter .msg-box,
-            .card.letter .sender-box {
-                max-width: none;
-            }
-
-            .card.letter .msg-box {
-                min-height: 0;
-            }
-        }
-
-        @media (max-width: 900px) {
-            .wrap {
-                grid-template-columns: 1fr;
-            }
-
-            .card {
-                max-width: 100%;
-            }
-
-            .actions {
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .share-section {
-                text-align: center;
-            }
-        }
-
-        @media (max-width: 540px) {
-
-            .verse-box,
-            .msg-box {
-                font-size: 13px;
-                word-break: break-word;
-            }
-
-            .verse-box .ref {
-                font-size: 11px;
-            }
-        }
-
-        @media (min-width: 769px) {
-            .verse-box .ref {
-                margin-top: 0;
-            }
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-        integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+{% extends 'base.html' %}
+
+{% block content %}
+<title>엽서 보기</title>
+<style>
+    /* ============ 엽서 템플릿: 상하 정석 배치 (Style 1) ============ */
+    .card.postcard .overlay {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        /* 중앙 정렬로 여백 확보 */
+        padding: 8% 10%;
+        /* 상하좌우 충분한 여백 */
+        gap: 0;
+    }
+
+    .card.postcard .left,
+    .card.postcard .right {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        /* 글자들 중앙 정렬 */
+        text-align: center;
+    }
+
+    /* 상단 말씀 구역 (1/3) */
+    .card.postcard .left {
+        flex: 0 0 auto;
+        margin-bottom: 20px;
+    }
+
+    /* 중간 구분선 */
+    .card.postcard .divider {
+        width: 40%;
+        /* 선 길이 */
+        height: 1px;
+        background-color: var(--muted);
+        opacity: 0.3;
+        margin: 15px 0 25px;
+    }
+
+    /* 하단 편지 구역 (2/3) */
+    .card.postcard .right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .card.postcard .verse-box {
+        font-size: 1.4rem;
+        /* 말씀은 조금 더 크게 */
+        margin-bottom: 10px;
+        font-family: 'YesMyungjo', serif;
+        /* 명조체 계열 권장 */
+    }
+
+    /* 상하 배치(1번째 디자인) 내 verse-box 상세 수정 */
+    .card.postcard .verse-box .text {
+        white-space: pre-wrap;
+        /* 줄바꿈 허용 */
+        word-break: keep-all;
+        /* 단어 단위로 끊어지게 하여 가독성 향상 */
+        line-height: 1.6;
+        /* 줄 간격을 넓혀 시원하게 보이도록 함 */
+        text-align: center;
+        /* 중앙 정렬 */
+        font-size: 0.95rem;
+        /* 말씀이 길면 기본 크기를 살짝 줄임 */
+    }
+
+    /* 소제목 강조 스타일 (선택 사항) */
+    .card.postcard .verse-box .text b,
+    .card.postcard .verse-box .text span.subtitle {
+        display: block;
+        margin: 10px 0;
+        font-weight: 800;
+        color: #2563eb;
+    }
+
+    .card.postcard .msg-box {
+        font-size: 1rem;
+        line-height: 1.8;
+        color: var(--muted);
+    }
+
+    .card.postcard .sender-box {
+        margin-top: auto;
+        /* 아래쪽 밀어내기 */
+        width: 100%;
+        text-align: right;
+        /* 보낸 이는 우측 하단 */
+        font-size: 0.9rem;
+        padding-top: 20px;
+    }
+
+    /* 메시지가 없을 때 (말씀 강조형) */
+    .card.postcard.no-message .divider {
+        display: none;
+    }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+    integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
 </head>
 
 <body>
     <script>
         (function () {
-            const fontFamily = {{ font_family| tojson
+            const fontFamily = {{ font_family | tojson
         }};
         if (fontFamily) {
             document.documentElement.style.setProperty('--user-font', fontFamily);
@@ -592,20 +134,19 @@
                             <span class="ref">{{ verse_reference }}</span>
                         </div>
                         {% if not (message or '').strip() %}
-                        <div class="sender-box">
-                            From. {{ sender or '익명' }}
-                        </div>
+                        <div class="divider"></div>
                         {% endif %}
                     </div>
                     <div class="right">
+                        {% if (message or '').strip() %}
                         <div class="msg-box">
                             <div class="body">{{ (message or '')|replace('\r', ' ')|replace('\n', ' ') }}</div>
                         </div>
-                        {% if (message or '').strip() %}
+                        {% endif %}
+
                         <div class="sender-box">
                             From. {{ sender or '익명' }}
                         </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -641,9 +182,15 @@
             <div class="share-section">
                 <div class="share-title">공유하기</div>
                 <div class="actions">
-                    <button class="btn btn-instagram" onclick="shareInstagram()">Instagram</button>
-                    <button class="btn btn-x" onclick="shareX()">X</button>
-                    <button class="btn btn-kakao" onclick="shareKakao()">KakaoTalk</button>
+                    <button class="btn" onclick="shareInstagram()">
+                        <img src="{{ url_for('static', filename='images/icon/insta.png') }}" alt="ig"
+                            style="width: 20px; vertical-align: middle; margin-right: 5px;"></button>
+                    <button class="btn" onclick="shareX()"><img
+                            src="{{ url_for('static', filename='images/icon/thread.png') }}" alt="X"
+                            style="width: 20px; vertical-align: middle; margin-right: 5px;"></button>
+                    <button class="btn" onclick="shareKakao()"><img
+                            src="{{ url_for('static', filename='images/icon/kakao.jpg') }}" alt="kakao"
+                            style="width: 20px; vertical-align: middle; margin-right: 5px;"></button>
                     <button class="btn btn-light" onclick="copyShareUrl()">URL 복사</button>
                 </div>
             </div>
@@ -800,7 +347,7 @@
         }
 
         function getShareMeta() {
-            const senderName = {{ sender| tojson
+            const senderName = {{ sender | tojson
         }};
         const safeSender = senderName && senderName.trim() ? senderName : '익명';
         const url = window.location.href;
@@ -924,3 +471,4 @@
 </body>
 
 </html>
+{% endblock content %}

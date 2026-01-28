@@ -38,8 +38,9 @@
     <div class="mb-8"></div>
     {% endif %}
 
-    <div class="relative mb-10 animate-float">
-        <img src="/static/images/postbox/{{ color }}.png" class="w-64 h-64 object-contain drop-shadow-2xl mx-auto">
+    <div class="relative mb-10">
+        <img src="/static/images/postbox/{{ color }}.png"
+            class="w-80 h-80 object-contain drop-shadow-2xl mx-auto animate-float">
 
         {% if is_owner and postcard_count == 0 %}
         <div class="mt-6">
@@ -51,42 +52,18 @@
         </div>
         {% else %}
         <div class="mt-6 text-slate-600 dark:text-slate-300">
-            현재 <span class="text-primary font-bold text-2xl">{{ postcard_count }}</span>개의 편지가 담겨있어요!
+            현재 <span class="{{theme}} font-bold text-2xl">{{ postcard_count }}</span>개의 편지가 담겨있어요!
         </div>
         {% endif %}
     </div>
 
     <div class="w-full max-w-sm space-y-4">
         {% if is_owner %}
-        <!-- 공유하기 카드 -->
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl">
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">💌 내 우체통 공유하기</h3>
-
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="shareKakao()"
-                    class="flex items-center justify-center gap-2 py-3 bg-[#FEE500] hover:bg-[#FDD835] text-[#191919] font-bold rounded-xl transition-all active:scale-95">
-                    <svg class="w-5 h-5 pointer-events-none" viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                            d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.922-.123.477.175.47.37.34.152-.102 2.41-1.637 3.393-2.302.544.073 1.103.111 1.677.111 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
-                    </svg>
-                    <span class="text-sm">카카오톡</span>
-                </button>
-
-                <button onclick="copyLink()"
-                    class="flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-all active:scale-95">
-                    <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    <span class="text-sm">링크 복사</span>
-                </button>
-            </div>
-        </div>
 
         {% if postcard_count > 0 %}
         {% if is_opened %}
         <button onclick="location.href='/postbox/{{ url_path }}/letters'"
-            class="w-full py-5 bg-accent text-slate-900 rounded-2xl font-bold text-xl shadow-xl hover:scale-[1.02] transition-all">
+            class="w-full py-5 bg-accent text-slate-900 rounded-2xl font-bold  {{ theme }} text-xl shadow-xl hover:scale-[1.02] transition-all">
             📩 우체통 열기 ({{ postcard_count }}개의 편지)
         </button>
         {% else %}
@@ -119,7 +96,8 @@
         class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl text-center max-h-[85vh] overflow-y-auto px-5 py-5 sm:p-6 w-[min(92vw,22rem)]">
         <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">로그인이 필요해요</h3>
         <p class="text-slate-600 dark:text-slate-300 text-sm mb-6">
-            편지를 남기려면 간편 로그인이 필요합니다.
+            편지를 남기려면 t소셜
+            로그인이 필요합니다.
         </p>
 
         <div class="flex flex-col gap-3">
