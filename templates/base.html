@@ -73,9 +73,9 @@
                 'bible-postoffice-2025.web.app',
             ]);
             if (allowedHosts.has(host) || host.includes('run.app')) {
-                return origin;
+                return origin + '/?auth=1';
             }
-            return "https://bible-postoffice-2025.web.app";
+            return "https://bible-postoffice-2025.web.app/?auth=1";
         }
 
         // Global Logout Handler (Syncs Supabase & Flask)

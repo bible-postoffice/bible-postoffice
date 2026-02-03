@@ -58,11 +58,8 @@ def _collect_all_curated_references():
 postboxes = {}
 postcards = {}
 
-# 템플릿 유형 매핑 (Supabase templates.template_type: 0=엽서, 1=편지지)
-TEMPLATE_TYPE_MAP = {
-    "엽서": 0,
-    "편지지": 1,
-}
+# 템플릿 유형 (엽서 0 고정)
+TEMPLATE_TYPE_POSTCARD = 0
 
 
 def supabase_headers():
@@ -204,18 +201,7 @@ def store_postcard_supabase(postbox_id: str, postcard: dict):
             tpl_id = int(tpl_id_raw)
     except Exception:
         tpl_id = None
-    tpl_type_raw = postcard.get("template_type")
-    tpl_type = None
-    try:
-        if isinstance(tpl_type_raw, str):
-            digits = ''.join(ch for ch in tpl_type_raw if ch.isdigit())
-            tpl_type = int(digits) if digits else None
-        elif tpl_type_raw is not None:
-            tpl_type = int(tpl_type_raw)
-    except Exception:
-        tpl_type = None
-    if tpl_type is None:
-        tpl_type = TEMPLATE_TYPE_MAP.get(tpl_type_raw)
+    tpl_type = TEMPLATE_TYPE_POSTCARD
     payload = {
         "id": postcard["id"],
         "postbox_id": postbox_id,
@@ -319,17 +305,9 @@ def view_postcard(postcard_id):
             2: "images/postcards/postcard2.jpg",
             3: "images/postcards/postcard3.jpg",
             4: "images/postcards/postcard4.jpg",
-        },
-        1: {  # 편지지 (ID 5~8도 매핑)
-            1: "images/letters/letter1.png",
-            2: "images/letters/letter2.png",
-            3: "images/letters/letter3.png",
-            4: "images/letters/letter4.png",
-            5: "images/letters/letter1.png",
-            6: "images/letters/letter2.png",
-            7: "images/letters/letter3.png",
-            8: "images/letters/letter4.png",
-        },
+            5: "images/postcards/postcard5.jpg",
+            6: "images/postcards/postcard6.jpg",
+        }
     }
 
     try:
@@ -346,8 +324,7 @@ def view_postcard(postcard_id):
         tpl_id_int = None
 
     # 템플릿 타입이 없거나 잘못되었으면 ID로 유추 (5 이상은 편지지로 취급)
-    if tpl_type not in (0, 1):
-        tpl_type = 1 if (tpl_id_int and tpl_id_int >= 5) else 0
+    tpl_type = TEMPLATE_TYPE_POSTCARD
 
     template_image = tpl_img
     if not template_image:
@@ -359,7 +336,36 @@ def view_postcard(postcard_id):
     if not (template_image_url.startswith("http://") or template_image_url.startswith("https://")):
         template_image_url = url_for('static', filename=template_image)
 
-    template_is_letter = tpl_type == 1
+    # 1. 엽서가 속한 우체통 정보를 가져와서 앞뒤 엽서 ID를 찾음
+    prev_id = None
+    next_id = None
+    total_count = 1
+    current_index = 0
+    postbox_url = None
+
+    postbox_id = card.get("postbox_id")
+    if postbox_id:
+        all_cards = fetch_postcards_supabase(postbox_id)
+        if all_cards:
+            total_count = len(all_cards)
+            # ID 기준 혹은 생성일 순으로 정렬되어 있다고 가정 (fetch_postcards_supabase에서 정렬함)
+            card_ids = [c["id"] for c in all_cards]
+            if postcard_id in card_ids:
+                current_index = card_ids.index(postcard_id)
+                if current_index > 0:
+                    prev_id = card_ids[current_index - 1]
+                if current_index < total_count - 1:
+                    next_id = card_ids[current_index + 1]
+        
+        # 우체통 URL(slug) 조회
+        pb = fetch_postbox_supabase(postbox_id)
+        if pb:
+            postbox_url = pb.get("url")
+
+    # 2. URL 생성
+    prev_url = url_for('view_postcard', postcard_id=prev_id) if prev_id else None
+    next_url = url_for('view_postcard', postcard_id=next_id) if next_id else None
+    list_url = url_for('postbox.view_postbox', url_path=postbox_url) if postbox_url else None
 
     return render_template(
         'postcard_view.html',
@@ -373,8 +379,13 @@ def view_postcard(postcard_id):
         template_type=tpl_type,
         template_image=template_image,
         template_image_url=template_image_url,
-        template_is_letter=template_is_letter,
         kakao_js_key=os.environ.get("KAKAO_JS_KEY", ""),
+        # 내비게이션 데이터
+        prev_url=prev_url,
+        next_url=next_url,
+        list_url=list_url,
+        total_count=total_count,
+        current_index=current_index
     )
 
 
@@ -863,6 +874,13 @@ def debug_postbox(id_or_slug):
 
 @app.route('/')
 def index():
+    # 0. 인증 프로세스 중에는 서버측 자동 리다이렉트 방지
+    if request.args.get('auth') == '1':
+        return render_template('index.html', 
+                             supabase_url=os.getenv('SUPABASE_URL'),
+                             supabase_key=os.getenv('SUPABASE_KEY'),
+                             is_logged_in='user_email' in session)
+
     # 1. 로그인 세션 확인
     if 'user_email' in session:
         email = session['user_email']

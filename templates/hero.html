@@ -143,14 +143,22 @@
                 // 구글은 'full_name', 카카오는 'full_name' 혹은 'nickname'을 주로 사용합니다.
                 const nickname = metadata.full_name || metadata.nickname || session.user.email.split('@')[0];
 
+                // [수정] 리다이렉트 URL 감지 로직 개선
+                let nextUrl = sessionStorage.getItem('postboxReturnTo');
+                if (!nextUrl) {
+                    const foundKey = Object.keys(sessionStorage).find(k => k.startsWith('postboxReturnUrl-'));
+                    if (foundKey) nextUrl = sessionStorage.getItem(foundKey);
+                }
+
                 try {
                     const response = await fetch('/check-and-save', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             token: session.access_token,
-                            email: metadata.email,
-                            nickname: nickname
+                            email: session.user.email,
+                            nickname: nickname,
+                            next_url: nextUrl
                         })
                     });
 

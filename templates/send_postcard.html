@@ -1,822 +1,949 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>엽서 보내기</title>
-    <style>
-        body {
-            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-            padding: 30px;
-            background: #f5f7fb;
-            color: #0f172a;
-        }
-        .container {
-            max-width: 700px;
-            width: 100%;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            box-sizing: border-box;
-        }
-        h2 {
-            text-align: center;
-            color: #0f172a;
-            font-family: 'Noto Serif KR', 'Pretendard', serif;
-            font-weight: 800;
-        }
-        .steps {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px 0 30px;
-            gap: 10px;
-        }
-        .step {
-            flex: 1;
-            padding: 12px 10px;
-            border-radius: 10px;
-            background: #eef2ff;
-            color: #4c51bf;
-            font-weight: 600;
-            text-align: center;
-            border: 1px solid #d7dcff;
-        }
-        .step.active {
-            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
-            border-color: #2749d8;
-            color: #fff;
-            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
-        }
-        .step.completed {
-            background: #e0f2fe;
-            border-color: #bfdbfe;
-            color: #2563eb;
-        }
-        .step span {
-            color: #6b7280;
-            font-weight: 500;
-            display: block;
-            font-size: 13px;
-            margin-top: 4px;
-        }
-        .pill {
-            display: inline-block;
-            background: rgba(16,185,129,0.12);
-            color: #0f9c68;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        .section-title {
-            font-weight: 700;
-            margin: 25px 0 12px;
-            color: #0f172a;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .search-box .section-title {
-            display: flex;
-            width: 100%;
-            margin-bottom: 8px;
-        }
-        .tooltip {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #e5e7eb;
-            color: #0f172a;
-            font-size: 12px;
-            font-weight: 800;
-            cursor: default;
-        }
-        .tooltip .tooltip-content {
-            position: absolute;
-            top: 130%;
-            left: 50%;
-            transform: translateX(-50%);
-            min-width: 220px;
-            max-width: 280px;
-            background: white;
-            color: #1f2937;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 12px 14px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            font-size: 13px;
-            line-height: 1.5;
-            z-index: 10;
-            display: none;
-        }
-        .tooltip:hover .tooltip-content {
-            display: block;
-        }
-        .tooltip ul {
-            padding-left: 16px;
-            margin: 8px 0 0;
-        }
-        .tooltip li { margin-bottom: 6px; }
-        .selected-banner {
-            background: #eef2ff;
-            border: 1px solid #dfe3ff;
-            border-radius: 12px;
-            padding: 12px 14px;
-            margin-bottom: 12px;
-            display: none;
-        }
-        .selected-banner strong { color: #4338ca; }
-        .selected-banner .template-type { color: #374151; font-weight: 600; }
-        .name-field {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 12px 14px;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            background: #f9fafb;
-        }
-        .name-field label { font-weight: 700; color: #111827; }
-        .name-field .name-input {
-            width: 100%;
-            max-width: 100%;
-            padding: 14px 16px;
-            font-size: 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            box-sizing: border-box;
-            background: #fff;
-        }
-        .name-help { color: #4b5563; font-size: 13px; }
-        .search-box {
-            margin: 30px 0;
-        }
-        input[type="text"] {
-            width: 70%;
-            max-width: 100%;
-            padding: 15px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            box-sizing: border-box;
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 16px;
-            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 5px;
-            max-width: 100%;
-            font-weight: 800;
-            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
-        }
-        button:hover {
-            background: linear-gradient(135deg, #244fdd 0%, #5c8dff 100%);
-        }
-        .page-nav {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin: 10px 0 4px;
-        }
-        .nav-arrow {
-            padding: 12px 14px;
-            min-width: 120px;
-            border-radius: 10px;
-            border: 1px solid #d1d5db;
-            background: #fff;
-            color: #2563eb;
-            font-size: 15px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-        .nav-arrow.primary {
-            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
-            border: none;
-            color: #fff;
-            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
-        }
-        .nav-arrow:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    /* Existing Typography and Design */
+    @font-face {
+        font-family: 'Aggravo';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SBAggroM.woff') format('woff');
+        font-weight: 500;
+        font-display: swap;
+    }
+
+    .container {
+        max-width: 700px;
+        width: 100%;
+        margin: 0 auto;
+        background: white;
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        box-sizing: border-box;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .dark .container {
+        background: #1e293b;
+        color: #f1f5f9;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    h2 {
+        text-align: center;
+        color: #0f172a;
+        font-family: 'Aggravo', 'Noto Serif KR', serif;
+        font-weight: 800;
+    }
+
+    .dark h2 {
+        color: #f1f5f9;
+    }
+
+    .steps {
+        display: flex;
+        justify-content: space-between;
+        margin: 20px 0 30px;
+        gap: 10px;
+    }
+
+    .step {
+        flex: 1;
+        padding: 12px 10px;
+        border-radius: 10px;
+        background: #eef2ff;
+        color: #4c51bf;
+        font-weight: 600;
+        text-align: center;
+        border: 1px solid #d7dcff;
+    }
+
+    .step.active {
+        background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
+        border-color: #2749d8;
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+    }
+
+    .step.completed {
+        background: #e0f2fe;
+        border-color: #bfdbfe;
+        color: #2563eb;
+    }
+
+    .step span {
+        color: #6b7280;
+        font-weight: 500;
+        display: block;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .pill {
+        display: inline-block;
+        background: rgba(16, 185, 129, 0.12);
+        color: #0f9c68;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .section-title {
+        font-weight: 700;
+        margin: 25px 0 12px;
+        color: #0f172a;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .dark .section-title {
+        color: #e2e8f0;
+    }
+
+    .search-box .section-title {
+        display: flex;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .tooltip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #e5e7eb;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: default;
+    }
+
+    .tooltip .tooltip-content {
+        position: absolute;
+        top: 130%;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 220px;
+        max-width: 280px;
+        background: white;
+        color: #1f2937;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        font-size: 13px;
+        line-height: 1.5;
+        z-index: 10;
+        display: none;
+    }
+
+    .tooltip:hover .tooltip-content {
+        display: block;
+    }
+
+    .tooltip ul {
+        padding-left: 16px;
+        margin: 8px 0 0;
+    }
+
+    .tooltip li {
+        margin-bottom: 6px;
+    }
+
+    .selected-banner {
+        background: #eef2ff;
+        border: 1px solid #dfe3ff;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+        display: none;
+    }
+
+    .selected-banner strong {
+        color: #4338ca;
+    }
+
+    .selected-banner .template-type {
+        color: #374151;
+        font-weight: 600;
+    }
+
+    .name-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 14px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #f9fafb;
+    }
+
+    .dark .name-field {
+        background: #334155;
+        border-color: #475569;
+    }
+
+    .dark .name-field label {
+        color: #f1f5f9;
+    }
+
+    .name-field label {
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .name-field .name-input {
+        width: 100%;
+        max-width: 100%;
+        padding: 14px 16px;
+        font-size: 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        box-sizing: border-box;
+        background: #fff;
+        color: #0f172a;
+    }
+
+    .dark .name-field .name-input {
+        background: #0f172a;
+        border-color: #1e293b;
+        color: #f1f5f9;
+    }
+
+    .name-help {
+        color: #4b5563;
+        font-size: 13px;
+    }
+
+    .search-box {
+        margin: 30px 0;
+    }
+
+    input[type="text"] {
+        width: 70%;
+        max-width: 100%;
+        padding: 15px;
+        font-size: 16px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        box-sizing: border-box;
+        background: #fff;
+        color: #0f172a;
+    }
+
+    .dark input[type="text"] {
+        background: #0f172a;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+
+    button {
+        padding: 15px 30px;
+        font-size: 16px;
+        background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 5px;
+        max-width: 100%;
+        font-weight: 800;
+        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+    }
+
+    button:hover {
+        background: linear-gradient(135deg, #244fdd 0%, #5c8dff 100%);
+    }
+
+    .page-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 10px 0 4px;
+    }
+
+    .nav-arrow {
+        padding: 12px 14px;
+        min-width: 120px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+        color: #2563eb;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .nav-arrow.primary {
+        background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+    }
+
+    .nav-arrow:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .cta-row {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 6px;
+    }
+
+    .cta-row .btn-primary,
+    .cta-row .btn-secondary {
+        flex: 1 1 260px;
+        max-width: 100%;
+    }
+
+    .cta-row .btn-secondary {
+        background: #fff;
+        color: #1f2937;
+        border: 1px solid #d1d5db;
+        box-shadow: none;
+        font-weight: 700;
+    }
+
+    @media (max-width: 640px) {
         .cta-row {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 6px;
+            flex-wrap: nowrap;
         }
+
         .cta-row .btn-primary,
         .cta-row .btn-secondary {
-            flex: 1 1 260px;
+            flex: 0 0 45%;
+            padding: 16px 12px;
+        }
+    }
+
+    @media (max-width: 640px) {
+        body {
+            padding: 14px;
+        }
+
+        .container {
+            padding: 24px 18px;
+        }
+
+        input[type="text"] {
+            width: 100%;
             max-width: 100%;
-        }
-        .cta-row .btn-secondary {
-            background: #fff;
-            color: #1f2937;
-            border: 1px solid #d1d5db;
-            box-shadow: none;
-            font-weight: 700;
-        }
-        @media (max-width: 640px) {
-            .cta-row { flex-wrap: nowrap; }
-            .cta-row .btn-primary,
-            .cta-row .btn-secondary {
-                flex: 0 0 45%;
-                padding: 16px 12px;
-            }
-        }
-        @media (max-width: 640px) {
-            body { padding: 14px; }
-            .container { padding: 24px 18px; }
-            input[type="text"] { width: 100%; max-width: 100%; margin-bottom: 10px; }
-            button { width: 100%; }
-            .toggle-row {
-                flex-direction: row;
-                align-items: center;
-                width: 100%;
-                box-sizing: border-box;
-                gap: 8px;
-            }
-            .toggle-row .switch { margin-left: auto; }
-            .toggle-desc { margin-top: 0; }
-        }
-        .verse-item {
-            padding: 20px;
-            border: 2px solid #eee;
-            border-radius: 10px;
-            margin: 15px 0;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .verse-item:hover {
-            background: #f9f9f9;
-            border-color: #667eea;
-        }
-        .verse-item.selected {
-            border-color: #667eea;
-            background: #e8eaf6;
-        }
-        .verse-reference {
-            font-weight: bold;
-            color: #667eea;
             margin-bottom: 10px;
         }
-        textarea {
-            width: 100%;
-            height: 150px;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-size: 16px;
-            font-family: 'Noto Sans KR', sans-serif;
-            box-sizing: border-box;
-            overflow: hidden;
-            resize: none;
-        }
-        .char-counter {
-            text-align: right;
-            color: #6b7280;
-            font-size: 13px;
-            margin: -4px 2px 6px;
-        }
-        .loading {
-            text-align: center;
-            color: #667eea;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>💌 성경 구절 엽서 보내기</h2>
 
-        <div class="search-box">
-            <div class="section-title" style="margin-top:28px;">성경 구절 검색 및 선택
-                <span class="tooltip">?
-                    <div class="tooltip-content">
-                        <strong>검색 예시</strong>
-                        <ul>
-                            <li><strong>키워드:</strong> 건강, 취업응원, 가족, 사랑</li>
-                            <li><strong>구절:</strong> 예 29:11, 마태복음 10:38</li>
-                            <li><strong>문구:</strong> "내 발에 등이요" → 시편 119편 105절</li>
-                        </ul>
-                    </div>
-                </span>
-            </div>
-            <input type="text" id="keyword" placeholder="키워드/구절/문구를 입력하세요">
-            <button onclick="searchVerses()">구절 찾기</button>
-        </div>
-        
-        <div class="loading" id="loading">🔍 검색 중...</div>
-        <div id="verse-results"></div>
-        <div class="page-nav" id="page-nav" style="display:none;">
-            <button id="prev-page" class="nav-arrow">이전 보기</button>
-            <button id="next-page" class="nav-arrow primary">더 보기</button>
-        </div>
-        
-        <div class="section-title">
-            보여줄 이름
+        button {
+            width: 100%;
+        }
+
+        .toggle-row {
+            flex-direction: row;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+            gap: 8px;
+        }
+
+        .toggle-row .switch {
+            margin-left: auto;
+        }
+
+        .toggle-desc {
+            margin-top: 0;
+        }
+    }
+
+    .verse-item {
+        padding: 20px;
+        border: 2px solid #eee;
+        border-radius: 10px;
+        margin: 15px 0;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #fff;
+    }
+
+    .dark .verse-item {
+        background: #0f172a;
+        border-color: #334155;
+        color: #cbd5e1;
+    }
+
+    .verse-item:hover {
+        background: #f9f9f9;
+        border-color: #667eea;
+    }
+
+    .dark .verse-item:hover {
+        background: #1e293b;
+        border-color: #6c8bff;
+    }
+
+    .verse-item.selected {
+        border-color: #667eea;
+        background: #e8eaf6;
+    }
+
+    .dark .verse-item.selected {
+        border-color: #6c8bff;
+        background: #1e1b4b;
+        color: #f1f5f9;
+    }
+
+    .verse-reference {
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+
+    textarea {
+        width: 100%;
+        height: 150px;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        margin: 20px 0;
+        font-size: 16px;
+        font-family: 'Noto Sans KR', sans-serif;
+        box-sizing: border-box;
+        overflow: hidden;
+        resize: none;
+        background: #fff;
+        color: #0f172a;
+    }
+
+    .dark textarea {
+        background: #0f172a;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+
+    .char-counter {
+        text-align: right;
+        color: #6b7280;
+        font-size: 13px;
+        margin: -4px 2px 6px;
+    }
+
+    .loading {
+        text-align: center;
+        color: #667eea;
+        display: none;
+    }
+</style>
+<div class="container my-8">
+    <h2>💌 성경 구절 엽서 보내기</h2>
+
+    <div class="search-box">
+        <div class="section-title" style="margin-top:28px;">성경 구절 검색 및 선택
             <span class="tooltip">?
                 <div class="tooltip-content">
-                    입력하지 않으면 익명으로 표시됩니다.
+                    <strong>검색 예시</strong>
+                    <ul>
+                        <li><strong>키워드:</strong> 건강, 취업응원, 가족, 사랑</li>
+                        <li><strong>구절:</strong> 예 29:11, 마태복음 10:38</li>
+                        <li><strong>문구:</strong> "내 발에 등이요" → 시편 119편 105절</li>
+                    </ul>
                 </div>
             </span>
         </div>
-        <div class="name-field" style="margin-bottom:18px;">
-            <input type="text" id="sender-name" class="name-input" placeholder="예: 하영, 온유한친구" maxlength="20">
-        </div>
-
-        <div class="section-title">편지 작성 (선택)</div>
-        <div class="char-counter" id="message-counter">0/100자</div>
-        <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요" maxlength="100"></textarea>
-        
-        <div class="cta-row">
-            <button class="btn-primary" onclick="goPreview()">미리보기 & 글씨체 ✨</button>
-            <button class="btn-secondary" onclick="window.location.href='/send/{{ postbox_id }}'">이전</button>
-        </div>
+        <input type="text" id="keyword" placeholder="키워드/구절/문구를 입력하세요">
+        <button onclick="searchVerses()">구절 찾기</button>
     </div>
 
-    <script>
-        let selectedVerse = null;
-        let selectedTemplate = null;
-        let lastQuery = '';
-        let currentPage = 0;
-        let totalPages = 0;
-        const postboxId = "{{ postbox_id }}";
-        const draftKey = `postcardDraft-${postboxId}`;
-        const MAX_MESSAGE_LENGTH = 100;
-        const messageInput = document.getElementById('message');
-        const messageCounter = document.getElementById('message-counter');
-        const preselectedTemplate = {
-            id: "{{ template_id or '' }}",
-            type: "{{ template_type or '' }}",
-            name: "{{ template_name or '' }}"
+    <div class="loading" id="loading">🔍 검색 중...</div>
+    <div id="verse-results"></div>
+    <div class="page-nav" id="page-nav" style="display:none;">
+        <button id="prev-page" class="nav-arrow">이전 보기</button>
+        <button id="next-page" class="nav-arrow primary">더 보기</button>
+    </div>
+
+    <div class="section-title">
+        보여줄 이름
+        <span class="tooltip">?
+            <div class="tooltip-content">
+                입력하지 않으면 익명으로 표시됩니다.
+            </div>
+        </span>
+    </div>
+    <div class="name-field" style="margin-bottom:18px;">
+        <input type="text" id="sender-name" class="name-input" placeholder="예: 온유한친구" maxlength="20">
+    </div>
+
+    <div class="section-title">편지 작성 (선택)</div>
+    <div class="char-counter" id="message-counter">0/100자</div>
+    <textarea id="message" placeholder="💭 선택사항: 함께 보낼 편지를 작성하세요" maxlength="100"></textarea>
+
+    <div class="cta-row">
+        <button class="btn-primary" onclick="goPreview()">미리보기 & 글씨체 ✨</button>
+        <button class="btn-secondary" onclick="window.location.href='/send/{{ postbox_id }}'">이전</button>
+    </div>
+</div>
+
+<script>
+    let selectedVerse = null;
+    let selectedTemplate = null;
+    let lastQuery = '';
+    let currentPage = 0;
+    let totalPages = 0;
+    const postboxId = "{{ postbox_id }}";
+    const draftKey = `postcardDraft-${postboxId}`;
+    const MAX_MESSAGE_LENGTH = 100;
+    const messageInput = document.getElementById('message');
+    const messageCounter = document.getElementById('message-counter');
+    const preselectedTemplate = {
+        id: "{{ template_id or '' }}",
+        type: "{{ template_type or '' }}",
+        name: "{{ template_name or '' }}"
+    };
+    const hasQueryTemplate = !!(preselectedTemplate.id || preselectedTemplate.type);
+    const TYPE_LABEL = { 0: '엽서' };
+    const TYPE_MAP = { '엽서': 0 };
+    const templateAssets = {
+        1: "{{ url_for('static', filename='images/postcards/postcard1.jpg') }}",
+        2: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}",
+        3: "{{ url_for('static', filename='images/postcards/postcard3.jpg') }}",
+        4: "{{ url_for('static', filename='images/postcards/postcard4.jpg') }}",
+        5: "{{ url_for('static', filename='images/postcards/postcard5.jpg') }}",
+        6: "{{ url_for('static', filename='images/postcards/postcard6.jpg') }}",
+    };
+    const defaultTemplate = { id: 1, type: 0, name: '항공 엽서', typeLabel: '엽서' };
+    function normalizeTemplate(tpl = {}) {
+        const rawId = tpl.id;
+        let id = parseInt(String(rawId).replace(/\D+/g, ''), 10);
+        if (!id) id = 1;
+        typeInt = 0;
+        const typeLabel = TYPE_LABEL[typeInt] || '엽서';
+        return {
+            id,
+            type: typeInt,
+            typeLabel,
+            name: tpl.name || `템플릿 ${id}`,
         };
-        const hasQueryTemplate = !!(preselectedTemplate.id || preselectedTemplate.type);
-        const TYPE_LABEL = { 0: '엽서', 1: '편지지' };
-        const TYPE_MAP = { '엽서': 0, '편지지': 1 };
-        const templateAssets = {
-            1: "{{ url_for('static', filename='images/postcards/postcard1.jpg') }}",
-            2: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}",
-            3: "{{ url_for('static', filename='images/postcards/postcard3.jpg') }}",
-            4: "{{ url_for('static', filename='images/postcards/postcard4.jpg') }}",
-            5: "{{ url_for('static', filename='images/postcards/postcard5.jpg') }}",
-            6: "{{ url_for('static', filename='images/postcards/postcard6.jpg') }}",
-            7: "{{ url_for('static', filename='images/postcards/postcard7.jpg') }}",
-            8: "{{ url_for('static', filename='images/postcards/postcard8.jpg') }}",
-            9: "{{ url_for('static', filename='images/postcards/postcard9.jpg') }}",
-        };
-        const defaultTemplate = { id: 1, type: 0, name: '항공 엽서', typeLabel: '엽서' };
-        function normalizeTemplate(tpl = {}) {
-            const rawId = tpl.id;
-            let id = parseInt(String(rawId).replace(/\D+/g, ''), 10);
-            if (!id) id = 1;
-            const rawType = tpl.type;
-            let typeInt = 0;
-            if (typeof rawType === 'string') {
-                const num = parseInt(rawType, 10);
-                if (!Number.isNaN(num)) typeInt = num;
-                else typeInt = TYPE_MAP[rawType] ?? 0;
-            } else {
-                typeInt = rawType ?? 0;
-            }
-            typeInt = typeInt === 1 ? 1 : 0;
-            const typeLabel = TYPE_LABEL[typeInt] || '엽서';
-            return {
-                id,
-                type: typeInt,
-                typeLabel,
-                name: tpl.name || `템플릿 ${id}`,
-            };
+    }
+
+    function setTemplateFromQuery() {
+        const tpl = defaultTemplate;
+        selectedTemplate = tpl;
+    }
+
+    const pageNav = document.getElementById('page-nav');
+    const prevPageBtn = document.getElementById('prev-page');
+    const nextPageBtn = document.getElementById('next-page');
+
+    async function fetchVerses(page = 0) {
+        const response = await fetch('/api/recommend-verses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: lastQuery, page })
+        });
+        return response.json();
+    }
+
+    async function searchVerses() {
+        const query = document.getElementById('keyword').value;
+        if (!query) {
+            alert('검색어를 입력해주세요');
+            return;
+        }
+        lastQuery = query;
+        currentPage = 0;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('verse-results').innerHTML = '';
+
+        try {
+            const data = await fetchVerses(currentPage);
+            totalPages = data.total_pages || (data.has_more ? currentPage + 2 : 1);
+            displayVerses(data.verses || []);
+            updatePager(data.has_more, true);
+        } catch (e) {
+            alert('검색 중 오류가 발생했습니다: ' + e.message);
         }
 
-        function setTemplateFromQuery() {
-            const tpl = preselectedTemplate.id ? normalizeTemplate(preselectedTemplate) : defaultTemplate;
-            selectedTemplate = tpl;
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    async function goPage(delta) {
+        if (!lastQuery) return;
+        const target = currentPage + delta;
+        if (target < 0) return;
+        currentPage = target;
+        document.getElementById('loading').style.display = 'block';
+        try {
+            const data = await fetchVerses(currentPage);
+            totalPages = data.total_pages || (data.has_more ? currentPage + 2 : currentPage + 1);
+            displayVerses(data.verses || []);
+            updatePager(data.has_more, false);
+        } catch (e) {
+            alert('페이지 이동 중 오류가 발생했습니다: ' + e.message);
         }
-        
-        const pageNav = document.getElementById('page-nav');
-        const prevPageBtn = document.getElementById('prev-page');
-        const nextPageBtn = document.getElementById('next-page');
-        
-        async function fetchVerses(page = 0) {
-            const response = await fetch('/api/recommend-verses', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ query: lastQuery, page })
-            });
-            return response.json();
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    function updatePager(hasMoreFlag, firstPage = false) {
+        const moreAvailable = !!hasMoreFlag;
+        const hasPrev = currentPage > 0;
+        // 첫 페이지에서는 '더 보기'만 노출, 이전 숨김
+        pageNav.style.display = (hasPrev || moreAvailable) ? 'flex' : 'none';
+        prevPageBtn.style.display = hasPrev ? 'inline-block' : 'none';
+        nextPageBtn.style.display = moreAvailable ? 'inline-block' : 'none';
+    }
+
+    function displayVerses(verses) {
+        const container = document.getElementById('verse-results');
+        container.innerHTML = '';
+
+        if (verses.length === 0) {
+            container.innerHTML = '<p>검색 결과가 없습니다.</p>';
+            return;
         }
 
-        async function searchVerses() {
-            const query = document.getElementById('keyword').value;
-            if (!query) {
-                alert('검색어를 입력해주세요');
-                return;
-            }
-            lastQuery = query;
-            currentPage = 0;
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('verse-results').innerHTML = '';
-            
-            try {
-                const data = await fetchVerses(currentPage);
-                totalPages = data.total_pages || (data.has_more ? currentPage + 2 : 1);
-                displayVerses(data.verses || []);
-                updatePager(data.has_more, true);
-            } catch (e) {
-                alert('검색 중 오류가 발생했습니다: ' + e.message);
-            }
-            
-            document.getElementById('loading').style.display = 'none';
-        }
-
-        async function goPage(delta) {
-            if (!lastQuery) return;
-            const target = currentPage + delta;
-            if (target < 0) return;
-            currentPage = target;
-            document.getElementById('loading').style.display = 'block';
-            try {
-                const data = await fetchVerses(currentPage);
-                totalPages = data.total_pages || (data.has_more ? currentPage + 2 : currentPage + 1);
-                displayVerses(data.verses || []);
-                updatePager(data.has_more, false);
-            } catch (e) {
-                alert('페이지 이동 중 오류가 발생했습니다: ' + e.message);
-            }
-            document.getElementById('loading').style.display = 'none';
-        }
-
-        function updatePager(hasMoreFlag, firstPage = false) {
-            const moreAvailable = !!hasMoreFlag;
-            const hasPrev = currentPage > 0;
-            // 첫 페이지에서는 '더 보기'만 노출, 이전 숨김
-            pageNav.style.display = (hasPrev || moreAvailable) ? 'flex' : 'none';
-            prevPageBtn.style.display = hasPrev ? 'inline-block' : 'none';
-            nextPageBtn.style.display = moreAvailable ? 'inline-block' : 'none';
-        }
-
-        function displayVerses(verses) {
-            const container = document.getElementById('verse-results');
-            container.innerHTML = '';
-            
-            if (verses.length === 0) {
-                container.innerHTML = '<p>검색 결과가 없습니다.</p>';
-                return;
-            }
-            
-            verses.forEach((verse) => {
-                const div = document.createElement('div');
-                div.className = 'verse-item';
-                div.innerHTML = `
+        verses.forEach((verse) => {
+            const div = document.createElement('div');
+            div.className = 'verse-item';
+            div.innerHTML = `
                     <div class="verse-reference">📖 ${verse.reference}</div>
                     <div>${verse.text}</div>
                 `;
-                div.onclick = () => selectVerse(verse, div);
-                container.appendChild(div);
-            });
-        }
-        
-        function selectVerse(verse, element) {
-            document.querySelectorAll('.verse-item').forEach(el => 
-                el.classList.remove('selected')
-            );
-            element.classList.add('selected');
-            selectedVerse = verse;
-        }
-
-        function normalizeSingleLine(text) {
-            return (text || '').replace(/\r?\n+/g, ' ');
-        }
-
-        function adjustMessageHeight() {
-            messageInput.style.height = 'auto';
-            messageInput.style.height = `${messageInput.scrollHeight}px`;
-        }
-
-        function updateMessageCounter() {
-            const length = messageInput.value.length;
-            messageCounter.textContent = `${length}/${MAX_MESSAGE_LENGTH}자`;
-        }
-
-        messageInput.addEventListener('input', () => {
-            const normalized = normalizeSingleLine(messageInput.value);
-            if (normalized !== messageInput.value) {
-                messageInput.value = normalized;
-            }
-            if (messageInput.value.length > MAX_MESSAGE_LENGTH) {
-                messageInput.value = messageInput.value.slice(0, MAX_MESSAGE_LENGTH);
-            }
-            adjustMessageHeight();
-            updateMessageCounter();
+            div.onclick = () => selectVerse(verse, div);
+            container.appendChild(div);
         });
-        
-        function goPreview() {
-            if (!selectedVerse) {
-                alert('성경 구절을 먼저 선택해주세요! 📖');
-                return;
-            }
-            
-            const message = normalizeSingleLine(messageInput.value);
-            if (message.length > MAX_MESSAGE_LENGTH) {
-                alert(`편지는 최대 ${MAX_MESSAGE_LENGTH}자까지 작성할 수 있어요.`);
-                return;
-            }
-            if (!validateBeforeSend()) {
-                return;
-            }
-            const senderNameInput = document.getElementById('sender-name');
-            const senderName = senderNameInput ? senderNameInput.value.trim() : '';
-            const draft = {
-                postbox_id: postboxId,
-                template: selectedTemplate,
-                sender_name: senderName,
-                is_anonymous: !senderName,
-                verse: selectedVerse,
-                message
-            };
-            try {
-                sessionStorage.setItem(draftKey, JSON.stringify(draft));
-            } catch (e) {
-                console.warn('draft save failed', e);
-            }
-            window.location.href = `/send/${postboxId}/preview`;
+    }
+
+    function selectVerse(verse, element) {
+        document.querySelectorAll('.verse-item').forEach(el =>
+            el.classList.remove('selected')
+        );
+        element.classList.add('selected');
+        selectedVerse = verse;
+    }
+
+    function normalizeSingleLine(text) {
+        return (text || '').replace(/\r?\n+/g, ' ');
+    }
+
+    function adjustMessageHeight() {
+        messageInput.style.height = 'auto';
+        messageInput.style.height = `${messageInput.scrollHeight}px`;
+    }
+
+    function updateMessageCounter() {
+        const length = messageInput.value.length;
+        messageCounter.textContent = `${length}/${MAX_MESSAGE_LENGTH}자`;
+    }
+
+    messageInput.addEventListener('input', () => {
+        const normalized = normalizeSingleLine(messageInput.value);
+        if (normalized !== messageInput.value) {
+            messageInput.value = normalized;
         }
-        
-        // Enter 키로 검색
-        document.getElementById('keyword').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                searchVerses();
-            }
-        });
-        prevPageBtn.addEventListener('click', () => goPage(-1));
-        nextPageBtn.addEventListener('click', () => goPage(1));
-
-        setTemplateFromQuery();
-
-        (function restoreDraft() {
-            try {
-                const raw = sessionStorage.getItem(draftKey);
-                if (!raw) return;
-                const saved = JSON.parse(raw);
-                if (saved.message) {
-                    const normalized = normalizeSingleLine(saved.message);
-                    messageInput.value = normalized.slice(0, MAX_MESSAGE_LENGTH);
-                }
-                if (saved.sender_name) {
-                    const senderNameInput = document.getElementById('sender-name');
-                    if (senderNameInput) senderNameInput.value = saved.sender_name;
-                }
-                const savedTemplate = saved.template ? normalizeTemplate(saved.template) : null;
-                const queryTemplate = hasQueryTemplate ? normalizeTemplate(preselectedTemplate) : null;
-
-                // 쿼리로 넘어온 템플릿이 있으면 saved 템플릿을 덮어써서 이전 선택이 남는 문제를 방지
-                if (queryTemplate) {
-                    selectedTemplate = queryTemplate;
-                    saved.template = queryTemplate;
-                    try {
-                        sessionStorage.setItem(draftKey, JSON.stringify(saved));
-                    } catch (e) {
-                        console.warn('draft overwrite failed', e);
-                    }
-                } else if (savedTemplate) {
-                    selectedTemplate = savedTemplate;
-                }
-                // 구절은 미리보기에서 돌아왔을 때도 새로 선택하도록 초기화
-                selectedVerse = null;
-                updateMessageCounter();
-                adjustMessageHeight();
-            } catch (e) {
-                console.warn('draft restore failed', e);
-            }
-        })();
-        updateMessageCounter();
+        if (messageInput.value.length > MAX_MESSAGE_LENGTH) {
+            messageInput.value = messageInput.value.slice(0, MAX_MESSAGE_LENGTH);
+        }
         adjustMessageHeight();
+        updateMessageCounter();
+    });
 
-        
-               // ============================================
-        // 1. jsDelivr CDN을 통한 금칙어 리스트 로드
-        // ============================================
-        let profanityList = [];
-        
-        // 1,143개의 한국어 욕설 데이터 로드
-        fetch('https://cdn.jsdelivr.net/gh/hlog2e/bad_word_list@master/word_list.json')
-            .then(response => response.json())
-            .then(data => {
-                profanityList = normalizeProfanityList(data);
-                if (profanityList.length === 0) {
-                    profanityList = getBasicProfanityList();
+    function goPreview() {
+        if (!selectedVerse) {
+            alert('성경 구절을 먼저 선택해주세요! 📖');
+            return;
+        }
+
+        const message = (messageInput.value || '').trim();
+        if (message.length > MAX_MESSAGE_LENGTH) {
+            alert(`편지는 최대 ${MAX_MESSAGE_LENGTH}자까지 작성할 수 있어요.`);
+            return;
+        }
+        if (!validateBeforeSend()) {
+            return;
+        }
+        const senderNameInput = document.getElementById('sender-name');
+        const senderName = senderNameInput ? senderNameInput.value.trim() : '';
+        const draft = {
+            postbox_id: postboxId,
+            sender_name: senderName,
+            is_anonymous: !senderName,
+            verse: selectedVerse,
+            message: message
+        };
+        try {
+            sessionStorage.setItem(draftKey, JSON.stringify(draft));
+        } catch (e) {
+            console.warn('draft save failed', e);
+        }
+        window.location.href = `/send/${postboxId}/preview`;
+    }
+
+    // Enter 키로 검색
+    document.getElementById('keyword').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchVerses();
+        }
+    });
+    prevPageBtn.addEventListener('click', () => goPage(-1));
+    nextPageBtn.addEventListener('click', () => goPage(1));
+
+    setTemplateFromQuery();
+
+    (function restoreDraft() {
+        try {
+            const raw = sessionStorage.getItem(draftKey);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (saved.message) {
+                const normalized = normalizeSingleLine(saved.message);
+                messageInput.value = normalized.slice(0, MAX_MESSAGE_LENGTH);
+            }
+            if (saved.sender_name) {
+                const senderNameInput = document.getElementById('sender-name');
+                if (senderNameInput) senderNameInput.value = saved.sender_name;
+            }
+            const savedTemplate = saved.template ? normalizeTemplate(saved.template) : null;
+            const queryTemplate = hasQueryTemplate ? normalizeTemplate(preselectedTemplate) : null;
+
+            // 쿼리로 넘어온 템플릿이 있으면 saved 템플릿을 덮어써서 이전 선택이 남는 문제를 방지
+            if (queryTemplate) {
+                selectedTemplate = queryTemplate;
+                saved.template = queryTemplate;
+                try {
+                    sessionStorage.setItem(draftKey, JSON.stringify(saved));
+                } catch (e) {
+                    console.warn('draft overwrite failed', e);
                 }
-                console.log(`✅ 금칙어 ${profanityList.length}개 로드 완료`);
-            })
-            .catch(error => {
-                console.error('⚠️ 금칙어 리스트 로드 실패:', error);
-                // 로드 실패 시 기본 금칙어 사용
+            } else if (savedTemplate) {
+                selectedTemplate = savedTemplate;
+            }
+            // 구절은 미리보기에서 돌아왔을 때도 새로 선택하도록 초기화
+            selectedVerse = null;
+            updateMessageCounter();
+            adjustMessageHeight();
+        } catch (e) {
+            console.warn('draft restore failed', e);
+        }
+    })();
+    updateMessageCounter();
+    adjustMessageHeight();
+
+
+    // ============================================
+    // 1. jsDelivr CDN을 통한 금칙어 리스트 로드
+    // ============================================
+    let profanityList = [];
+
+    // 1,143개의 한국어 욕설 데이터 로드
+    fetch('https://cdn.jsdelivr.net/gh/hlog2e/bad_word_list@master/word_list.json')
+        .then(response => response.json())
+        .then(data => {
+            profanityList = normalizeProfanityList(data);
+            if (profanityList.length === 0) {
                 profanityList = getBasicProfanityList();
-            });
+            }
+            console.log(`✅ 금칙어 ${profanityList.length}개 로드 완료`);
+        })
+        .catch(error => {
+            console.error('⚠️ 금칙어 리스트 로드 실패:', error);
+            // 로드 실패 시 기본 금칙어 사용
+            profanityList = getBasicProfanityList();
+        });
 
-        // ============================================
-        // 2. 기본 금칙어 리스트 (백업용)
-        // ============================================
-        function getBasicProfanityList() {
-            return [
-                "시발", "시벌", "씨발", "씨벌", "시바", "씨바", "시팔", "씨팔",
-                "개새", "개색", "새끼", "쌔끼", "썌끼", "색히", "색기",
-                "병신", "븅신", "뷰신", "빙신", "멍청", "또라이", "미친",
-                "ㅅㅂ", "ㅆㅂ", "ㅄ", "ㅂㅅ", "ㅁㅊ", "ㄱㅅㄲ",
-                "좆", "좃", "졷", "존나", "존만", "졸라", "지랄", "염병",
-                "개자식", "개놈", "개년", "걸레", "창녀", "썅", "엠창",
-                "애미", "애비", "에미", "에비", "엄창", "육시랄",
-                "닥쳐", "꺼져", "죽어", "뒤져", "디져", "뒤지", "디지",
-                "엿먹", "젠장", "씹", "씹새", "씹세", "씹쌔",
-                "호로", "퍅", "퍽", "후레", "쌍놈", "쌍년"
-            ];
-        }
-
-        function normalizeProfanityList(data) {
-            if (Array.isArray(data)) return data;
-            if (data && Array.isArray(data.words)) return data.words;
-            if (data && Array.isArray(data.bad_words)) return data.bad_words;
-            if (data && Array.isArray(data.badwords)) return data.badwords;
-            return [];
-        }
-
-        // ============================================
-        // 3. 정규식 기반 변형 욕설 패턴
-        // ============================================
-        const profanityPatterns = [
-            /[시씨쉬싯].{0,2}[발벌빨뻘]/g,
-            /[개]{1}[새색섹쌔].{0,1}[끼키]/g,
-            /[병븅빙].{0,1}[신씬]/g,
-            /ㅅ.{0,1}ㅂ/g,
-            /ㅂ.{0,1}ㅅ/g,
-            /[존좆].{0,1}[나만]/g,
-            /[지쥐].{0,1}[랄럴]/g,
-            /[닥됙].{0,1}[쳐처]/g,
-            /[꺼껴].{0,1}[져저]/g,
-            /[죽쥭].{0,1}[어여]/g,
-            /[뒤되].{0,1}[져저지]/g,
-            /[미믜].{0,1}[친]/g,
-            /[애앤에엔].{0,1}[미비]/g,
-            /[씹쓉].{0,2}[새색]/g
+    // ============================================
+    // 2. 기본 금칙어 리스트 (백업용)
+    // ============================================
+    function getBasicProfanityList() {
+        return [
+            "시발", "시벌", "씨발", "씨벌", "시바", "씨바", "시팔", "씨팔",
+            "개새", "개색", "새끼", "쌔끼", "썌끼", "색히", "색기",
+            "병신", "븅신", "뷰신", "빙신", "멍청", "또라이", "미친",
+            "ㅅㅂ", "ㅆㅂ", "ㅄ", "ㅂㅅ", "ㅁㅊ", "ㄱㅅㄲ",
+            "좆", "좃", "졷", "존나", "존만", "졸라", "지랄", "염병",
+            "개자식", "개놈", "개년", "걸레", "창녀", "썅", "엠창",
+            "애미", "애비", "에미", "에비", "엄창", "육시랄",
+            "닥쳐", "꺼져", "죽어", "뒤져", "디져", "뒤지", "디지",
+            "엿먹", "젠장", "씹", "씹새", "씹세", "씹쌔",
+            "호로", "퍅", "퍽", "후레", "쌍놈", "쌍년"
         ];
+    }
 
-        // ============================================
-        // 4. 욕설 감지 함수 (고급)
-        // ============================================
-        function findProfanity(text) {
-            if (!text || text.trim() === '') return [];
-            
-            // 텍스트 정규화 (공백, 특수문자 제거)
-            const normalizedText = text.toLowerCase()
-                .replace(/\s/g, '')
-                .replace(/[^\w가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
-            const matches = new Set();
-            
-            // 1) 정규식 패턴 매칭 (변형 욕설 감지)
-            for (let pattern of profanityPatterns) {
-                const safePattern = new RegExp(pattern.source, pattern.flags.replace('g', ''));
-                const match = safePattern.exec(normalizedText);
-                if (match) {
-                    matches.add(match[0]);
-                }
+    function normalizeProfanityList(data) {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.words)) return data.words;
+        if (data && Array.isArray(data.bad_words)) return data.bad_words;
+        if (data && Array.isArray(data.badwords)) return data.badwords;
+        return [];
+    }
+
+    // ============================================
+    // 3. 정규식 기반 변형 욕설 패턴
+    // ============================================
+    const profanityPatterns = [
+        /[시씨쉬싯].{0,2}[발벌빨뻘]/g,
+        /[개]{1}[새색섹쌔].{0,1}[끼키]/g,
+        /[병븅빙].{0,1}[신씬]/g,
+        /ㅅ.{0,1}ㅂ/g,
+        /ㅂ.{0,1}ㅅ/g,
+        /[존좆].{0,1}[나만]/g,
+        /[지쥐].{0,1}[랄럴]/g,
+        /[닥됙].{0,1}[쳐처]/g,
+        /[꺼껴].{0,1}[져저]/g,
+        /[죽쥭].{0,1}[어여]/g,
+        /[뒤되].{0,1}[져저지]/g,
+        /[미믜].{0,1}[친]/g,
+        /[애앤에엔].{0,1}[미비]/g,
+        /[씹쓉].{0,2}[새색]/g
+    ];
+
+    // ============================================
+    // 4. 욕설 감지 함수 (고급)
+    // ============================================
+    function findProfanity(text) {
+        if (!text || text.trim() === '') return [];
+
+        // 텍스트 정규화 (공백, 특수문자 제거)
+        const normalizedText = text.toLowerCase()
+            .replace(/\s/g, '')
+            .replace(/[^\w가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
+        const matches = new Set();
+
+        // 1) 정규식 패턴 매칭 (변형 욕설 감지)
+        for (let pattern of profanityPatterns) {
+            const safePattern = new RegExp(pattern.source, pattern.flags.replace('g', ''));
+            const match = safePattern.exec(normalizedText);
+            if (match) {
+                matches.add(match[0]);
             }
-            
-            // 2) 금칙어 리스트 매칭
-            for (let word of (profanityList || [])) {
-                const normalizedWord = word.toLowerCase().replace(/\s/g, '');
-                if (normalizedText.includes(normalizedWord)) {
-                    matches.add(word);
-                }
-            }
-            
-            // 3) 자음/모음 분리 욕설 감지 (예: ㅅㅂ, ㄱㅅㄲ)
-            const consonantText = extractConsonants(text);
-            const forbiddenConsonants = ['ㅅㅂ', 'ㅆㅂ', 'ㅄ', 'ㅂㅅ', 'ㄱㅅㄲ', 'ㅁㅊ'];
-            for (let consonant of forbiddenConsonants) {
-                if (consonantText.includes(consonant)) {
-                    matches.add(consonant);
-                }
-            }
-            
-            return Array.from(matches);
         }
 
-        function containsProfanity(text) {
-            return findProfanity(text).length > 0;
+        // 2) 금칙어 리스트 매칭
+        for (let word of (profanityList || [])) {
+            const normalizedWord = word.toLowerCase().replace(/\s/g, '');
+            if (normalizedText.includes(normalizedWord)) {
+                matches.add(word);
+            }
         }
 
-        // ============================================
-        // 5. 한글 자음 추출 함수
-        // ============================================
-        function extractConsonants(text) {
-            const CHOSUNG_LIST = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-            let result = '';
-            
-            for (let char of text) {
-                const code = char.charCodeAt(0) - 44032;
-                if (code >= 0 && code <= 11171) {
-                    result += CHOSUNG_LIST[Math.floor(code / 588)];
-                } else if (CHOSUNG_LIST.includes(char)) {
-                    result += char;
+        // 3) 자음/모음 분리 욕설 감지 (예: ㅅㅂ, ㄱㅅㄲ)
+        const consonantText = extractConsonants(text);
+        const forbiddenConsonants = ['ㅅㅂ', 'ㅆㅂ', 'ㅄ', 'ㅂㅅ', 'ㄱㅅㄲ', 'ㅁㅊ'];
+        for (let consonant of forbiddenConsonants) {
+            if (consonantText.includes(consonant)) {
+                matches.add(consonant);
+            }
+        }
+
+        return Array.from(matches);
+    }
+
+    function containsProfanity(text) {
+        return findProfanity(text).length > 0;
+    }
+
+    // ============================================
+    // 5. 한글 자음 추출 함수
+    // ============================================
+    function extractConsonants(text) {
+        const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+        let result = '';
+
+        for (let char of text) {
+            const code = char.charCodeAt(0) - 44032;
+            if (code >= 0 && code <= 11171) {
+                result += CHOSUNG_LIST[Math.floor(code / 588)];
+            } else if (CHOSUNG_LIST.includes(char)) {
+                result += char;
+            }
+        }
+        return result;
+    }
+
+    // ============================================
+    // 6. 실시간 입력 검증
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function () {
+        const senderNameInput = document.getElementById('sender-name');
+        const letterContentInput = document.getElementById('message');
+
+        // 보여줄 이름 검증
+        if (senderNameInput) {
+            senderNameInput.addEventListener('input', function (e) {
+                const matches = findProfanity(e.target.value);
+                if (matches.length > 0) {
+                    alert(`⚠️ 부적절한 표현이 포함되어 있습니다.\n금칙어: ${matches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
+                    e.target.value = e.target.value.slice(0, -1);
+                    e.target.style.borderColor = '#e74c3c';
+                } else {
+                    e.target.style.borderColor = '';
                 }
-            }
-            return result;
+            });
         }
 
-        // ============================================
-        // 6. 실시간 입력 검증
-        // ============================================
-        document.addEventListener('DOMContentLoaded', function() {
-            const senderNameInput = document.getElementById('sender-name');
-            const letterContentInput = document.getElementById('message');
-            
-            // 보여줄 이름 검증
-            if (senderNameInput) {
-                senderNameInput.addEventListener('input', function(e) {
-                    const matches = findProfanity(e.target.value);
-                    if (matches.length > 0) {
-                        alert(`⚠️ 부적절한 표현이 포함되어 있습니다.\n금칙어: ${matches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
-                        e.target.value = e.target.value.slice(0, -1);
-                        e.target.style.borderColor = '#e74c3c';
-                    } else {
-                        e.target.style.borderColor = '';
-                    }
-                });
-            }
-            
-            // 편지 내용 검증
-            if (letterContentInput) {
-                letterContentInput.addEventListener('input', function(e) {
-                    const matches = findProfanity(e.target.value);
-                    if (matches.length > 0) {
-                        alert(`⚠️ 부적절한 표현이 포함되어 있습니다.\n금칙어: ${matches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
-                        e.target.value = e.target.value.slice(0, -1);
-                        e.target.style.borderColor = '#e74c3c';
-                    } else {
-                        e.target.style.borderColor = '';
-                    }
-                });
-            }
-        });
+        // 편지 내용 검증
+        if (letterContentInput) {
+            letterContentInput.addEventListener('input', function (e) {
+                const matches = findProfanity(e.target.value);
+                if (matches.length > 0) {
+                    alert(`⚠️ 부적절한 표현이 포함되어 있습니다.\n금칙어: ${matches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
+                    e.target.value = e.target.value.slice(0, -1);
+                    e.target.style.borderColor = '#e74c3c';
+                } else {
+                    e.target.style.borderColor = '';
+                }
+            });
+        }
+    });
 
-        // ============================================
-        // 7. 전송 전 최종 검증
-        // ============================================
-        function validateBeforeSend() {
-            const senderName = document.getElementById('sender-name')?.value || '';
-            const letterContent = document.getElementById('message')?.value || '';
-            
-            const senderMatches = findProfanity(senderName);
-            if (senderMatches.length > 0) {
-                alert(`⚠️ 보내는 사람 이름에 부적절한 표현이 포함되어 있습니다.\n금칙어: ${senderMatches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
-                return false;
-            }
-            
-            const letterMatches = findProfanity(letterContent);
-            if (letterMatches.length > 0) {
-                alert(`⚠️ 편지 내용에 부적절한 표현이 포함되어 있습니다.\n금칙어: ${letterMatches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
-                return false;
-            }
-            
-            return true;
+    // ============================================
+    // 7. 전송 전 최종 검증
+    // ============================================
+    function validateBeforeSend() {
+        const senderName = document.getElementById('sender-name')?.value || '';
+        const letterContent = document.getElementById('message')?.value || '';
+
+        const senderMatches = findProfanity(senderName);
+        if (senderMatches.length > 0) {
+            alert(`⚠️ 보내는 사람 이름에 부적절한 표현이 포함되어 있습니다.\n금칙어: ${senderMatches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
+            return false;
         }
 
-        // ============================================
-        // 8. 기존 전송 버튼에 검증 추가
-        // ============================================
-        // 전송 버튼을 찾아서 클릭 이벤트에 검증 함수 연결
-        document.addEventListener('DOMContentLoaded', function() {
-            const sendButton = document.querySelector('button[type="submit"]') || 
-                             document.querySelector('.send-button') ||
-                             document.querySelector('#sendButton');
-            
-            if (sendButton) {
-                sendButton.addEventListener('click', function(e) {
-                    if (!validateBeforeSend()) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return false;
-                    }
-                });
-            }
-        });
-    </script>
+        const letterMatches = findProfanity(letterContent);
+        if (letterMatches.length > 0) {
+            alert(`⚠️ 편지 내용에 부적절한 표현이 포함되어 있습니다.\n금칙어: ${letterMatches.join(', ')}\n하나님께서 기뻐하시는 언어를 사용해주세요.`);
+            return false;
+        }
+
+        return true;
+    }
+
+    // ============================================
+    // 8. 기존 전송 버튼에 검증 추가
+    // ============================================
+    // 전송 버튼을 찾아서 클릭 이벤트에 검증 함수 연결
+    document.addEventListener('DOMContentLoaded', function () {
+        const sendButton = document.querySelector('button[type="submit"]') ||
+            document.querySelector('.send-button') ||
+            document.querySelector('#sendButton');
+
+        if (sendButton) {
+            sendButton.addEventListener('click', function (e) {
+                if (!validateBeforeSend()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            });
+        }
+    });
+</script>
 </body>
+
 </html>
+{% endblock %}

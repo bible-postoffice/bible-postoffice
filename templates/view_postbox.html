@@ -51,9 +51,7 @@
             </p>
         </div>
         {% else %}
-        <div class="mt-6 text-slate-600 dark:text-slate-300">
-            현재 <span class="{{theme}} font-bold text-2xl">{{ postcard_count }}</span>개의 편지가 담겨있어요!
-        </div>
+        현재 <span class="{{theme}} font-bold text-2xl">{{ postcard_count }}</span>개의 엽서가 담겨있어요!
         {% endif %}
     </div>
 
@@ -62,9 +60,9 @@
 
         {% if postcard_count > 0 %}
         {% if is_opened %}
-        <button onclick="location.href='/postbox/{{ url_path }}/letters'"
+        <button onclick="location.href='{{ url_for('postbox.view_postcards', url_path=url_path) }}'"
             class="w-full py-5 bg-accent text-slate-900 rounded-2xl font-bold  {{ theme }} text-xl shadow-xl hover:scale-[1.02] transition-all">
-            📩 우체통 열기 ({{ postcard_count }}개의 편지)
+            📩 우체통 열기 ({{ postcard_count }}개의 엽서)
         </button>
         {% else %}
         <div class="bg-slate-100 dark:bg-slate-800 p-6 rounded-3xl border-2 border-dashed border-slate-300">
@@ -72,7 +70,7 @@
             <div id="countdown" class="text-3xl font-black tracking-widest text-primary">00:00:00:00</div>
             <p class="mt-4 text-xs text-slate-400 font-medium">
                 {% set date_parts = end_date.split('-') %}
-                편지는 {{ date_parts[1]|int }}월 {{ date_parts[2]|int }}일에 열어볼 수 있어요!
+                엽서는 {{ date_parts[1]|int }}월 {{ date_parts[2]|int }}일에 열어볼 수 있어요!
             </p>
         </div>
         {% endif %}
@@ -243,7 +241,7 @@
             alert("로그인 설정이 준비되지 않았습니다.");
             return;
         }
-        sessionStorage.setItem('postboxReturnTo', window.location.pathname);
+        sessionStorage.setItem('manual_login', 'true'); sessionStorage.setItem('postboxReturnTo', window.location.pathname);
         sessionStorage.removeItem(`postboxAuthChecked-{{ postbox_id }}`);
         await window.supabaseApp.auth.signInWithOAuth({
             provider: 'google',
@@ -261,7 +259,7 @@
             alert("로그인 설정이 준비되지 않았습니다.");
             return;
         }
-        sessionStorage.setItem('postboxReturnTo', window.location.pathname);
+        sessionStorage.setItem('manual_login', 'true'); sessionStorage.setItem('postboxReturnTo', window.location.pathname);
         sessionStorage.removeItem(`postboxAuthChecked-{{ postbox_id }}`);
         await window.supabaseApp.auth.signInWithOAuth({
             provider: 'kakao',
@@ -344,6 +342,14 @@
                         isLoggedIn = true;
                         closeLoginModal();
                         updateLogoutVisibility();
+
+                        // 서버에서 준 리다이렉트 주소가 현재와 다르면 이동
+                        const targetUrl = result.redirect_url;
+                        if (targetUrl && !window.location.href.includes(targetUrl)) {
+                            window.location.href = targetUrl;
+                            return;
+                        }
+
                         if (!isOwner) {
                             alert("로그인이 완료되었습니다. 다시 편지 남기기를 눌러주세요.");
                         }

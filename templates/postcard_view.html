@@ -1,474 +1,564 @@
 {% extends 'base.html' %}
-
 {% block content %}
 <title>엽서 보기</title>
 <style>
-    /* ============ 엽서 템플릿: 상하 정석 배치 (Style 1) ============ */
-    .card.postcard .overlay {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        /* 중앙 정렬로 여백 확보 */
-        padding: 8% 10%;
-        /* 상하좌우 충분한 여백 */
-        gap: 0;
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+    @font-face {
+        font-family: 'OmuDaye';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-01@1.0/omyu_pretty.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
     }
 
-    .card.postcard .left,
-    .card.postcard .right {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        /* 글자들 중앙 정렬 */
-        text-align: center;
+    @font-face {
+        font-family: 'IsYun';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
     }
 
-    /* 상단 말씀 구역 (1/3) */
-    .card.postcard .left {
-        flex: 0 0 auto;
-        margin-bottom: 20px;
+    @font-face {
+        font-family: 'DoolgiMayoGothic';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.1/Dovemayo_gothic.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
     }
 
-    /* 중간 구분선 */
-    .card.postcard .divider {
-        width: 40%;
-        /* 선 길이 */
-        height: 1px;
-        background-color: var(--muted);
-        opacity: 0.3;
-        margin: 15px 0 25px;
+    @font-face {
+        font-family: 'OngleipSeunghun';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408@1.0/Ownglyph_Seung_Hoon-Rg.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
     }
 
-    /* 하단 편지 구역 (2/3) */
-    .card.postcard .right {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
+    @font-face {
+        font-family: 'GangwonEducationSaeum';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEduSaeeum_OTFMediumA.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
     }
 
-    .card.postcard .verse-box {
-        font-size: 1.4rem;
-        /* 말씀은 조금 더 크게 */
-        margin-bottom: 10px;
-        font-family: 'YesMyungjo', serif;
-        /* 명조체 계열 권장 */
+    @font-face {
+        font-family: 'OngleipRyudung';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2405-2@1.0/Ownglyph_ryuttung-Rg.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
     }
 
-    /* 상하 배치(1번째 디자인) 내 verse-box 상세 수정 */
-    .card.postcard .verse-box .text {
-        white-space: pre-wrap;
-        /* 줄바꿈 허용 */
-        word-break: keep-all;
-        /* 단어 단위로 끊어지게 하여 가독성 향상 */
-        line-height: 1.6;
-        /* 줄 간격을 넓혀 시원하게 보이도록 함 */
-        text-align: center;
-        /* 중앙 정렬 */
-        font-size: 0.95rem;
-        /* 말씀이 길면 기본 크기를 살짝 줄임 */
+    :root {
+        --ink: #3B3B3B;
+        /* 요청하신 진회색 고정 */
+        --muted: #475569;
+        --user-font: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
     }
 
-    /* 소제목 강조 스타일 (선택 사항) */
-    .card.postcard .verse-box .text b,
-    .card.postcard .verse-box .text span.subtitle {
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background-color: #f8fafc;
+        /* 라이트 모드 기본 배경 */
+        min-height: 100vh;
+        overflow-x: hidden;
+        color: var(--ink);
+        font-family: var(--user-font);
+        transition: background-color 0.5s ease, background-image 0.5s ease;
+    }
+
+    /* 다크 모드 배경 */
+    .dark body {
+        background-color: #0f172a;
+        background-image:
+            radial-gradient(at 0% 0%, hsla(210, 100%, 15%, 1) 0, transparent 50%),
+            radial-gradient(at 50% 0%, hsla(220, 100%, 10%, 1) 0, transparent 50%),
+            radial-gradient(at 100% 0%, hsla(210, 100%, 15%, 1) 0, transparent 50%);
+    }
+
+    /* 반짝이는 별 배경 */
+    .stars-container {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        display: none;
+        /* 기본(라이트) 모드에서 숨김 */
+    }
+
+    .dark .stars-container {
         display: block;
-        margin: 10px 0;
-        font-weight: 800;
-        color: #2563eb;
+        /* 다크 모드에서만 표시 */
     }
 
-    .card.postcard .msg-box {
-        font-size: 1rem;
-        line-height: 1.8;
-        color: var(--muted);
+    .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: #fbbf24;
+        border-radius: 50%;
+        opacity: 0.5;
+        animation: twinkle 3s ease-in-out infinite;
     }
 
-    .card.postcard .sender-box {
-        margin-top: auto;
-        /* 아래쪽 밀어내기 */
-        width: 100%;
-        text-align: right;
-        /* 보낸 이는 우측 하단 */
-        font-size: 0.9rem;
+    @keyframes twinkle {
+
+        0%,
+        100% {
+            opacity: 0.3;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+    }
+
+    .wrap {
+        max-width: 1300px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        align-items: center;
+        padding-bottom: 60px;
         padding-top: 20px;
     }
 
-    /* 메시지가 없을 때 (말씀 강조형) */
-    .card.postcard.no-message .divider {
-        display: none;
+    .card-container {
+        width: 60rem;
+        display: flex;
+        justify-content: center;
+        padding: 0 20px;
+    }
+
+    .postcard-wrapper {
+        position: relative;
+        width: 100%;
+        max-width: 1200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: var(--ink);
+        font-size: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-btn:hover {
+        background: #fff;
+        transform: translateY(-50%) scale(1.1);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .nav-btn.prev {
+        left: -25px;
+    }
+
+    .nav-btn.next {
+        right: -25px;
+    }
+
+    @media (max-width: 1100px) {
+        .nav-btn.prev {
+            left: 10px;
+        }
+
+        .nav-btn.next {
+            right: 10px;
+        }
+    }
+
+    .list-btn-container {
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    .btn-all-list {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(4px);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        font-size: 13px;
+        padding: 8px 16px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+    }
+
+    .btn-all-list:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+    }
+
+    .card {
+        position: relative;
+        background: url("{{ url_for('static', filename=template_image) }}") center/cover no-repeat;
+        width: 100%;
+        max-width: 1200px;
+        aspect-ratio: 2367 / 1676;
+        border: none;
+        border-radius: 44px;
+        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.6s ease-out;
+    }
+
+    .card.ready {
+        opacity: 1;
+    }
+
+    .overlay {
+        position: absolute;
+        inset: 0;
+        padding: 13.25% 16.4% 13.25%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .verse-box {
+        color: var(--ink);
+        line-height: 1.5;
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        flex: 1;
+    }
+
+    .verse-box .text {
+        white-space: pre-wrap;
+        word-break: keep-all;
+        line-height: 1.6;
+        text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .verse-box .ref {
+        font-weight: 800;
+        text-align: right;
+        margin-top: 10px;
+    }
+
+    .sender-box {
+        color: var(--ink);
+        font-weight: 700;
+        text-align: center;
+        margin-top: auto;
+        padding-top: 4px;
+    }
+
+    /* 외부 메시지 박스 스타일 */
+    .outer-msg-container {
+        width: 100%;
+        max-width: 900px;
+        margin-top: 20px;
+        padding: 32px;
+        background: rgba(255, 255, 255, 0.7);
+        /* 라이트 모드 배경 */
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 24px;
+        color: #1e293b;
+        /* 라이트 모드 텍스트 */
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        transition: all 0.5s ease;
+    }
+
+    .dark .outer-msg-container {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .outer-msg-container .label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #fbbf24;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        display: block;
+    }
+
+    .outer-msg-content {
+        font-size: 17px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        word-break: keep-all;
+    }
+
+    /* 반응형 */
+    @media (max-width: 768px) {
+        .card {
+            border-radius: 20px;
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+        }
+
+        .outer-msg-container {
+            padding: 24px;
+            border-radius: 16px;
+            margin: 0 20px;
+            width: calc(100% - 40px);
+        }
+
+        .outer-msg-content {
+            font-size: 15px;
+        }
+    }
+
+    .actions-container {
+        margin-top: 24px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #3b82f6;
+        color: #fff;
+    }
+
+    .btn-light {
+        background: #fff;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-logo {
+        padding: 8px;
+        background: #fff;
+        /* border: 1px solid #e2e8f0; */
+    }
+
+    .btn-logo img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
     }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-    integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
-</head>
 
-<body>
-    <script>
-        (function () {
-            const fontFamily = {{ font_family | tojson
-        }};
-        if (fontFamily) {
-            document.documentElement.style.setProperty('--user-font', fontFamily);
-        }
-        }) ();
-        (function () {
-            const kakaoKey = "{{ kakao_js_key|tojson }}";
-            if (kakaoKey && window.Kakao && !Kakao.isInitialized()) {
-                Kakao.init(kakaoKey);
-            }
-        })();
-    </script>
-    <div class="wrap">
-        <div class="card-container">
-            <div class="card {{ 'letter' if template_is_letter else 'postcard' }}{% if not (message or '').strip() %} no-message{% endif %}"
-                id="postcard">
-                <div class="overlay">
-                    <div class="left">
-                        <div class="verse-box">
-                            <div class="text">{{ (verse_text or '')|trim }}</div>
-                            <span class="ref">{{ verse_reference }}</span>
-                        </div>
-                        {% if not (message or '').strip() %}
-                        <div class="divider"></div>
-                        {% endif %}
-                    </div>
-                    <div class="right">
-                        {% if (message or '').strip() %}
-                        <div class="msg-box">
-                            <div class="body">{{ (message or '')|replace('\r', ' ')|replace('\n', ' ') }}</div>
-                        </div>
-                        {% endif %}
+<div class="stars-container">
+    {% for i in range(50) %}
+    <div class="star" style="left: {{ range(0, 100) | random }}%; 
+                top: {{ range(0, 100) | random }}%; 
+                animation-delay: {{ (range(0, 30) | random)/10 }}s;">
+    </div>
+    {% endfor %}
+</div>
 
-                        <div class="sender-box">
-                            From. {{ sender or '익명' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="actions-container">
-            {% if current_index is defined and total_letters is defined and total_letters > 1 %}
-            <div class="share-section">
-                <div class="share-title">편지 탐색 ({{ current_index + 1 }} / {{ total_letters }})</div>
-                <div class="actions">
-                    {% if current_index > 0 %}
-                    <button class="btn btn-light"
-                        onclick="location.href='/postbox/{{ postbox_url }}/letters/{{ current_index - 1 }}'">← 이전
-                        편지</button>
-                    {% else %}
-                    <button class="btn btn-light" disabled style="opacity: 0.5; cursor: not-allowed;">← 이전 편지</button>
-                    {% endif %}
-
-                    <button class="btn btn-light" onclick="location.href='/postbox/{{ postbox_url }}'">우체통으로</button>
-
-                    {% if current_index < total_letters - 1 %} <button class="btn btn-light"
-                        onclick="location.href='/postbox/{{ postbox_url }}/letters/{{ current_index + 1 }}'">다음 편지
-                        →</button>
-                        {% else %}
-                        <button class="btn btn-light" disabled style="opacity: 0.5; cursor: not-allowed;">다음 편지
-                            →</button>
-                        {% endif %}
-                </div>
-            </div>
-            {% endif %}
-            <div class="actions">
-                <button class="btn btn-primary" onclick="saveImage()">이미지 저장</button>
-            </div>
-            <div class="share-section">
-                <div class="share-title">공유하기</div>
-                <div class="actions">
-                    <button class="btn" onclick="shareInstagram()">
-                        <img src="{{ url_for('static', filename='images/icon/insta.png') }}" alt="ig"
-                            style="width: 20px; vertical-align: middle; margin-right: 5px;"></button>
-                    <button class="btn" onclick="shareX()"><img
-                            src="{{ url_for('static', filename='images/icon/thread.png') }}" alt="X"
-                            style="width: 20px; vertical-align: middle; margin-right: 5px;"></button>
-                    <button class="btn" onclick="shareKakao()"><img
-                            src="{{ url_for('static', filename='images/icon/kakao.jpg') }}" alt="kakao"
-                            style="width: 20px; vertical-align: middle; margin-right: 5px;"></button>
-                    <button class="btn btn-light" onclick="copyShareUrl()">URL 복사</button>
-                </div>
-            </div>
+<div class="wrap">
+    <!-- {% if list_url %}
+    <div class="list-btn-container">
+        <a href="{{ list_url }}" class="btn-all-list">
+            <span>📂</span> 전체 목록 보기
+        </a>
+    </div>
+    {% endif %} -->
+    <div class="actions-container">
+        <div class="actions">
+            <button class="btn btn-logo" onclick="shareKakao()" title="카카오톡 공유">
+                <img src="{{ url_for('static', filename='images/icon/kakao.jpg') }}" alt="Kakao">
+            </button>
+            <button class="btn btn-logo" onclick="shareInstagram()" title="인스타그램 공유">
+                <img src="{{ url_for('static', filename='images/icon/insta.png') }}" alt="Instagram">
+            </button>
+            <button class="btn btn-light" onclick="copyShareUrl()">🔗 URL 복사</button>
+            <button class="btn btn-primary" onclick="saveImage()">💾 이미지 저장</button>
         </div>
     </div>
 
-    <script>
-        function fitTextToContainer(element, minSize, maxSize, containerHeight = null, containerWidth = null) {
-            if (!element || !element.textContent.trim()) return;
+    <div class="card-container">
+        <div class="postcard-wrapper">
+            {% if prev_url %}
+            <a href="{{ prev_url }}" class="nav-btn prev" title="이전 엽서">‹</a>
+            {% endif %}
 
-            let fontSize = maxSize;
+            <div class="card ready" id="postcard">
+                <div class="overlay">
+                    <div class="verse-box">
+                        <div class="text">{{ (verse_text or '')|trim }}</div>
+                        <div class="ref">{{ verse_reference }}</div>
+                    </div>
+                    <div class="sender-box">From. {{ sender or '익명' }}</div>
+                </div>
+            </div>
+
+            {% if next_url %}
+            <a href="{{ next_url }}" class="nav-btn next" title="다음 엽서">›</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if (message or '').strip() %}
+    <div class="outer-msg-container">
+        <span class="label">{{ sender or '익명' }}의 한마디</span>
+        <div class="outer-msg-content">{{ (message or '') }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // 폰트 설정
+    (function () {
+        const fontFamily = {{ font_family | tojson
+    }};
+    if (fontFamily) {
+        document.documentElement.style.setProperty('--user-font', fontFamily);
+    }
+    }) ();
+
+    // 카카오 초기화
+    (function () {
+        const kakaoKey = {{ kakao_js_key | tojson
+    }};
+    if (kakaoKey && window.Kakao && !Kakao.isInitialized()) {
+        Kakao.init(kakaoKey);
+    }
+    }) ();
+
+    // 텍스트 크기 자동 조정 함수
+    function fitTextToContainer(element, minSize, maxSize, containerHeight = null) {
+        if (!element) return;
+        let fontSize = maxSize;
+        element.style.fontSize = fontSize + 'px';
+        const targetHeight = containerHeight || element.parentElement.clientHeight;
+
+        let iterations = 0;
+        while ((element.scrollHeight > targetHeight || element.scrollWidth > element.clientWidth) && fontSize > minSize && iterations < 100) {
+            fontSize -= 0.5;
             element.style.fontSize = fontSize + 'px';
+            iterations++;
+        }
+    }
 
-            let iterations = 0;
-            const maxIterations = 200;
+    async function adjustLayout() {
+        const isMobile = window.innerWidth <= 768;
+        const verseText = document.querySelector('.verse-box .text');
 
-            const refHeight = containerHeight !== null ? containerHeight : element.clientHeight;
-            const refWidth = containerWidth !== null ? containerWidth : element.clientWidth;
+        await document.fonts.ready;
 
-            while ((element.scrollHeight > refHeight + 1 ||
-                element.scrollWidth > refWidth + 1) &&
-                fontSize > minSize && iterations < maxIterations) {
-                fontSize -= 0.3;
-                element.style.fontSize = fontSize + 'px';
-                iterations++;
-            }
+        if (verseText) {
+            fitTextToContainer(verseText, isMobile ? 12 : 16, isMobile ? 40 : 80);
         }
 
-        function fitVerseBox() {
-            const verseBox = document.querySelector('.verse-box');
-            const verseRef = document.querySelector('.verse-box .ref');
-            const verseText = document.querySelector('.verse-box .text');
+        document.getElementById('postcard').classList.add('ready');
+    }
 
-            if (!verseBox || !verseRef || !verseText) return;
+    window.addEventListener('load', adjustLayout);
+    window.addEventListener('resize', adjustLayout);
 
-            const isMobile = window.innerWidth <= 480;
-            const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
-
-            let refMin, refMax, textMin, textMax;
-
-            if (isMobile) {
-                refMin = 8; refMax = 10;
-                textMin = 8; textMax = 12;
-            } else if (isTablet) {
-                refMin = 8; refMax = 15;
-                textMin = 7; textMax = 16;
-            } else {
-                refMin = 12; refMax = 20;
-                textMin = 13; textMax = 24;
-            }
-
-            fitTextToContainer(verseRef, refMin, refMax);
-
-            // ref 높이 제외한 영역에 본문 맞춤
-            const verseBoxHeight = verseBox.clientHeight;
-            const refHeight = verseRef.offsetHeight;
-            const refMargin = parseInt(getComputedStyle(verseRef).marginTop || 0, 10);
-            const availableHeight = verseBoxHeight - refHeight - refMargin;
-
-            let textFontSize = textMax;
-            verseText.style.fontSize = textFontSize + 'px';
-
-            let iterations = 0;
-            const maxIterations = 200;
-
-            while ((verseText.scrollHeight > availableHeight + 1 ||
-                verseText.scrollWidth > verseText.clientWidth + 1) &&
-                textFontSize > textMin && iterations < maxIterations) {
-                textFontSize -= 0.3;
-                verseText.style.fontSize = textFontSize + 'px';
-                iterations++;
-            }
-        }
-
-        function adjustAllText() {
-            const msgBoxContainer = document.querySelector('.msg-box');
-            const msgBox = document.querySelector('.msg-box .body');
-            const senderBoxContainer = document.querySelector('.sender-box');
-            const senderBox = document.querySelector('.sender-box');
-            const rightColumn = document.querySelector('.card.postcard .right');
-            const verseRef = document.querySelector('.verse-box .ref');
-            const verseText = document.querySelector('.verse-box .text');
-
-            const isMobile = window.innerWidth <= 480;
-            const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
-            let msgMin, msgMax, senderMin, senderMax;
-            if (isMobile) {
-                msgMin = 10; msgMax = 18;
-                senderMin = 10; senderMax = 12;
-            } else if (isTablet) {
-                msgMin = 12; msgMax = 20;
-                senderMin = 10; senderMax = 12;
-            } else {
-                msgMin = 12; msgMax = 28;
-                senderMin = 20; senderMax = 20;
-            }
-
-
-            fitVerseBox();
-            if (verseRef && verseText) {
-                verseRef.style.fontSize = getComputedStyle(verseText).fontSize;
-            }
-
-            if (msgBox && msgBoxContainer) {
-                fitTextToContainer(msgBox, msgMin, msgMax, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
-
-                if (msgBox.scrollHeight > msgBoxContainer.clientHeight + 1) {
-                    const hardMin = msgMin;
-                    const currentSize = parseFloat(getComputedStyle(msgBox).fontSize) || msgMax;
-                    fitTextToContainer(msgBox, hardMin, currentSize, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
-                }
-            }
-            if (senderBox && msgBox) {
-                const baseSize = getComputedStyle(msgBox).fontSize;
-                const baseSizeNum = parseFloat(baseSize) || 0;
-                const senderSize = baseSizeNum ? Math.max(baseSizeNum, senderMin) + 'px' : baseSize;
-                senderBox.style.fontSize = senderSize;
-                const wrapper = senderBox.parentElement;
-                if (wrapper) wrapper.style.fontSize = senderSize;
-            }
-
-            if (senderBox && senderBoxContainer) {
-                fitTextToContainer(senderBox, senderMin, senderMax, senderBoxContainer.clientHeight, senderBoxContainer.clientWidth);
-                const senderFontSize = getComputedStyle(senderBox).fontSize;
-                senderBoxContainer.style.fontSize = senderFontSize;
-            }
-
-            // rightColumn overflow 보정은 gap 제거로 생략
-        }
-
-
-
-        // 페이지 로드 및 리사이즈 시 실행
-        window.addEventListener('load', () => {
-            setTimeout(adjustAllText, 100);
-        });
-        window.addEventListener('resize', adjustAllText);
-
-        function saveImage() {
-            const cardEl = document.getElementById('postcard');
-            if (!cardEl || typeof html2canvas === 'undefined') {
-                alert('이미지 저장 도구를 불러오지 못했습니다.');
-                return;
-            }
-            html2canvas(cardEl, { scale: 2 }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'postcard.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }).catch(err => {
-                alert('이미지 저장 중 오류가 발생했습니다.');
-                console.error(err);
-            });
-        }
-
-        function getShareMeta() {
-            const senderName = {{ sender | tojson
-        }};
-        const safeSender = senderName && senderName.trim() ? senderName : '익명';
+    function copyShareUrl(silent = false) {
         const url = window.location.href;
-        return {
-            url,
-            title: '말씀 우체통',
-            text: `${safeSender}이 보낸 성경 말씀 편지입니다. ${url}`,
-        };
-        }
-
-        async function createShareImageFile() {
-            const cardEl = document.getElementById('postcard');
-            if (!cardEl || typeof html2canvas === 'undefined') return null;
-            const canvas = await html2canvas(cardEl, { scale: 2 });
-            return new Promise(resolve => {
-                canvas.toBlob(blob => {
-                    if (!blob) return resolve(null);
-                    resolve(new File([blob], 'postcard.png', { type: 'image/png' }));
-                }, 'image/png');
-            });
-        }
-
-        async function shareWithSystem(preferImage = false) {
-            const meta = getShareMeta();
-            if (!navigator.share) {
-                copyShareUrl(true);
-                return false;
-            }
-            try {
-                if (preferImage && navigator.canShare) {
-                    const file = await createShareImageFile();
-                    if (file && navigator.canShare({ files: [file] })) {
-                        await navigator.share({ ...meta, files: [file] });
-                        return true;
-                    }
-                }
-                await navigator.share(meta);
-                return true;
-            } catch (err) {
-                console.warn('share failed', err);
-                return false;
-            }
-        }
-
-        async function shareInstagram() {
-            const ok = await shareWithSystem(true);
-            if (!ok) {
-                alert('모바일 공유 기능이 필요합니다. URL을 복사했습니다.');
-            }
-        }
-
-        function shareX() {
-            const meta = getShareMeta();
-            const shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(meta.url)}&text=${encodeURIComponent(meta.text)}`;
-            window.open(shareUrl, '_blank', 'noopener,noreferrer');
-        }
-
-        async function shareKakao() {
-            const kakaoKey = {{ kakao_js_key| tojson
-        }};
-        if (!kakaoKey || !window.Kakao || !Kakao.isInitialized()) {
-            const ok = await shareWithSystem(true);
-            if (!ok) {
-                alert('모바일 공유 기능이 필요합니다. URL을 복사했습니다.');
-            }
-            return;
-        }
-        const meta = getShareMeta();
-        Kakao.Share.sendDefault({
-            objectType: 'feed',
-            content: {
-                title: '말씀 우체통',
-                description: meta.text,
-                imageUrl: "https://bible-postoffice-2025.web.app/view-postcard/adae057c-0902-4d77-b46b-541e60241532",
-                link: {
-                    mobileWebUrl: meta.url,
-                    webUrl: meta.url,
-                },
-            },
-            buttons: [
-                {
-                    title: '엽서 보러가기',
-                    link: {
-                        mobileWebUrl: meta.url,
-                        webUrl: meta.url,
-                    },
-                },
-            ],
+        navigator.clipboard.writeText(url).then(() => {
+            if (!silent) alert('URL이 복사되었습니다.');
         });
-        }
+    }
 
-        function copyShareUrl(silent = false) {
-            const { url } = getShareMeta();
-            if (navigator.clipboard?.writeText) {
-                navigator.clipboard.writeText(url).then(() => {
-                    if (!silent) alert('URL이 복사되었습니다.');
-                }).catch(() => {
-                    fallbackCopy(url, silent);
-                });
-            } else {
-                fallbackCopy(url, silent);
-            }
-        }
+    async function shareKakao() {
+        if (!window.Kakao || !Kakao.isInitialized()) return;
+        const sender = {{ (sender or '익명') | tojson
+    }};
+    Kakao.Link.sendDefault({
+        objectType: 'feed',
+        content: {
+            title: '말씀 우체통',
+            description: `${sender}님이 보낸 엽서가 도착했습니다.`,
+            imageUrl: window.location.origin + '/static/images/default_og.png',
+            link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+        },
+        buttons: [{ title: '엽서 보기', link: { mobileWebUrl: window.location.href, webUrl: window.location.href } }]
+    });
+    }
 
-        function fallbackCopy(text, silent) {
-            const temp = document.createElement('textarea');
-            temp.value = text;
-            temp.style.position = 'fixed';
-            temp.style.opacity = '0';
-            document.body.appendChild(temp);
-            temp.select();
-            try {
-                document.execCommand('copy');
-                if (!silent) alert('URL이 복사되었습니다.');
-            } catch (e) {
-                if (!silent) alert('URL 복사에 실패했습니다.');
-            }
-            document.body.removeChild(temp);
-        }
-    </script>
-</body>
+    async function saveImage() {
+        const card = document.getElementById('postcard');
+        const btn = event.currentTarget;
+        btn.disabled = true;
+        btn.innerText = '⏳ 저장 중...';
 
-</html>
-{% endblock content %}
+        try {
+            const canvas = await html2canvas(card, {
+                useCORS: true,
+                scale: 2,
+                backgroundColor: null
+            });
+            const link = document.createElement('a');
+            link.download = 'postcard.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (err) {
+            console.error(err);
+            alert('이미지 저장에 실패했습니다.');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = '💾 이미지 저장';
+        }
+    }
+
+    function shareInstagram() {
+        alert('엽서를 이미지로 저장한 후 인스타그램에 공유해 주세요!');
+        saveImage();
+    }
+</script>
+{% endblock %}

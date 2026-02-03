@@ -1,421 +1,381 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>엽서/편지지 선택</title>
+    <title>엽서 선택 - 디자인하기</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Outfit:wght@300;400;600;800&family=Noto+Serif+KR:wght@400;700&display=swap');
+
         :root {
             --primary: #3b82f6;
-            --primary-strong: #2563eb;
-            --accent: #10b981;
-            --ink: #0f172a;
-            --frame: #38bdf8;
-            --frame-strong: #0ea5e9;
-            --muted: #6b7280;
-            --panel: #ffffff;
-            --bg: #f5f7fb;
+            --primary-strong: #1d4ed8;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --ink: #1e293b;
+            --muted: #64748b;
+            --accent: #f59e0b;
         }
-        * { box-sizing: border-box; }
+
+        * {
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
         body {
             margin: 0;
-            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
+            font-family: 'Outfit', 'Pretendard', sans-serif;
+            background: #f8fafc;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.05) 0px, transparent 50%);
             color: var(--ink);
             min-height: 100vh;
             overflow-x: hidden;
         }
+
         .shell {
-            max-width: 1180px;
-            width: 100%;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 32px 20px 40px;
+            padding: 40px 24px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            position: relative;
-            overflow: hidden;
-            color: var(--ink);
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
         }
-        .card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 24px;
-            padding: 28px 24px 30px;
-            box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
-            flex: 1;
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Marcellus', 'Noto Serif KR', serif;
+            font-size: clamp(28px, 4vw, 36px);
+            margin: 0;
+            letter-spacing: -0.01em;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Selection Stage */
+        .stage {
+            width: 100%;
             display: flex;
             flex-direction: column;
-            min-height: 0;
-            position: relative;
-            overflow: hidden;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-        h1 {
-            margin: 0;
-            font-size: 30px;
-            letter-spacing: -0.03em;
-            font-family: 'Noto Serif KR', 'Pretendard', system-ui, -apple-system, sans-serif;
-        }
-        .subtitle {
-            color: #4b5563;
-            margin-top: 8px;
-            font-size: 16px;
-        }
-        .step {
-            display: flex;
             align-items: center;
-            gap: 8px;
-            font-weight: 700;
-            color: #475569;
+            gap: 50px;
         }
-        .step span {
-            padding: 6px 10px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-        .step .current {
-            background: rgba(59,130,246,0.14);
-            border-color: rgba(59,130,246,0.35);
-            color: #1d4ed8;
-        }
-        .toggle-bar {
-            margin-top: 18px;
-            display: flex;
-            justify-content: center;
-        }
-        .toggle {
+
+        /* Large Preview */
+        .preview-container {
+            width: 100%;
+            max-width: 800px;
             position: relative;
-            background: #f1f5f9;
-            border: 1px solid #dfe3ea;
-            border-radius: 16px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            width: 270px;
+            perspective: 1000px;
+        }
+
+        .frame-wrapper {
+            width: 100%;
+            aspect-ratio: 18.22 / 12.9;
+            border-radius: 24px;
             overflow: hidden;
-        }
-        .toggle button {
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.15);
+            background: #fff;
+            transform: rotateX(2deg);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
-            padding: 12px 0;
-            font-size: 15px;
-            font-weight: 800;
-            color: #475569;
-            background: transparent;
-            border: none;
-            cursor: pointer;
             z-index: 2;
         }
-        .toggle .thumb {
-            position: absolute;
-            top: 3px;
-            left: 3px;
-            width: calc(50% - 6px);
-            height: calc(100% - 6px);
-            background: linear-gradient(135deg, #3b82f6 0%, #5c9bff 100%);
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(59,130,246,0.3);
-            transition: transform 0.2s ease;
+
+        .frame-wrapper:hover {
+            transform: rotateX(0deg) translateY(-10px);
+            box-shadow: 0 50px 120px -20px rgba(0, 0, 0, 0.2);
         }
-        .stage {
-            position: relative;
-            margin-top: 20px;
-            background: #f8fafc;
-            border: 1px dashed #d0dbe8;
-            border-radius: 20px;
-            padding: 18px 16px;
-            display: grid;
-            place-items: center;
-            flex: 1;
-            min-height: 320px;
-            min-width: 0;
+
+        .preview-image {
             width: 100%;
-            max-width: 100%;
-        }
-        .frame {
-            position: relative;
-            width: min(90vw, 820px);
-            border: 2px solid var(--frame-strong);
-            border-radius: 18px;
-            overflow: hidden;
-            box-shadow: none;
-            transition: width 0.2s ease, height 0.2s ease;
-        }
-        .frame.landscape {
-            aspect-ratio: 3 / 2;
-            height: clamp(320px, 52vh, 520px);
-        }
-        .frame.portrait {
-            aspect-ratio: 2 / 3;
-            height: clamp(360px, 64vh, 680px);
-        }
-        .preview-large {
-            position: absolute;
-            inset: 0;
-            background-size: contain;
+            height: 100%;
+            background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
-            transition: background 0.25s ease;
+            transition: transform 0.8s ease, filter 0.4s ease;
         }
-        .preview-large::after { display: none; }
-        .label {
-            position: absolute;
-            top: 14px;
-            left: 14px;
-            padding: 8px 12px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.85);
-            color: #0f172a;
-            font-weight: 800;
-            backdrop-filter: blur(6px);
-            border: 1px solid rgba(15,23,42,0.08);
-        }
-        .meta {
-            position: absolute;
-            left: 16px;
-            right: 16px;
-            bottom: 16px;
-            color: #e2e8f0;
-        }
-        .name {
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 6px;
-        }
-        .desc {
-            color: #475569;
-            font-size: 15px;
-            margin-bottom: 10px;
-        }
-        .counter {
-            font-size: 13px;
-            color: var(--muted);
-        }
-        .arrow {
+
+        /* Nav Buttons Overlay */
+        .nav-overlay {
             position: absolute;
             top: 50%;
+            left: -30px;
+            right: -30px;
             transform: translateY(-50%);
-            width: 58px;
-            height: 58px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            border: 2px solid #d0dbe8;
-            background: #fff;
-            color: #2563eb;
-            font-size: 26px;
-            font-weight: 900;
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: var(--ink);
+            font-size: 24px;
             cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: grid;
             place-items: center;
-            box-shadow: 0 15px 30px rgba(37,99,235,0.18);
-            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
         }
-        .arrow:hover { transform: translateY(-50%) scale(1.02); }
-        .arrow:active { transform: translateY(-50%) scale(0.98); }
-        .arrow.left { left: 12px; }
-        .arrow.right { right: 12px; }
-        .actions {
-            margin-top: 14px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 12px;
+
+        .nav-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3);
+            border-color: var(--primary);
         }
-        .btn {
-            padding: 14px 18px;
-            border-radius: 12px;
-            border: 2px solid var(--primary-strong);
-            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
-            color: #f8fafc;
-            font-weight: 800;
-            font-size: 15px;
+
+        /* Circular Thumbnails */
+        .thumbnails-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 10px;
+        }
+
+        .thumb-item {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
             cursor: pointer;
-            box-shadow: 0 15px 30px rgba(59,130,246,0.3);
+            border: 3px solid white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
         }
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            box-shadow: none;
+
+        .thumb-item::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
         }
-        .btn.secondary {
-            background: #fff;
-            color: #1f2937;
-            border-color: #d0dbe8;
-            box-shadow: none;
+
+        .thumb-item:hover {
+            transform: translateY(-5px) scale(1.1);
         }
-        .hint {
-            text-align: center;
+
+        .thumb-item.active {
+            transform: translateY(-8px) scale(1.15);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .thumb-item.active::after {
+            border-color: var(--primary);
+            inset: -6px;
+        }
+
+        /* Action Section */
+        .actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
             margin-top: 10px;
+        }
+
+        .info-panel {
+            text-align: center;
+        }
+
+        .template-name {
+            font-family: 'Marcellus', serif;
+            font-size: 24px;
+            margin: 0 0 8px 0;
+            color: var(--ink);
+        }
+
+        .template-counter {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
             color: var(--muted);
-            font-size: 13px;
+            text-transform: uppercase;
         }
+
+        .main-btn {
+            width: 100%;
+            padding: 20px;
+            border-radius: 20px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+            color: white;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.4);
+            letter-spacing: 0.02em;
+        }
+
+        .main-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 45px -5px rgba(59, 130, 246, 0.5);
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--ink);
+        }
+
         @media (max-width: 768px) {
-            .frame { width: min(94vw, 560px); max-height: none; }
-            .arrow { display: none; }
-            .card { padding: 18px; }
-            .shell { padding: 18px 14px 26px; }
-            h1 { font-size: 22px; }
-            .stage { min-height: 280px; padding: 14px 10px; }
-        }
-        @media (min-width: 1024px) {
-            .shell { padding: 26px 22px; }
-            .card { padding: 24px 26px 26px; }
-            .stage { margin-top: 18px; }
-            .frame { height: clamp(340px, 60vh, 640px); }
-        }
-        @media (max-width: 540px) {
-            .header { flex-direction: column; align-items: flex-start; }
-            .stage { padding: 12px 8px; }
-            .frame { width: 100%; max-width: 100%; }
-            .actions { grid-template-columns: 1fr 1fr; }
+            .nav-overlay {
+                display: none;
+            }
+
+            .shell {
+                padding: 40px 16px;
+            }
+
+            .thumb-item {
+                width: 55px;
+                height: 55px;
+            }
+
+            .frame-wrapper {
+                border-radius: 16px;
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="shell">
-        <div class="card">
-            <div class="header">
-                <div>
-                    <h1>엽서 선택</h1>
-                    <div class="subtitle">좌우 화살표나 스와이프로 엽서를 살펴보세요.</div>
+        <header class="header">
+            <span class="template-counter" id="counter-text">01 / 06</span>
+            <h1 id="tpl-name">Loading...</h1>
+        </header>
+
+        <section class="stage">
+            <div class="preview-container">
+                <div class="frame-wrapper">
+                    <div class="preview-image" id="preview-img"></div>
                 </div>
-                <div class="step">
-                    <span class="current">1 · 선택</span>
-                    <span>2 · 작성</span>
-                    <span>3 · 미리보기</span>
+
+                <div class="nav-overlay">
+                    <button class="nav-btn" id="prev-btn" title="이전">‹</button>
+                    <button class="nav-btn" id="next-btn" title="다음">›</button>
                 </div>
             </div>
 
-            <div class="stage">
-                <button class="arrow left" id="prev-btn">&#x2039;</button>
-                <div class="frame" id="frame">
-                    <div class="preview-large" id="preview"></div>
-                    <div class="meta">
-                        <div class="name" id="name"></div>
-                        <div class="desc" id="desc"></div>
-                        <div class="counter" id="counter"></div>
-                    </div>
-                </div>
-                <button class="arrow right" id="next-btn">&#x203a;</button>
+            <div class="thumbnails-container" id="thumb-grid">
+                <!-- Circular thumbnails will be injected here -->
             </div>
+        </section>
 
-            <div class="actions">
-                <button class="btn" id="select-btn" disabled>선택</button>
-                <button class="btn secondary" id="back-btn">이전</button>
-            </div>
-            <div class="hint">엽서를 고른 뒤 선택 버튼을 눌러주세요.</div>
+        <div class="actions">
+            <button class="main-btn" id="select-btn">이 디자인으로 시작하기</button>
+            <a href="javascript:history.back()" class="back-link">위치로 돌아가기</a>
         </div>
     </div>
 
     <script>
         const postboxId = "{{ postbox_id }}";
         const templates = [
-            { id: 1, name: '항공 엽서', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard1.jpg') }}" },
-            { id: 2, name: '화원', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}" },
-            { id: 3, name: '하늘', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard3.jpg') }}" },
-            { id: 4, name: '크레용', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard4.jpg') }}" },
-            { id: 5, name: '크레용2026', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard5.jpg') }}" },
-            { id: 6, name: '바닷가2026', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard6.jpg') }}" },
-            { id: 7, name: '빈티지', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard7.jpg') }}" },
-            { id: 8, name: '파란리본', typeLabel: '엽서', type: 0, image: "{{ url_for('static', filename='images/postcards/postcard8.jpg') }}" },
+            { id: 1, name: 'BEYOND HORIZON', image: "{{ url_for('static', filename='images/postcards/postcard1.jpg') }}" },
+            { id: 2, name: 'SECRET GARDEN', image: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}" },
+            { id: 3, name: 'ETERNAL BLUE', image: "{{ url_for('static', filename='images/postcards/postcard3.jpg') }}" },
+            { id: 4, name: 'SOFT PASTELL', image: "{{ url_for('static', filename='images/postcards/postcard4.jpg') }}" },
+            { id: 5, name: 'VINTAGE 2026', image: "{{ url_for('static', filename='images/postcards/postcard5.jpg') }}" },
+            { id: 6, name: 'OCEAN BREEZE', image: "{{ url_for('static', filename='images/postcards/postcard6.jpg') }}" },
         ];
 
-        const previewEl = document.getElementById('preview');
-        const nameEl = document.getElementById('name');
-        const descEl = document.getElementById('desc');
-        const counterEl = document.getElementById('counter');
-        const selectBtn = document.getElementById('select-btn');
-        const backBtn = document.getElementById('back-btn');
+        let currentIndex = 0;
+        const previewImg = document.getElementById('preview-img');
+        const tplName = document.getElementById('tpl-name');
+        const counterText = document.getElementById('counter-text');
+        const thumbGrid = document.getElementById('thumb-grid');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
-        const frameEl = document.getElementById('frame');
-        const stageEl = document.querySelector('.stage');
+        const selectBtn = document.getElementById('select-btn');
 
-        let currentIndex = 0;
-
-        function render() {
-            const list = templates;
-            if (!list.length) {
-                selectBtn.disabled = true;
-                previewEl.className = 'preview-large';
-                previewEl.style.backgroundImage = '';
-                nameEl.textContent = '';
-                descEl.textContent = '';
-                counterEl.textContent = '';
-                return;
-            }
-            if (currentIndex >= list.length) currentIndex = 0;
-            if (currentIndex < 0) currentIndex = list.length - 1;
-
-            const tpl = list[currentIndex];
-            previewEl.className = 'preview-large';
-            previewEl.style.backgroundImage = tpl.image ? `url(${tpl.image})` : '';
-            nameEl.textContent = '';
-            descEl.textContent = '';
-            counterEl.textContent = `${currentIndex + 1} / ${list.length}`;
-            selectBtn.disabled = false;
-            frameEl.classList.remove('landscape', 'portrait');
-            frameEl.classList.add('landscape');
+        function init() {
+            templates.forEach((tpl, idx) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'thumb-item';
+                thumb.style.backgroundImage = `url(${tpl.image})`;
+                thumb.onclick = () => {
+                    currentIndex = idx;
+                    updateUI();
+                };
+                thumbGrid.appendChild(thumb);
+            });
+            updateUI();
         }
 
-        prevBtn.addEventListener('click', () => {
-            currentIndex -= 1;
-            render();
-        });
-        nextBtn.addEventListener('click', () => {
-            currentIndex += 1;
-            render();
-        });
+        function updateUI() {
+            const tpl = templates[currentIndex];
 
-        // swipe support for touch devices
-        function enableSwipe(el) {
-            let startX = 0;
-            let startY = 0;
-            let isTouch = false;
-            const threshold = 40;
-            el.addEventListener('touchstart', (e) => {
-                if (!e.touches.length) return;
-                isTouch = true;
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-            }, { passive: true });
-            el.addEventListener('touchend', (e) => {
-                if (!isTouch) return;
-                const endX = (e.changedTouches && e.changedTouches[0].clientX) || startX;
-                const endY = (e.changedTouches && e.changedTouches[0].clientY) || startY;
-                const dx = endX - startX;
-                const dy = endY - startY;
-                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
-                    currentIndex += dx < 0 ? 1 : -1;
-                    render();
-                }
-                isTouch = false;
-            }, { passive: true });
+            // Image with transition support
+            previewImg.style.opacity = 0.5;
+            setTimeout(() => {
+                previewImg.style.backgroundImage = `url(${tpl.image})`;
+                previewImg.style.opacity = 1;
+            }, 50);
+
+            tplName.textContent = tpl.name;
+            counterText.textContent = `${(currentIndex + 1).toString().padStart(2, '0')} / ${templates.length.toString().padStart(2, '0')}`;
+
+            // Thumbnails
+            const thumbs = document.querySelectorAll('.thumb-item');
+            thumbs.forEach((t, idx) => {
+                t.classList.toggle('active', idx === currentIndex);
+            });
         }
-        // 터치 스와이프는 스테이지에서만 감지해 중복 이동을 방지
-        enableSwipe(stageEl);
 
-        selectBtn.addEventListener('click', () => {
-            const list = templates;
-            if (!list.length) return;
-            const tpl = list[currentIndex];
+        prevBtn.onclick = () => {
+            currentIndex = (currentIndex - 1 + templates.length) % templates.length;
+            updateUI();
+        };
+
+        nextBtn.onclick = () => {
+            currentIndex = (currentIndex + 1) % templates.length;
+            updateUI();
+        };
+
+        selectBtn.onclick = () => {
+            const tpl = templates[currentIndex];
             const url = new URL(window.location.origin + `/send/${postboxId}/write`);
             url.searchParams.set('template_id', tpl.id);
-            url.searchParams.set('template_type', tpl.type);
+            url.searchParams.set('template_type', 0);
             url.searchParams.set('template_name', tpl.name);
             window.location.href = url.toString();
-        });
+        };
 
-        backBtn.addEventListener('click', () => {
-            if (window.history.length > 1) window.history.back();
-            else window.location.href = '/';
-        });
-
-        render();
+        init();
     </script>
 </body>
+
 </html>

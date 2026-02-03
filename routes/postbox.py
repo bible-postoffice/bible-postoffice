@@ -169,10 +169,10 @@ def create_postbox_action():
         return jsonify({" success": False, "message": str(e)}), 500
 
 
-@postbox_bp.route('/postbox/<url_path>/letters')
-@postbox_bp.route('/postbox/<url_path>/letters/<int:letter_index>')
-def view_letters(url_path, letter_index=0):
-    """우체통의 편지들을 보여주는 페이지"""
+@postbox_bp.route('/postbox/<url_path>/postcards')
+@postbox_bp.route('/postbox/<url_path>/postcards/<int:postcard_index>')
+def view_postcards(url_path, postcard_index=0):
+    """우체통의 엽서들을 보여주는 페이지"""
     try:
         # 1. 우체통 정보 조회
         postbox_res = supabase.table('postboxes').select('*').eq('url', url_path).execute()
@@ -198,23 +198,17 @@ def view_letters(url_path, letter_index=0):
             return "받은 편지가 없습니다", 404
         
         postcards = postcards_res.data
-        total_letters = len(postcards)
+        total_postcards = len(postcards)
         
         # 4. 인덱스 유효성 검사
-        if letter_index < 0 or letter_index >= total_letters:
-            letter_index = 0
+        if postcard_index < 0 or postcard_index >= total_postcards:
+            postcard_index = 0
         
-        letter = postcards[letter_index]
+        letter = postcards[postcard_index]
         
         # 5. 템플릿 이미지 경로 결정
         template_id = letter.get('template_id', 1)
-        template_type = letter.get('template_type', 0)
-        template_is_letter = template_type == 1
-        
-        if template_is_letter:
-            template_image = f'images/letters/letter{template_id}.jpg'
-        else:
-            template_image = f'images/postcards/postcard{template_id}.jpg'
+        template_image = f'images/postcards/postcard{template_id}.jpg'
         
         # 6. 렌더링
         return render_template('postcard_view.html',
@@ -224,14 +218,15 @@ def view_letters(url_path, letter_index=0):
                              message=letter.get('message', ''),
                              font_family=letter.get('font_family', 'Pretendard'),
                              template_image=template_image,
-                             template_is_letter=template_is_letter,
                              kakao_js_key=os.environ.get('KAKAO_JS_KEY'),
-                             current_index=letter_index,
-                             total_letters=total_letters,
-                             postbox_url=url_path)
+                             postcard_index=postcard_index,
+                             total_postcards=total_postcards,
+                             prev_url=url_for('postbox.view_postcards', url_path=url_path, postcard_index=postcard_index - 1) if postcard_index > 0 else None,
+                             next_url=url_for('postbox.view_postcards', url_path=url_path, postcard_index=postcard_index + 1) if postcard_index < total_postcards - 1 else None,
+                             list_url=url_for('postbox.view_postbox', url_path=url_path))
     
     except Exception as e:
-        print(f"Error in view_letters: {e}")
+        print(f"Error in view_postcards: {e}")
         return "오류가 발생했습니다", 500
 
 

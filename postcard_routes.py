@@ -115,7 +115,7 @@ def create_postcard_blueprint(
         postcard = {
             "id": str(uuid.uuid4()),
             "template_id": data.get("template_id") or 1,
-            "template_type": data.get("template_type") if data.get("template_type") is not None else 0,
+            "template_type": 0,
             "template_name": data.get("template_name") or "",
             "sender_name": sender_name,
             "is_anonymous": is_anonymous,
@@ -141,7 +141,7 @@ def create_postcard_blueprint(
         if owner_redirect is not None:
             return owner_redirect
 
-        return render_template("choose_template.html", postbox_id=postbox_id)
+        return redirect(url_for("postcard_routes.send_page_write", postbox_id=postbox_id))
 
     @bp.route("/send/<postbox_id>/write")
     def send_page_write(postbox_id):

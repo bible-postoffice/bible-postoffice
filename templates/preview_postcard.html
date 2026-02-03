@@ -1,482 +1,515 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>미리보기 & 글씨체</title>
-    <style>
-        @font-face {
-            font-family: 'Pretendard';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Thin.woff2') format('woff2');
-            font-weight: 100;
-            font-display: swap;
-}
+{% extends 'base.html' %}
 
-        @font-face {
-            font-family: 'PyeojinGothic';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2504-1@1.0/PyeojinGothic-Regular.woff2') format('woff2');
-            font-weight: 400;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'KimJeongcheolMyoungjo';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/KimjungchulMyungjo-Light.woff2') format('woff2');
-            font-weight: 300;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'YesMyungjo';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_13@1.0/YESMyoungjo-Regular.woff') format('woff');
-            font-weight: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'SchoolSafetyWing';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2511-1@1.0/HakgyoansimNalgaeR.woff2') format('woff2');
-            font-weight: normal;
-            font-display: swap;
-        }
-        :root {
-            --ink: #0f172a;
-            --muted: #6b7280;
-            --accent: #6366f1;
-            --panel: #ffffff;
-            --bg: #f5f7fb;
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--ink);
-            padding: 28px 16px 34px;
-        }
-        .shell {
-            max-width: 1180px;
-            margin: 0 auto;
-            background: var(--panel);
-            border-radius: 20px;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 18px 50px rgba(15,23,42,0.08);
-            padding: 26px 24px 30px;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            flex-wrap: wrap;
-            align-items: flex-start;
-        }
-        h2 {
-            margin: 0;
-            font-size: 28px;
-            letter-spacing: -0.02em;
-            font-family: 'Noto Serif KR', 'Pretendard', serif;
-        }
-        .sub {
-            margin-top: 6px;
-            color: var(--muted);
-        }
-        
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&display=swap');
+
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+    @font-face {
+        font-family: 'OmuDaye';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-01@1.0/omyu_pretty.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'IsYun';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'OngleipSeunghun';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408@1.0/Ownglyph_Seung_Hoon-Rg.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'OngleipRyudung';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2405-2@1.0/Ownglyph_ryuttung-Rg.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'NostalgicMyoeunHeullim';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-1@1.0/Griun_MyoeunHeullim-Rg.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'KyoboHandwriting2021Seongjiyoung';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2212@1.0/KyoboHandwriting2021sjy.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'Mingigeok';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105@1.1/Mingijuk.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    /* 제목폰트 */
+    @font-face {
+        font-family: 'Aggravo';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SBAggroM.woff') format('woff');
+        font-weight: 500;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'Aggravo';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SBAggroB.woff') format('woff');
+        font-weight: 700;
+        font-display: swap;
+    }
+
+    :root {
+        --ink: #0f172a;
+        --muted: #6b7280;
+        --accent: #6366f1;
+        --panel: #ffffff;
+        --bg: #f5f7fb;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        /* base.html의 배경색 유지하되 필요시 오버라이드 */
+        font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+    }
+
+    .shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        background: var(--panel);
+        border-radius: 20px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+        padding: 26px 24px 30px;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: -0.02em;
+        font-family: 'Aggravo';
+    }
+
+    .sub {
+        margin-top: 6px;
+        color: var(--muted);
+        font-family: 'Aggravo';
+    }
+
+    .layout {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 24px;
+        margin-top: 22px;
+        width: 100%;
+    }
+
+    .layout>* {
+        min-width: 0;
+    }
+
+    .preview-card {
+        position: relative;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        min-height: 0;
+    }
+
+    .template-frame {
+        position: relative;
+        width: 100%;
+        min-height: 200px;
+        background-size: cover;
+        background-position: center;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .template-frame {
+        aspect-ratio: 2367 / 1676;
+        border-radius: 44px;
+        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+    }
+
+    .template-frame .overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 13.25% 16.4% 13.25%;
+    }
+
+    .template-frame .left {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .template-frame .right {
+        display: none;
+        /* 메시지는 밖으로 나감 */
+    }
+
+    .template-frame.postcard.no-message .left {
+        padding-top: 0;
+    }
+
+    .template-frame.postcard .left {
+        padding-top: 0;
+    }
+
+    .verse-box {
+        color: var(--ink);
+        line-height: 1.5;
+        font-weight: 300;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        flex: 1;
+        width: 100%;
+    }
+
+    .verse-box .text {
+        white-space: pre-wrap;
+        word-break: keep-all;
+        line-height: 1.6;
+        text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .verse-box .ref {
+        font-weight: 500;
+        text-align: right;
+        margin-top: 10px;
+        align-self: flex-end;
+        color: var(--ink);
+    }
+
+    .sender-box {
+        color: var(--ink);
+        font-weight: 500;
+        text-align: center;
+        margin-top: auto;
+        padding-top: 4px;
+    }
+
+    /* 외부 메시지 박스 스타일 */
+    .outer-msg-container {
+        width: 100%;
+        margin-top: 20px;
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 20px;
+        color: #1e293b;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+
+    .dark .outer-msg-container {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 편지 작성 구간 */
+    .outer-msg-container .label {
+        font-family: 'Aggravo';
+        font-size: 15px;
+        font-weight: 500;
+        color: #fbbf24;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .outer-msg-content {
+        font-size: 1.2rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: keep-all;
+    }
+
+    /* Selection Stages */
+    .selection-row {
+        margin-bottom: 24px;
+    }
+
+    .selection-label {
+        font-family: 'Aggravo';
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: var(--ink);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Template Selection */
+    .template-grid {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        scrollbar-width: none;
+    }
+
+    .template-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .template-thumb {
+        flex: 0 0 45px;
+        aspect-ratio: 1;
+        border-radius: 16px;
+        background-size: cover;
+        background-position: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .template-thumb:hover {
+        transform: translateY(-2px);
+    }
+
+    .template-thumb.active {
+        border-color: var(--accent);
+        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+        transform: scale(1.05);
+    }
+
+    .font-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .side {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .font-option {
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: #fff;
+        cursor: pointer;
+        transition: border 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .font-option:hover {
+        border-color: #94a3b8;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .font-option.active {
+        border-color: #6366f1;
+        box-shadow: 0 14px 28px rgba(79, 70, 229, 0.16);
+        background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+    }
+
+    .font-label {
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: auto;
+    }
+
+    button {
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+        font-weight: 800;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
+        color: #fff;
+        border: none;
+        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .tag {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #4338ca;
+        font-weight: 700;
+        font-size: 12px;
+        margin-left: 6px;
+    }
+
+    @media (max-width: 900px) {
         .layout {
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 18px;
-            margin-top: 22px;
-            width: 100%;
+            grid-template-columns: 1fr;
         }
-        .layout > * { min-width: 0; }
+    }
+
+    @media (max-width: 540px) {
+        body {
+            padding: 14px 12px 18px;
+        }
+
+        .shell {
+            padding: 16px 12px 20px;
+            border-radius: 14px;
+        }
+
+        .header {
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .preview-card {
-            position: relative;
-            background: transparent;
-            border: none;
-            border-radius: 0;
-            padding: 0;
-            min-height: 0;
-        }
-        .template-frame {
-            position: relative;
             width: 100%;
-            min-height: 360px;
-            background-size: cover;
-            background-position: center;
-            border-radius: 16px;
-            border: 1px solid #d1d5db;
-            overflow: hidden;
-            box-shadow: 0 18px 36px rgba(0,0,0,0.08);
-            transition: box-shadow 0.2s ease;
-            box-sizing: border-box;
         }
-        .template-frame.postcard { aspect-ratio: 16 / 10; }
-        .template-frame.letter { aspect-ratio: 2 / 3; }
-        
-        .overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
+
+        .template-frame {
+            min-height: 320px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
         }
-        
-        /* 엽서 템플릿: 위아래 1단 구조 */
-        .template-frame.postcard .overlay { 
+
+        .template-frame .overlay {
             display: grid;
             grid-template-rows: 60% 40%;
             gap: 0;
-            padding: 12% 6% 6%;
+            padding: 10% 6% 8%;
             justify-content: space-between;
         }
-        
-        .template-frame.postcard .left,
-        .template-frame.postcard .right {
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            width: 100%;
-            min-height: 0;
-        }
-        .template-frame.postcard .left {
-            padding-top: 0;
-        }
-        
-        .verse-box {
-            color: var(--ink);
-            line-height: 1.5;
-            font-weight: 600;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            flex: 1 1 auto;
-            max-height: none;
-            justify-content: flex-start;
-        }
-        .verse-box .text {
-            flex: 0 0 auto;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow-wrap: break-word;
-        }
-        .verse-box .ref {
-            font-weight: 800;
-            text-align: right;
-            flex-shrink: 0;
-            margin-top: 0.15em;
-            align-self: flex-end;
-            display: block;
-            color: var(--ink);
-            font-size: 13px;
-        }
-        .msg-box {
-            color: var(--ink);
-            line-height: 1.5;
-            font-weight: 600;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .msg-box .body {
-            flex: 1;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            overflow: hidden;
-        }
-        .sender-box {
-            color: var(--ink);
-            font-weight: 700;
-            overflow: hidden;
-            width: 100%;
-            text-align: center;
-            align-self: center;
-        }
-        
-        .template-frame.postcard .verse-box {
-            flex: 1;
-            background: none;
-            border: none;
-            box-shadow: none;
-            min-height: 0;
-        }
-        
-        .template-frame.postcard .msg-box {
-            flex: 1;
-            background: none;
-            border: none;
-            box-shadow: none;
-            min-height: 0;
-        }
-        
-        .template-frame.postcard .sender-box {
-            margin-top: auto;
-            background: none;
-            border: none;
-            box-shadow: none;
-            flex: 0 0 12.5%;
-            padding-top: 2px;
-            padding-bottom: 2px;
-            line-height: 1.2;
-            overflow: visible;
-        }
-        .template-frame.postcard .msg-box {
-            flex: 0 0 87.5%;
-        }
+
         .template-frame.postcard.no-message .overlay {
-            grid-template-rows: 100%;
+            padding: 15% 6% 3%;
         }
-        .template-frame.postcard.no-message .right {
-            flex: 0 0 0;
-            display: none;
-        }
-        .template-frame.postcard.no-message .left {
-            justify-content: center;
-            padding-top: 6%;
-        }
-        .template-frame.postcard.no-message .verse-box {
-            max-width: 96%;
-            margin: 0 auto;
-        }
-        .template-frame.postcard.no-message .sender-box {
-            display: block;
-            margin: 10px auto 0;
-        }
-        
-        /* 편지지 템플릿: 세로 배치 */
-        .template-frame.letter .overlay {
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            gap: 6%;
-            padding: 10% 8%;
-            height: 80%;
-            margin: auto;
-        }
-        .template-frame.letter .left,
-        .template-frame.letter .right {
-            width: 80%;
-            max-width: 760px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .template-frame.letter .left {
-            flex: 0 0 40%;
-            justify-content: center;
-        }
-        .template-frame.letter .right {
-            flex: 0 0 40%;
-            justify-content: flex-start;
+
+        .template-frame .left,
+        .template-frame .right {
+            padding-top: 0;
             gap: 8px;
-        }
-        
-        .template-frame.letter .verse-box,
-        .template-frame.letter .msg-box,
-        .template-frame.letter .sender-box {
-            background: none;
-            border: none;
-            border-radius: 0;
-            padding: 0;
-            box-shadow: none;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.25);
-        }
-        .template-frame.letter .verse-box,
-        .template-frame.letter .msg-box {
+            flex: 1 1 auto;
             width: 100%;
-            max-width: 760px;
-        }
-        .template-frame.letter .msg-box {
-            flex: 1 1 0;
             min-height: 0;
-            overflow: hidden;
-            height: 100%;
         }
-        .template-frame.letter .msg-box .body {
-            height: 100%;
-            display: flex;
-            align-items: center;
+
+        .verse-box,
+        .msg-box {
+            font-size: 13px;
+            word-break: break-word;
         }
-        .template-frame.letter .sender-box {
-            width: 100%;
-            max-width: 760px;
-            border-radius: 0;
-            align-self: center;
-            text-align: center;
-            margin-top: auto;
+
+        .verse-box .ref {
+            font-size: 11px;
         }
-        .template-frame.letter.no-message .right {
-            flex: 0 0 0;
-            display: none;
-        }
-        .template-frame.letter.no-message .left {
-            flex: 1 1 auto;
-            width: 100%;
-            padding-top: 6%;
-        }
-        .template-frame.letter.no-message .verse-box {
-            max-width: 96%;
-            margin: 0 auto;
-        }
-        
+
         .side {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            width: 100%;
-            box-sizing: border-box;
+            padding: 12px;
+            border-radius: 12px;
         }
-        .font-section {
-            flex: 1 1 auto;
-        }
-        .font-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 10px;
-        }
+
         .font-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
+            flex-wrap: nowrap;
         }
+
         .font-tab {
-            border: 1px solid #d1d5db;
-            border-radius: 999px;
-            padding: 8px 12px;
-            background: #fff;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            transition: border 0.15s ease, box-shadow 0.15s ease;
+            flex: 1 1 0;
+            text-align: center;
+            padding: 8px 6px;
         }
-        .font-tab.active {
-            border-color: #6366f1;
-            box-shadow: 0 8px 16px rgba(79,70,229,0.2);
-            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+
+        .font-grid {
+            grid-template-columns: 1fr;
         }
-        .font-option {
-            border: 1px solid #d1d5db;
-            border-radius: 12px;
-            padding: 10px 12px;
-            background: #fff;
-            cursor: pointer;
-            transition: border 0.15s ease, box-shadow 0.15s ease;
-        }
-        .font-option:hover {
-            border-color: #94a3b8;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.06);
-        }
-        .font-option.active {
-            border-color: #6366f1;
-            box-shadow: 0 14px 28px rgba(79,70,229,0.16);
-            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
-        }
-        .font-label {
-            font-weight: 800;
-            color: #0f172a;
-        }
-        
+
         .actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: auto;
+            grid-template-columns: 1fr;
+            gap: 8px;
         }
+
         button {
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1px solid #d1d5db;
-            background: #fff;
-            font-weight: 800;
-            cursor: pointer;
-            font-size: 15px;
+            width: 100%;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #2b59ff 0%, #6c8bff 100%);
-            color: #fff;
-            border: none;
-            box-shadow: 0 12px 24px rgba(59,130,246,0.25);
+
+        /* Letter-specific mobile styles removed */
+    }
+
+    @media (min-width: 769px) {
+        .verse-box .ref {
+            margin-top: 0;
         }
-        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .tag {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #4338ca;
-            font-weight: 700;
-            font-size: 12px;
-            margin-left: 6px;
-        }
-        @media (max-width: 900px) {
-            .layout { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 540px) {
-            body { padding: 14px 12px 18px; }
-            .shell { padding: 16px 12px 20px; border-radius: 14px; }
-            .header { flex-direction: column; gap: 10px; }
-            
-            .preview-card { width: 100%; }
-            .template-frame { min-height: 320px; border-radius: 12px; width: 100%; max-width: 100%; margin: 0 auto; }
-            .template-frame.postcard {
-                background-size: contain;
-                background-repeat: no-repeat;
-            }
-            .template-frame.postcard .overlay { 
-                display: grid;
-                grid-template-rows: 60% 40%;
-                gap: 0; 
-                padding: 10% 6% 8%; 
-                justify-content: space-between;
-            }
-            .template-frame.postcard.no-message .overlay {
-                padding: 15% 6% 3%;
-            }
-            .template-frame.postcard .left,
-            .template-frame.postcard .right {
-                padding-top: 0;
-                gap: 8px;
-                flex: 1 1 auto;
-                width: 100%;
-                min-height: 0;
-            }
-            .verse-box,
-            .msg-box { font-size: 13px; word-break: break-word; }
-            .verse-box .ref { font-size: 11px; }
-            .side { padding: 12px; border-radius: 12px; }
-            .font-tabs { flex-wrap: nowrap; }
-            .font-tab { flex: 1 1 0; text-align: center; padding: 8px 6px; }
-            .font-grid { grid-template-columns: 1fr; }
-            .actions { grid-template-columns: 1fr; gap: 8px; }
-            button { width: 100%; }
-            /* 편지지 모드에서 중앙 80% 영역에 텍스트 배치 */
-            .template-frame.letter .overlay {
-                padding: 8% 6%;
-                gap: 6%;
-                justify-content: space-between;
-            }
-            .template-frame.letter .verse-box {
-                min-height: 40%;
-                display: flex;
-                align-items: center;
-            }
-            .template-frame.letter .msg-box,
-            .template-frame.letter .sender-box {
-                max-width: none;
-            }
-            .template-frame.letter .msg-box {
-                min-height: 0;
-            }
-        }
-        @media (min-width: 769px) {
-            .verse-box .ref { margin-top: 0; }
-        }
-    </style>
+    }
+</style>
 </head>
+
 <body>
     <div class="shell">
         <div class="header">
@@ -484,43 +517,41 @@
                 <h2>전송 전 미리보기</h2>
                 <div class="sub">선택한 말씀과 편지를 원하는 글씨체로 확인하고 보내주세요.</div>
             </div>
-            
+
         </div>
 
         <div class="layout">
             <div class="preview-card">
-                <div class="template-frame postcard" id="template-frame">
+                <div class="template-frame" id="template-frame">
                     <div class="overlay">
-                        <div class="left" id="left-column">
-                            <div class="verse-box">
-                                <div class="text" id="verse-text"></div>
-                                <span class="ref" id="verse-ref"></span>
-                            </div>
+                        <div class="verse-box">
+                            <div class="text" id="verse-text"></div>
+                            <div class="ref" id="verse-ref"></div>
                         </div>
-                        <div class="right" id="right-column">
-                            <div class="msg-box">
-                                <div class="body" id="message-text"></div>
-                            </div>
-                            <div class="sender-box" id="sender-box">
-                                From. <span id="sender-label"></span>
-                            </div>
-                        </div>
+                        <div class="sender-box">from. <span id="sender-label"></span></div>
                     </div>
+                </div>
+
+                <div class="outer-msg-container" id="preview-msg-container" style="display:none;">
+                    <span class="label" id="preview-msg-label">MESSAGE</span>
+                    <div class="outer-msg-content" id="message-text"></div>
                 </div>
             </div>
 
             <div class="side">
-                
+                <div class="selection-row">
+                    <div class="selection-label">🎨 엽서 디자인 선택</div>
+                    <div class="template-grid" id="template-grid"></div>
+                </div>
 
-                <div class="font-section">
-                    <div style="font-weight:800; margin-bottom:8px; color:#0f172a;">글씨체 선택</div>
-                    <div class="font-tabs" id="font-tabs"></div>
+                <div class="selection-row">
+                    <div class="selection-label">✍️ 글씨체 선택</div>
                     <div class="font-grid" id="font-grid"></div>
                 </div>
 
                 <div class="actions">
-                    <button id="edit-btn">수정하기</button>
-                    <button class="btn-primary" id="send-btn">이대로 보낼게요 🚀</button>
+                    <button id="edit-btn">내용 수정</button>
+                    <button class="btn-primary" id="send-btn">전송하기 🚀</button>
                 </div>
             </div>
         </div>
@@ -530,147 +561,89 @@
         const postboxId = "{{ postbox_id }}";
         const draftKey = `postcardDraft-${postboxId}`;
         const returnKey = `postboxReturnUrl-${postboxId}`;
-        const templateAssets = {
-            1: "{{ url_for('static', filename='images/postcards/postcard1.jpg') }}",
-            2: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}",
-            3: "{{ url_for('static', filename='images/postcards/postcard3.jpg') }}",
-            4: "{{ url_for('static', filename='images/postcards/postcard4.jpg') }}",
-            5: "{{ url_for('static', filename='images/postcards/postcard5.jpg') }}",
-            6: "{{ url_for('static', filename='images/postcards/postcard6.jpg') }}",
-            7: "{{ url_for('static', filename='images/postcards/postcard7.jpg') }}",
-            8: "{{ url_for('static', filename='images/postcards/postcard8.jpg') }}",
-            9: "{{ url_for('static', filename='images/postcards/postcard9.jpg') }}",
-        };
+
+        const TEMPLATES = [
+            { id: 1, name: 'BEYOND HORIZON', image: "{{ url_for('static', filename='images/postcards/postcard1.jpg') }}" },
+            { id: 2, name: 'SECRET GARDEN', image: "{{ url_for('static', filename='images/postcards/postcard2.jpg') }}" },
+            { id: 3, name: 'ETERNAL BLUE', image: "{{ url_for('static', filename='images/postcards/postcard3.jpg') }}" },
+            { id: 4, name: 'SOFT PASTELL', image: "{{ url_for('static', filename='images/postcards/postcard4.jpg') }}" },
+            { id: 5, name: 'VINTAGE 2026', image: "{{ url_for('static', filename='images/postcards/postcard5.jpg') }}" },
+            { id: 6, name: 'OCEAN BREEZE', image: "{{ url_for('static', filename='images/postcards/postcard6.jpg') }}" },
+        ];
+
         const FONT_OPTIONS = {
             'sans': {
                 id: 'sans',
-                label: '모던 산세리프',
-                desc: '깔끔하고 단정한 분위기',
-                fontFamily: "'Pretendard','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif",
-                sample: '늘 평안과 은혜가 함께하길 바라요.'
+                label: 'Pretendard',
+                desc: '정갈한 기본 고딕',
+                fontFamily: "'Pretendard', sans-serif"
             },
-            'serif': {
-                id: 'serif',
-                label: '클래식 세리프',
-                desc: '전통적인 편지 느낌',
-                fontFamily: "'Noto Serif KR','Times New Roman','Apple SD Gothic Neo',serif",
-                sample: '기도로 함께하며 응원할게요.'
+            'omu': {
+                id: 'omu',
+                label: '오뮤 다예체',
+                desc: '귀여운 손글씨',
+                fontFamily: "'OmuDaye', cursive"
             },
-            'hand': {
-                id: 'hand',
-                label: '따뜻한 손글씨',
-                desc: '친근한 필기체 느낌',
-                fontFamily: "'Nanum Pen Script','Comic Sans MS','Apple SD Gothic Neo',cursive",
-                sample: '마음 가득 사랑을 담았어요.'
+            'isyun': {
+                id: 'isyun',
+                label: '이서윤체',
+                desc: '자연스러운 필기',
+                fontFamily: "'IsYun', cursive"
             },
-            'pyeojin': {
-                id: 'pyeojin',
-                label: '펴진고딕',
-                desc: '둥글둥글한 고딕체',
-                fontFamily: "'PyeojinGothic','Noto Sans KR','Apple SD Gothic Neo',sans-serif",
-                sample: '따뜻하게 마음을 전해요.'
+            'seunghun': {
+                id: 'seunghun',
+                label: '승훈체',
+                desc: '부드러운 흘림',
+                fontFamily: "'OngleipSeunghun', cursive"
             },
-            'kimmyoungjo': {
-                id: 'kimmyoungjo',
-                label: '김정철 명조',
-                desc: '얇고 우아한 명조',
-                fontFamily: "'KimJeongcheolMyoungjo','Noto Serif KR','Times New Roman',serif",
-                sample: '은혜와 평강이 가득하길.'
-            },
-            'yesmyungjo': {
-                id: 'yesmyungjo',
-                label: '예스 명조',
-                desc: '선명한 전통 명조',
-                fontFamily: "'YesMyungjo','Noto Serif KR','Times New Roman',serif",
-                sample: '진심을 담아 응원해요.'
-            },
-            'schoolsafety': {
-                id: 'schoolsafety',
-                label: '학교안전날개',
-                desc: '둥글고 귀여운 손글씨 느낌',
-                fontFamily: "'SchoolSafetyWing','Noto Sans KR','Apple SD Gothic Neo',cursive",
-                sample: '마음 가득 응원과 사랑을 담았어요.'
+            'ryudung': {
+                id: 'ryudung',
+                label: '류뚱체',
+                desc: '개성적인 필체',
+                fontFamily: "'OngleipRyudung', cursive"
             }
         };
 
+        const templateGridEl = document.getElementById('template-grid');
+        const fontGridEl = document.getElementById('font-grid');
         const frameEl = document.getElementById('template-frame');
         const overlayEl = document.querySelector('.template-frame .overlay');
         const verseRefEl = document.getElementById('verse-ref');
         const verseTextEl = document.getElementById('verse-text');
         const messageTextEl = document.getElementById('message-text');
         const senderLabelEl = document.getElementById('sender-label');
-        const senderBoxEl = document.getElementById('sender-box');
-        const rightColumnEl = document.getElementById('right-column');
-        const leftColumnEl = document.getElementById('left-column');
-        const fontTabsEl = document.getElementById('font-tabs');
-        const fontGridEl = document.getElementById('font-grid');
         const sendBtn = document.getElementById('send-btn');
         const editBtn = document.getElementById('edit-btn');
 
         let draft = null;
-        let selectedFont = 'serif';
-        let activeFontCategory = 'sans';
+        let selectedFont = 'sans';
+        let selectedTemplateId = 1;
         let templateImageSize = null;
-        const FONT_CATEGORIES = [
-            { id: 'sans', label: '고딕' },
-            { id: 'serif', label: '명조' },
-            { id: 'hand', label: '손글씨' }
-        ];
-        const SERIF_FONT_IDS = ['serif', 'kimmyoungjo', 'yesmyungjo'];
 
-        function normalizeTemplate(tpl = {}) {
-            const rawId = tpl.id;
-            let id = parseInt(String(rawId || '').replace(/\\D+/g, ''), 10);
-            if (!id) id = 1;
-            const rawType = tpl.type;
-            let typeInt = 0;
-            if (typeof rawType === 'string') {
-                const num = parseInt(rawType, 10);
-                if (!Number.isNaN(num)) typeInt = num;
-                else typeInt = rawType === '편지지' ? 1 : 0;
-            } else {
-                typeInt = rawType ?? 0;
-            }
-            typeInt = typeInt === 1 ? 1 : 0;
-            return {
-                id,
-                type: typeInt,
-                typeLabel: typeInt === 1 ? '편지지' : '엽서',
-                name: tpl.name || `템플릿 ${id}`
-            };
-        }
-
-        function renderFontTabs() {
-            fontTabsEl.innerHTML = '';
-            FONT_CATEGORIES.forEach(category => {
-                const tab = document.createElement('button');
-                tab.type = 'button';
-                tab.className = 'font-tab' + (category.id === activeFontCategory ? ' active' : '');
-                tab.textContent = category.label;
-                tab.onclick = () => {
-                    activeFontCategory = category.id;
-                    renderFontTabs();
-                    renderFontOptions();
+        function renderTemplateOptions() {
+            templateGridEl.innerHTML = '';
+            TEMPLATES.forEach(tpl => {
+                const thumb = document.createElement('div');
+                thumb.className = 'template-thumb' + (tpl.id === selectedTemplateId ? ' active' : '');
+                thumb.style.backgroundImage = `url(${tpl.image})`;
+                thumb.onclick = () => {
+                    selectedTemplateId = tpl.id;
+                    renderTemplateOptions();
+                    applyTemplate();
                 };
-                fontTabsEl.appendChild(tab);
+                templateGridEl.appendChild(thumb);
             });
         }
 
         function renderFontOptions() {
             fontGridEl.innerHTML = '';
-            const filtered = Object.values(FONT_OPTIONS).filter(opt => {
-                if (activeFontCategory === 'sans') return ['sans', 'pyeojin'].includes(opt.id);
-                if (activeFontCategory === 'serif') return SERIF_FONT_IDS.includes(opt.id);
-                if (activeFontCategory === 'hand') return ['hand', 'schoolsafety'].includes(opt.id);
-                return true;
-            });
-            filtered.forEach(opt => {
+            Object.values(FONT_OPTIONS).forEach(opt => {
                 const card = document.createElement('div');
-                card.className = 'font-option';
+                card.className = 'font-option' + (opt.id === selectedFont ? ' active' : '');
                 card.dataset.id = opt.id;
                 card.innerHTML = `
                     <div class="font-label" style="font-family:${opt.fontFamily}">${opt.label}</div>
-                    <div style="color:#6b7280; font-size:13px; margin-top:2px;">${opt.desc}</div>
+                    <div style="color:#6b7280; font-size:12px; margin-top:2px;">${opt.desc}</div>
                 `;
                 card.onclick = () => selectFont(opt.id);
                 fontGridEl.appendChild(card);
@@ -683,69 +656,82 @@
             [messageTextEl, verseTextEl, verseRefEl, senderLabelEl].forEach(el => {
                 el.style.fontFamily = opt.fontFamily;
             });
-            document.querySelectorAll('.font-option').forEach(card => {
-                card.classList.toggle('active', card.dataset.id === selectedFont);
-            });
-            
-            // 폰트 변경 후 텍스트 크기 재조정
+            renderFontOptions();
             setTimeout(adjustAllText, 50);
-            
             persistDraft();
         }
 
-
         function applyTemplate() {
-            const tpl = normalizeTemplate(draft.template || {});
-            const img = templateAssets[tpl.id];
-            frameEl.style.backgroundImage = img ? `url(${img})` : '';
-            frameEl.classList.remove('postcard', 'letter');
-            frameEl.classList.add(tpl.type === 1 ? 'letter' : 'postcard');
-
-            if (img) {
-                const image = new Image();
-                image.onload = () => {
-                    templateImageSize = { width: image.naturalWidth, height: image.naturalHeight };
-                    updateOverlayInset();
-                };
-                image.onerror = () => {
-                    templateImageSize = null;
-                    updateOverlayInset();
-                };
-                image.src = img;
-            } else {
-                templateImageSize = null;
-                updateOverlayInset();
-            }
-        }
-
-        function normalizeSingleLine(value) {
-            return (value || '').replace(/\r?\n+/g, ' ');
+            const tpl = TEMPLATES.find(t => t.id === selectedTemplateId) || TEMPLATES[0];
+            const img = new Image();
+            img.onload = () => {
+                templateImageSize = { width: img.naturalWidth, height: img.naturalHeight };
+                frameEl.style.backgroundImage = `url(${tpl.image})`;
+                frameEl.classList.add('postcard'); // Always postcard in this version
+            };
+            img.src = tpl.image;
         }
 
         function applyContent() {
             const verse = draft.verse || {};
             verseRefEl.textContent = verse.reference || '선택한 말씀';
             verseTextEl.textContent = (verse.text || '').replace(/\s+$/g, '');
-            messageTextEl.textContent = normalizeSingleLine(draft.message ? draft.message : '');
+            const messageValue = (draft.message || '').trim();
+            messageTextEl.textContent = messageValue;
+
             const senderName = (draft.sender_name || '').trim();
             const displayName = senderName || '익명';
             senderLabelEl.textContent = displayName;
-            const messageValue = normalizeSingleLine(draft.message ? draft.message : '');
-            frameEl.classList.toggle('no-message', messageValue.length === 0);
-            if (messageValue.length === 0 && senderBoxEl && leftColumnEl) {
-                leftColumnEl.appendChild(senderBoxEl);
-            } else if (messageValue.length > 0 && senderBoxEl && rightColumnEl && senderBoxEl.parentElement !== rightColumnEl) {
-                rightColumnEl.appendChild(senderBoxEl);
+
+            const msgContainer = document.getElementById('preview-msg-container');
+            const msgLabel = document.getElementById('preview-msg-label');
+            if (msgContainer) {
+                msgContainer.style.display = messageValue.length > 0 ? 'block' : 'none';
+                if (msgLabel) msgLabel.textContent = `${displayName}의 한마디`;
             }
 
-            setTimeout(updateOverlayInset, 60);
-            setTimeout(adjustAllText, 100);
+            setTimeout(adjustAllText, 60);
+        }
+
+        async function adjustAllText() {
+            const isMobile = window.innerWidth <= 768;
+            const verseText = document.getElementById('verse-text');
+
+            await document.fonts.ready;
+
+            if (verseText) {
+                fitTextToContainer(verseText, isMobile ? 12 : 16, isMobile ? 25 : 30);
+            }
+        }
+
+        function fitTextToContainer(element, minSize, maxSize) {
+            if (!element) return;
+
+            let fontSize = maxSize;
+            element.style.fontSize = fontSize + 'px';
+
+            // 부모 요소 높이의 80%만 사용하도록 여유를 둠 (선택 사항)
+            const targetHeight = element.parentElement.clientHeight * 0.8;
+            const targetWidth = element.parentElement.clientWidth * 0.9;
+
+            let iterations = 0;
+            // 높이뿐만 아니라 너비도 체크하며 루프
+            while (
+                (element.scrollHeight > targetHeight || element.scrollWidth > targetWidth)
+                && fontSize > minSize
+                && iterations < 100
+            ) {
+                fontSize -= 0.5; // 0.5보다 1씩 줄이는 것이 성능상 유리할 수 있음
+                element.style.fontSize = fontSize + 'px';
+                iterations++;
+            }
         }
 
         function persistDraft() {
             const opt = FONT_OPTIONS[selectedFont] || FONT_OPTIONS.sans;
             try {
                 const next = Object.assign({}, draft, {
+                    template_id: selectedTemplateId,
                     font_family: opt.fontFamily,
                     font_style: opt.id
                 });
@@ -771,11 +757,13 @@
                 alert('작성 중인 편지를 찾을 수 없습니다.');
                 return;
             }
-            const tpl = normalizeTemplate(draft.template || {});
+            const tpl = TEMPLATES.find(t => t.id === selectedTemplateId) || TEMPLATES[0];
             const opt = FONT_OPTIONS[selectedFont] || FONT_OPTIONS.sans;
-            const message = normalizeSingleLine(draft.message || '');
+            const message = (draft.message || '').trim().replace(/\r?\n+/g, ' ');
+
             sendBtn.disabled = true;
             sendBtn.textContent = '전송 중...';
+
             try {
                 const response = await fetch('/api/send-postcard', {
                     method: 'POST',
@@ -783,7 +771,7 @@
                     body: JSON.stringify({
                         postbox_id: postboxId,
                         template_id: tpl.id,
-                        template_type: tpl.type,
+                        template_type: 0,
                         template_name: tpl.name,
                         sender_name: (draft.sender_name || '').trim(),
                         is_anonymous: !(draft.sender_name || '').trim(),
@@ -794,217 +782,27 @@
                         font_style: opt.id
                     })
                 });
+
                 if (response.ok) {
                     sessionStorage.removeItem(draftKey);
                     const returnUrl = sessionStorage.getItem(returnKey);
                     sessionStorage.removeItem(returnKey);
-                    alert('엽서가 성공적으로 전송되었습니다! 🎉\\n2026년 1월 1일에 상대방이 확인할 수 있습니다.');
-                    window.location.href = returnUrl || '/';
+                    alert('엽서가 성공적으로 전송되었습니다! 🎉\n2026년 1월 1일에 상대방이 확인할 수 있습니다.');
+                    window.location.href = returnUrl || `/postbox/${postboxId}`;
                 } else {
                     const err = await response.text();
-                    alert('전송 중 오류가 발생했습니다.\\n' + err);
+                    alert('전송 중 오류가 발생했습니다.\n' + err);
                 }
             } catch (e) {
                 alert('전송 실패: ' + e.message);
             } finally {
                 sendBtn.disabled = false;
-                sendBtn.textContent = '이대로 보낼게요 🚀';
-            }
-        }
-        // ========== 텍스트 자동 크기 조절 함수 ==========
-        function fitTextToContainer(element, minSize, maxSize, containerHeight = null, containerWidth = null) {
-            if (!element || !element.textContent.trim()) return;
-            
-            let fontSize = maxSize;
-            element.style.fontSize = fontSize + 'px';
-            
-            let iterations = 0;
-            const maxIterations = 200;
-            
-            // 컨테이너 크기가 지정된 경우 해당 크기를 기준으로, 아니면 요소 자체의 크기를 기준으로
-            const refHeight = containerHeight !== null ? containerHeight : element.clientHeight;
-            const refWidth = containerWidth !== null ? containerWidth : element.clientWidth;
-            
-            while ((element.scrollHeight > refHeight + 1 || 
-                    element.scrollWidth > refWidth + 1) && 
-                fontSize > minSize && iterations < maxIterations) {
-                fontSize -= 0.3;
-                element.style.fontSize = fontSize + 'px';
-                iterations++;
+                sendBtn.textContent = '전송하기 🚀';
             }
         }
 
-        function fitTextToContainerFill(element, minSize, maxSize, containerHeight = null, containerWidth = null) {
-            if (!element || !element.textContent.trim()) return;
 
-            const refHeight = containerHeight !== null ? containerHeight : element.clientHeight;
-            const refWidth = containerWidth !== null ? containerWidth : element.clientWidth;
-            let fontSize = minSize;
-            element.style.fontSize = fontSize + 'px';
-
-            let iterations = 0;
-            const maxIterations = 200;
-            while (fontSize < maxSize && iterations < maxIterations) {
-                element.style.fontSize = (fontSize + 0.3) + 'px';
-                if (element.scrollHeight > refHeight + 1 || element.scrollWidth > refWidth + 1) {
-                    element.style.fontSize = fontSize + 'px';
-                    break;
-                }
-                fontSize += 0.3;
-                iterations++;
-            }
-        }
-
-        function fitVerseBox() {
-            const verseBox = document.querySelector('.verse-box');
-            const verseRef = document.getElementById('verse-ref');
-            const verseText = document.getElementById('verse-text');
-            
-            if (!verseBox || !verseRef || !verseText) return;
-            
-            const isMobile = window.innerWidth <= 480;
-            const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
-            
-            let refMin, refMax, textMin, textMax;
-            
-            if (isMobile) {
-                refMin = 6; refMax = 10;
-                textMin = 6; textMax = 12;
-            } else if (isTablet) {
-                refMin = 7; refMax = 15;
-                textMin = 7; textMax = 16;
-            } else {
-                refMin = 10; refMax = 20;
-                textMin = 10; textMax = 24;
-            }
-            
-            // 제목(ref)을 먼저 맞춤
-            fitTextToContainer(verseRef, refMin, refMax);
-            
-            // 제목이 차지한 공간을 제외한 나머지에 본문 맞춤
-            const verseBoxHeight = verseBox.clientHeight;
-            const refHeight = verseRef.offsetHeight;
-            const refMargin = parseInt(getComputedStyle(verseRef).marginTop || 0);
-            const availableHeight = verseBoxHeight - refHeight - refMargin;
-            
-            let textFontSize = textMax;
-            verseText.style.fontSize = textFontSize + 'px';
-            
-            let iterations = 0;
-            const maxIterations = 200;
-            
-            while ((verseText.scrollHeight > availableHeight + 1 || 
-                    verseText.scrollWidth > verseText.clientWidth + 1) && 
-                textFontSize > textMin && iterations < maxIterations) {
-                textFontSize -= 0.3;
-                verseText.style.fontSize = textFontSize + 'px';
-                iterations++;
-            }
-        }
-
-        function adjustAllText() {
-            const msgBoxContainer = document.querySelector('.msg-box');
-            const msgBox = document.getElementById('message-text');
-            const senderBoxContainer = document.querySelector('.sender-box');
-            const senderBox = document.getElementById('sender-label');
-            const rightColumn = document.querySelector('.template-frame.postcard .right');
-            const verseRef = document.getElementById('verse-ref');
-            const verseText = document.getElementById('verse-text');
-            
-            const isMobile = window.innerWidth <= 480;
-            const isTablet = window.innerWidth <= 768 && window.innerWidth > 480;
-            let msgMin, msgMax, senderMin, senderMax;
-            if (isMobile) {
-                msgMin = 10; msgMax = 18;
-                senderMin = 10; senderMax = 12;
-            } else if (isTablet) {
-                msgMin = 12; msgMax = 20;
-                senderMin = 10; senderMax = 12;
-            } else {
-                msgMin = 12; msgMax = 28;
-                senderMin = 20; senderMax = 20;
-            }
-            
-            // 성경 구절 영역 (제목 + 본문)
-            fitVerseBox();
-            if (verseRef && verseText) {
-                // ref 크기를 본문과 동일하게 맞춤
-                verseRef.style.fontSize = getComputedStyle(verseText).fontSize;
-            }
-            
-            // 메시지 영역
-            if (msgBox && msgBoxContainer) {
-                // 컨테이너 크기를 기준으로 조절
-                fitTextToContainer(msgBox, msgMin, msgMax, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
-
-                // 여전히 넘치면 더 축소
-                if (msgBox.scrollHeight > msgBoxContainer.clientHeight + 1) {
-                    const hardMin = msgMin;
-                    const currentSize = parseFloat(getComputedStyle(msgBox).fontSize) || msgMax;
-                    fitTextToContainer(msgBox, hardMin, currentSize, msgBoxContainer.clientHeight, msgBoxContainer.clientWidth);
-                }
-            }
-            if (senderBox && msgBox) {
-                // 발신자 크기를 본문보다 조금 작게 맞춤
-                const baseSize = getComputedStyle(msgBox).fontSize;
-                const baseSizeNum = parseFloat(baseSize) || 0;
-                const senderSize = baseSizeNum ? Math.max(baseSizeNum, senderMin) + 'px' : baseSize;
-                senderBox.style.fontSize = senderSize;
-                const wrapper = senderBox.parentElement;
-                if (wrapper) wrapper.style.fontSize = senderSize;
-            }
-            
-            // 발신자 영역
-            if (senderBox && senderBoxContainer) {
-                // 컨테이너 크기를 기준으로 조절
-                fitTextToContainer(senderBox, senderMin, senderMax, senderBoxContainer.clientHeight, senderBoxContainer.clientWidth);
-                const senderFontSize = getComputedStyle(senderBox).fontSize;
-                senderBoxContainer.style.fontSize = senderFontSize;
-            }
-
-            // rightColumn overflow 보정은 gap을 제거했으므로 생략
-        }
-
-        function updateOverlayInset() {
-            if (!frameEl || !overlayEl || !frameEl.classList.contains('postcard')) {
-                return;
-            }
-            const style = getComputedStyle(frameEl);
-            const bgSize = style.backgroundSize;
-            const frameW = frameEl.clientWidth;
-            const frameH = frameEl.clientHeight;
-            let bgW = 0;
-            let bgH = 0;
-
-            if (templateImageSize && templateImageSize.width && templateImageSize.height) {
-                const scale = Math.min(frameW / templateImageSize.width, frameH / templateImageSize.height);
-                bgW = templateImageSize.width * scale;
-                bgH = templateImageSize.height * scale;
-            } else if (bgSize && bgSize !== 'cover' && bgSize !== 'auto' && bgSize !== 'auto auto') {
-                const parts = bgSize.split(' ');
-                if (parts.length >= 2 && parts[0].includes('px') && parts[1].includes('px')) {
-                    bgW = parseFloat(parts[0]) || 0;
-                    bgH = parseFloat(parts[1]) || 0;
-                }
-            }
-
-            if (!bgW || !bgH) {
-                overlayEl.style.inset = '0px';
-                return;
-            }
-
-            const insetX = Math.max((frameW - bgW) / 2, 0);
-            const insetY = Math.max((frameH - bgH) / 2, 0);
-            overlayEl.style.inset = `${insetY}px ${insetX}px`;
-        }
-
-        // 페이지 로드 및 리사이즈 시 실행
-        window.addEventListener('load', () => {
-            updateOverlayInset();
-            setTimeout(adjustAllText, 100);
-        });
         window.addEventListener('resize', () => {
-            updateOverlayInset();
             adjustAllText();
         });
 
@@ -1015,24 +813,19 @@
                 window.location.href = `/send/${postboxId}/write`;
                 return;
             }
-            renderFontTabs();
+
+            selectedTemplateId = draft.template_id || 1;
+            selectedFont = draft.font_style || 'sans';
+
+            renderTemplateOptions();
             renderFontOptions();
             applyTemplate();
             applyContent();
-
-            let initialFont = draft.font_style;
-            if (!initialFont && draft.font_family) {
-                const hit = Object.values(FONT_OPTIONS).find(opt => opt.fontFamily === draft.font_family);
-                if (hit) initialFont = hit.id;
-            }
-            selectedFont = FONT_OPTIONS[initialFont] ? initialFont : 'serif';
             selectFont(selectedFont);
         }
 
         sendBtn.addEventListener('click', sendPostcard);
         editBtn.addEventListener('click', () => window.location.href = `/send/${postboxId}/write`);
         init();
-
     </script>
-</body>
-</html>
+    {% endblock %}
