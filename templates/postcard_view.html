@@ -19,22 +19,8 @@
     }
 
     @font-face {
-        font-family: 'DoolgiMayoGothic';
-        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.1/Dovemayo_gothic.woff2') format('woff2');
-        font-weight: normal;
-        font-display: swap;
-    }
-
-    @font-face {
         font-family: 'OngleipSeunghun';
         src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408@1.0/Ownglyph_Seung_Hoon-Rg.woff2') format('woff2');
-        font-weight: normal;
-        font-display: swap;
-    }
-
-    @font-face {
-        font-family: 'GangwonEducationSaeum';
-        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEduSaeeum_OTFMediumA.woff') format('woff');
         font-weight: normal;
         font-display: swap;
     }
@@ -43,6 +29,42 @@
         font-family: 'OngleipRyudung';
         src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2405-2@1.0/Ownglyph_ryuttung-Rg.woff2') format('woff2');
         font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'NostalgicMyoeunHeullim';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-1@1.0/Griun_MyoeunHeullim-Rg.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'KyoboHandwriting2021Seongjiyoung';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2212@1.0/KyoboHandwriting2021sjy.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'Mingigeok';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105@1.1/Mingijuk.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    /* 제목폰트 */
+    @font-face {
+        font-family: 'Aggravo';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SBAggroM.woff') format('woff');
+        font-weight: 500;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'Aggravo';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SBAggroB.woff') format('woff');
+        font-weight: 700;
         font-display: swap;
     }
 
@@ -64,7 +86,7 @@
         min-height: 100vh;
         overflow-x: hidden;
         color: var(--ink);
-        font-family: var(--user-font);
+        font-family: var(--user-font) !important;
         transition: background-color 0.5s ease, background-image 0.5s ease;
     }
 
@@ -147,45 +169,60 @@
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        width: 50px;
-        height: 50px;
-        background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        border-radius: 50%;
+        width: 60px;
+        height: 80px;
+        background: none;
+        border: none;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        z-index: 10;
-        transition: all 0.2s ease;
+        z-index: 100;
+        /* 다른 요소보다 위에 오도록 */
         text-decoration: none;
-        color: var(--ink);
-        font-size: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+        /* 화살표 색상을 명확하게 지정 */
+        color: #333;
+        /* 글자가 안 보일 경우를 대비해 약간의 그림자 추가 (흰 배경에서도 잘 보임) */
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+
+        font-size: 50px;
+        /* 크기를 충분히 키움 */
+        font-weight: 300;
+        /* 너무 얇지 않게 조절 */
+        transition: all 0.3s ease;
+        opacity: 0.5;
     }
 
     .nav-btn:hover {
-        background: #fff;
-        transform: translateY(-50%) scale(1.1);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        opacity: 1;
+        color: #000;
+        /* 호버 시 더 진하게 */
     }
 
     .nav-btn.prev {
-        left: -25px;
+        left: -60px;
+        /* 카드 바깥쪽으로 배치 */
     }
 
     .nav-btn.next {
-        right: -25px;
+        right: -60px;
     }
 
-    @media (max-width: 1100px) {
+    /* 화면이 작아지면 화살표를 카드 안쪽으로 살짝 이동 */
+    @media (max-width: 1300px) {
         .nav-btn.prev {
             left: 10px;
         }
 
         .nav-btn.next {
             right: 10px;
+        }
+
+        .nav-btn {
+            color: #fff;
+            /* 카드 위로 올라올 땐 흰색이 더 잘 보일 수 있음 */
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
     }
 
@@ -226,7 +263,7 @@
         box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
         overflow: hidden;
         opacity: 0;
-        transition: opacity 0.6s ease-out;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-out;
     }
 
     .card.ready {
@@ -247,6 +284,7 @@
         color: var(--ink);
         line-height: 1.5;
         font-weight: 600;
+        font-size: 1.2rem;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -273,6 +311,7 @@
     .sender-box {
         color: var(--ink);
         font-weight: 700;
+        font-size: 1.2rem;
         text-align: center;
         margin-top: auto;
         padding-top: 4px;
@@ -303,7 +342,8 @@
     }
 
     .outer-msg-container .label {
-        font-size: 13px;
+        font-family: 'Aggravo';
+        font-size: 15px;
         font-weight: 700;
         color: #fbbf24;
         margin-bottom: 12px;
@@ -363,7 +403,8 @@
         padding: 12px 20px;
         border-radius: 12px;
         border: none;
-        font-weight: 600;
+        font-weight: 500;
+        font-family: 'Aggravo';
         cursor: pointer;
         transition: all 0.2s;
         display: flex;
@@ -371,7 +412,7 @@
         gap: 8px;
     }
 
-    .btn-primary {
+    /* .btn-primary {
         background: #3b82f6;
         color: #fff;
     }
@@ -380,18 +421,26 @@
         background: #fff;
         color: #334155;
         border: 1px solid #e2e8f0;
-    }
+    } */
 
     .btn-logo {
         padding: 8px;
-        background: #fff;
-        /* border: 1px solid #e2e8f0; */
+        background: transparent;
+        border: none;
+        transition: transform 0.2s ease;
+    }
+
+    .btn-logo:hover {
+        transform: scale(1.1);
     }
 
     .btn-logo img {
-        width: 32px;
-        height: 32px;
+        width: 40px;
+        height: 40px;
         object-fit: contain;
+        border-radius: 12px;
+        /* 아이콘 자체에 둥근 모서리 적용 (선택사항) */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 </style>
 
@@ -478,35 +527,106 @@
     }) ();
 
     // 텍스트 크기 자동 조정 함수
-    function fitTextToContainer(element, minSize, maxSize, containerHeight = null) {
-        if (!element) return;
-        let fontSize = maxSize;
-        element.style.fontSize = fontSize + 'px';
-        const targetHeight = containerHeight || element.parentElement.clientHeight;
+    // function fitTextToContainer(element, minSize, maxSize, containerHeight = null) {
+    //     if (!element) return;
+    //     let fontSize = maxSize;
+    //     element.style.fontSize = fontSize + 'px';
+    //     const targetHeight = containerHeight || element.parentElement.clientHeight;
 
-        let iterations = 0;
-        while ((element.scrollHeight > targetHeight || element.scrollWidth > element.clientWidth) && fontSize > minSize && iterations < 100) {
-            fontSize -= 0.5;
-            element.style.fontSize = fontSize + 'px';
-            iterations++;
+    //     let iterations = 0;
+    //     while ((element.scrollHeight > targetHeight || element.scrollWidth > element.clientWidth) && fontSize > minSize && iterations < 100) {
+    //         fontSize -= 0.5;
+    //         element.style.fontSize = fontSize + 'px';
+    //         iterations++;
+    //     }
+    // }
+    function fitTextToContainer(element, minSize, maxSize) {
+        let low = minSize;
+        let high = maxSize;
+        let optimalSize = minSize;
+
+        // 부모 요소의 높이와 너비를 기준으로 한계선 설정
+        const parent = element.parentElement;
+        const targetHeight = parent.clientHeight;
+        const targetWidth = parent.clientWidth;
+
+        // 이진 탐색으로 빠르게 최적의 폰트 크기 찾기 (딜레이 감소)
+        while (low <= high) {
+            let mid = (low + high) / 2;
+            element.style.fontSize = mid + 'px';
+
+            if (element.scrollHeight <= targetHeight && element.scrollWidth <= targetWidth) {
+                optimalSize = mid;
+                low = mid + 0.5;
+            } else {
+                high = mid - 0.5;
+            }
         }
+
+        element.style.fontSize = optimalSize + 'px';
     }
 
     async function adjustLayout() {
-        const isMobile = window.innerWidth <= 768;
+        const postcard = document.getElementById('postcard');
         const verseText = document.querySelector('.verse-box .text');
+        const isMobile = window.innerWidth <= 768;
 
-        await document.fonts.ready;
+        // 카드를 살짝 숨겨서 계산 과정이 안 보이게 함
+        postcard.classList.remove('ready');
 
-        if (verseText) {
-            fitTextToContainer(verseText, isMobile ? 12 : 16, isMobile ? 40 : 80);
+        // 폰트가 이미 로드되었는지 확인 (불필요한 대기 방지)
+        if (!document.fonts.check(`1em "${getComputedStyle(document.documentElement).getPropertyValue('--user-font')}"`)) {
+            await document.fonts.ready;
         }
 
-        document.getElementById('postcard').classList.add('ready');
+        if (verseText) {
+            // 루프 횟수를 줄이기 위해 시작 사이즈를 현실적으로 조정 (80 -> 40)
+            fitTextToContainer(verseText, isMobile ? 25 : 35, isMobile ? 35 : 50);
+        }
+
+        // 모든 계산이 끝나면 표시
+        requestAnimationFrame(() => {
+            postcard.classList.add('ready');
+        });
     }
 
     window.addEventListener('load', adjustLayout);
+    window.addEventListener('load', adjustLayout);
     window.addEventListener('resize', adjustLayout);
+
+    // 스와이프 기능 구현
+    (function () {
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const threshold = 50; // 스와이프 인식 최소 거리
+        const wrapper = document.querySelector('.postcard-wrapper');
+
+        if (!wrapper) return;
+
+        wrapper.addEventListener('touchstart', function (e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        wrapper.addEventListener('touchend', function (e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const diff = touchEndX - touchStartX;
+            if (Math.abs(diff) < threshold) return;
+
+            if (diff > 0) {
+                // 오른쪽으로 스와이프 -> 이전 엽서 (prev)
+                const prevBtn = document.querySelector('.nav-btn.prev');
+                if (prevBtn) prevBtn.click();
+            } else {
+                // 왼쪽으로 스와이프 -> 다음 엽서 (next)
+                const nextBtn = document.querySelector('.nav-btn.next');
+                if (nextBtn) nextBtn.click();
+            }
+        }
+    })();
 
     function copyShareUrl(silent = false) {
         const url = window.location.href;
@@ -519,12 +639,17 @@
         if (!window.Kakao || !Kakao.isInitialized()) return;
         const sender = {{ (sender or '익명') | tojson
     }};
-    Kakao.Link.sendDefault({
+    const verseText = {{ (verse_text or '') | tojson }};
+    const verseReference = {{ (verse_reference or '') | tojson }};
+
+    const description = verseText ? `${verseText} (${verseReference})` : `${sender}님이 보낸 엽서가 도착했습니다.`;
+
+    Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-            title: '말씀 우체통',
-            description: `${sender}님이 보낸 엽서가 도착했습니다.`,
-            imageUrl: window.location.origin + '/static/images/default_og.png',
+            title: `${sender}님이 보낸 말씀 엽서`,
+            description: description,
+            imageUrl: window.location.origin + '{{ url_for("static", filename=template_image) }}',
             link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
         },
         buttons: [{ title: '엽서 보기', link: { mobileWebUrl: window.location.href, webUrl: window.location.href } }]

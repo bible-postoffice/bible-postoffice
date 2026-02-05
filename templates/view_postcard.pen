@@ -100,8 +100,8 @@
     {
       "type": "rectangle",
       "id": "svseh",
-      "x": 132,
-      "y": 107,
+      "x": 137,
+      "y": 100,
       "fill": {
         "type": "image",
         "enabled": true,

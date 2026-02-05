@@ -58,6 +58,25 @@
     <div class="w-full max-w-sm space-y-4">
         {% if is_owner %}
 
+        <div class="flex gap-2 justify-center mb-4">
+            <button onclick="shareKakao()"
+                class="flex-1 py-3 px-4 bg-[#FEE500] text-[#191919] rounded-xl font-bold text-sm shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.922-.123.477.175.47.37.34.152-.102 2.41-1.637 3.393-2.302.544.073 1.103.111 1.677.111 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
+                </svg>
+                카카오톡 공유
+            </button>
+            <button onclick="copyLink()"
+                class="flex-1 py-3 px-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                링크 복사
+            </button>
+        </div>
+
         {% if postcard_count > 0 %}
         {% if is_opened %}
         <button onclick="location.href='{{ url_for('postbox.view_postcards', url_path=url_path) }}'"
@@ -154,27 +173,44 @@
         }
     };
     function shareKakao() {
-        Kakao.Share.sendDefault({
-            objectType: 'feed',
-            content: {
-                title: '{{ postbox_name }}',
-                description: '{{ prayer_topic or "말씀우체통이 도착했어요!" }}',
-                imageUrl: '{{ request.url_root }}static/images/postbox/{{ color }}.png',
+        if (!Kakao.isInitialized()) {
+            alert('카카오 SDK가 초기화되지 않았습니다.');
+            return;
+        }
+
+        var postboxName = {{ postbox_name | tojson
+    }};
+    var prayerTopic = {{ (prayer_topic or "말씀우체통이 도착했어요!") | tojson }};
+    var color = "{{ color }}";
+    var urlPath = "{{ url_path }}";
+
+    // Canonical URL construction
+    // http://127.0.0.1:5001/postbox/[url_path] 형식 보장
+    var origin = window.location.origin;
+    var imageUrl = origin + '/static/images/postbox/' + color + '.png';
+    var shareUrl = origin + '/postbox/' + urlPath;
+
+    Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+            title: postboxName,
+            description: prayerTopic,
+            imageUrl: imageUrl,
+            link: {
+                mobileWebUrl: shareUrl,
+                webUrl: shareUrl,
+            },
+        },
+        buttons: [
+            {
+                title: '우체통 구경가기',
                 link: {
-                    mobileWebUrl: window.location.href,
-                    webUrl: window.location.href,
+                    mobileWebUrl: shareUrl,
+                    webUrl: shareUrl,
                 },
             },
-            buttons: [
-                {
-                    title: '우체통 구경가기',
-                    link: {
-                        mobileWebUrl: window.location.href,
-                        webUrl: window.location.href,
-                    },
-                },
-            ],
-        });
+        ],
+    });
     }
 
     async function copyLink() {
